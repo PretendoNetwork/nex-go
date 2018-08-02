@@ -38,7 +38,8 @@ type RMCError struct {
 	CallID    uint32
 }
 
-func (Response *RMCResponse) setSuccess(CallID uint32, MethodID uint32, Data []byte) uint32 {
+// SetSuccess sets the RMCResponse payload to an instance of RMCSuccess
+func (Response *RMCResponse) SetSuccess(CallID uint32, MethodID uint32, Data []byte) uint32 {
 	Response.Success = 1
 	Response.Body = RMCSuccess{CallID, MethodID | 0x8000, Data}
 
@@ -47,7 +48,8 @@ func (Response *RMCResponse) setSuccess(CallID uint32, MethodID uint32, Data []b
 	return uint32(size)
 }
 
-func (Response *RMCResponse) setError(ErrorCode uint32, CallID uint32) uint32 {
+// SetError sets the RMCResponse payload to an instance of RMCError
+func (Response *RMCResponse) SetError(ErrorCode uint32, CallID uint32) uint32 {
 	Response.Success = 0
 	Response.Body = RMCError{ErrorCode, CallID}
 
@@ -56,7 +58,8 @@ func (Response *RMCResponse) setError(ErrorCode uint32, CallID uint32) uint32 {
 	return uint32(size)
 }
 
-func (Response *RMCResponse) toBytes() []byte {
+// Bytes converts a RMCResponse struct into a usable byte array
+func (Response *RMCResponse) Bytes() []byte {
 	data := bytes.NewBuffer(make([]byte, 0, Response.Size+1))
 
 	binary.Write(data, binary.LittleEndian, uint32(Response.Size))
@@ -91,8 +94,8 @@ func main() {
 	//MethodID   := uint32(1) // dummy values. These would actually be gotten from a request
 
 	response.ProtocolID = ProtocolID
-	response.Size = response.setError(0x8068000B, CallID)
+	response.Size = response.SetError(0x8068000B, CallID)
 
-	fmt.Println(response.toBytes())
+	fmt.Println(response.Bytes())
 }
 */

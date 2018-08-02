@@ -2,8 +2,6 @@ package nex
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"strings"
 	"time"
 )
@@ -81,6 +79,7 @@ func NewDateTime(current time.Time) DateTime {
 	return datetime
 }
 
+/*
 func main() {
 	JSONBuffer := []byte(`{
 		"stream":  "10",
@@ -118,3 +117,4 @@ func main() {
 
 	fmt.Printf(date, datet.Day, datet.Month, datet.Year, datet.Hour, datet.Minute, datet.Second)
 }
+*/
