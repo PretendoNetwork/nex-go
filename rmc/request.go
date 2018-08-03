@@ -50,7 +50,7 @@ func (Request *RMCRequest) FromBytes(Data []byte) (RMCRequest, error) {
 	}
 
 	Size := binary.LittleEndian.Uint16(SizeBuffer)
-	ProtocolID := ProtocolIDBuffer[0]
+	ProtocolID := int(ProtocolIDBuffer[0])
 	CallID := binary.LittleEndian.Uint16(CallIDBuffer)
 	MethodID := binary.LittleEndian.Uint16(MethodIDBuffer)
 	Parameters := Data[Size-13:]

@@ -18,51 +18,12 @@ type Server struct {
 	Handlers   map[string]func(Client, General.Packet)
 }
 
-// Client represents generic NEX/PRUDP client
-// _UDPConn           : The address of the client
-// State              : The clients connection state
-// SignatureKey       : MD5 hash of the servers access key
-// SignatureBase      : Packet checksum base (sum on the SignatureKey)
-// SecureKey          : NEX server packet event handles
-// ConnectionSignature: The clients unique connection signature
-// SessionID          : Clients session ID
-// Packets            : Packets sent to the server from the client
-// PacketQueue        : Packet queue
-// SequenceIDIn       : The sequence ID for client->server packets
-// SequenceIDOut      : The sequence ID for server->client packets
-type Client struct {
-	_UDPConn            *net.UDPAddr
-	State               int
-	SignatureKey        string
-	SignatureBase       int
-	SecureKey           []byte
-	ConnectionSignature []byte
-	SessionID           int
-	Packets             []General.Packet
-	PacketQueue         map[string]General.Packet
-	SequenceIDIn        int
-	SequenceIDOut       int
-}
-
 // NewServer returns a new NEX server
 func NewServer() *Server {
 	return &Server{
 		Handlers: make(map[string]func(Client, General.Packet)),
 		Clients:  make(map[string]Client),
 	}
-}
-
-// NewClient returns a new generic client
-func NewClient(addr *net.UDPAddr) Client {
-
-	client := Client{
-		_UDPConn:    addr,
-		State:       0,
-		SessionID:   0,
-		PacketQueue: make(map[string]General.Packet),
-	}
-
-	return client
 }
 
 // Listen starts a NEX server on a given port
@@ -157,17 +118,3 @@ func readPacket(server *Server) {
 		fmt.Println("UNKNOWN TYPE", PRUDPPacket.Type)
 	}
 }
-
-/*
-// Testing the package
-// This will be removed in the release
-func main() {
-	server := NewServer()
-
-	server.On("Syn", func(client Client, packet General.Packet) {
-		server.Send(client, []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
-	})
-
-	server.Listen(":60000")
-}
-*/
