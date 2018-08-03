@@ -14,45 +14,50 @@ import (
 // Handlers  : NEX server packet event handles
 type Server struct {
 	_UDPServer *net.UDPConn
-	Clients    []Client
-	Handlers   map[string]func(*net.UDPAddr, General.Packet)
+	Clients    map[string]Client
+	Handlers   map[string]func(Client, General.Packet)
 }
 
 // Client represents generic NEX/PRUDP client
-// State        : The clients connection state
-// SignatureKey : MD5 hash of the servers access key
-// SignatureBase: Packet checksum base
-// SecureKey    : NEX server packet event handles
-// Signature    : The clients signature
-// CallID       : A list of connected clients
-// SessionID    : Clients session ID
-// Packets      : Client sent, server-bound packets
-// PacketQueue  : Packet Queue
+// _UDPConn           : The address of the client
+// State              : The clients connection state
+// SignatureKey       : MD5 hash of the servers access key
+// SignatureBase      : Packet checksum base (sum on the SignatureKey)
+// SecureKey          : NEX server packet event handles
+// ConnectionSignature: The clients unique connection signature
+// SessionID          : Clients session ID
+// Packets            : Packets sent to the server from the client
+// PacketQueue        : Packet queue
+// SequenceIDIn       : The sequence ID for client->server packets
+// SequenceIDOut      : The sequence ID for server->client packets
 type Client struct {
-	State         int
-	SignatureKey  string
-	SignatureBase int
-	SecureKey     []byte
-	Signature     []byte
-	CallID        int
-	SessionID     int
-	Packets       []General.Packet
-	PacketQueue   map[string]General.Packet
+	_UDPConn            *net.UDPAddr
+	State               int
+	SignatureKey        string
+	SignatureBase       int
+	SecureKey           []byte
+	ConnectionSignature []byte
+	SessionID           int
+	Packets             []General.Packet
+	PacketQueue         map[string]General.Packet
+	SequenceIDIn        int
+	SequenceIDOut       int
 }
 
 // NewServer returns a new NEX server
 func NewServer() *Server {
 	return &Server{
-		Handlers: make(map[string]func(*net.UDPAddr, General.Packet)),
+		Handlers: make(map[string]func(Client, General.Packet)),
+		Clients:  make(map[string]Client),
 	}
 }
 
 // NewClient returns a new generic client
-func NewClient() Client {
+func NewClient(addr *net.UDPAddr) Client {
 
 	client := Client{
+		_UDPConn:    addr,
 		State:       0,
-		CallID:      0,
 		SessionID:   0,
 		PacketQueue: make(map[string]General.Packet),
 	}
@@ -61,31 +66,62 @@ func NewClient() Client {
 }
 
 // Listen starts a NEX server on a given port
-func (NEXServer *Server) Listen(port string) {
+func (server *Server) Listen(port string) {
 
 	protocol := "udp"
 
 	address, _ := net.ResolveUDPAddr(protocol, port)
-	server, _ := net.ListenUDP(protocol, address)
+	UDPServer, _ := net.ListenUDP(protocol, address)
 
-	NEXServer._UDPServer = server
+	server._UDPServer = UDPServer
 
 	fmt.Println("NEX server listening on port", port)
 
 	for {
-		readPacket(NEXServer)
+		readPacket(server)
 	}
 }
 
 // On defines a datagram event handler
-func (NEXServer *Server) On(event string, handler func(*net.UDPAddr, General.Packet)) {
-	NEXServer.Handlers[event] = handler
+func (server *Server) On(event string, handler func(Client, General.Packet)) {
+	server.Handlers[event] = handler
 }
 
-func readPacket(NEXServer *Server) {
+// Kick removes a client from the server
+func (server *Server) Kick(client Client) {
+	discriminator := client._UDPConn.String()
+
+	if _, ok := server.Clients[discriminator]; ok {
+		delete(server.Clients, discriminator)
+		fmt.Println("Kicked user", discriminator)
+	}
+}
+
+// Send writes data to client
+func (server *Server) Send(client Client, data interface{}) {
+	switch data.(type) {
+	case []byte:
+		buffer := data.([]byte)
+		server._UDPServer.WriteToUDP(buffer, client._UDPConn)
+	case General.Packet:
+		// TODO
+	}
+}
+
+func readPacket(server *Server) {
 
 	var buffer [64000]byte
-	len, addr, _ := NEXServer._UDPServer.ReadFromUDP(buffer[0:])
+	len, addr, _ := server._UDPServer.ReadFromUDP(buffer[0:])
+
+	discriminator := addr.String()
+
+	if _, ok := server.Clients[discriminator]; ok {
+		fmt.Println("Stored User")
+	} else {
+		server.Clients[discriminator] = NewClient(addr)
+	}
+
+	client := server.Clients[discriminator]
 
 	packet := buffer[0:len]
 
@@ -93,29 +129,29 @@ func readPacket(NEXServer *Server) {
 
 	switch PRUDPPacket.Type {
 	case 0:
-		handler := NEXServer.Handlers["Syn"]
+		handler := server.Handlers["Syn"]
 		if handler != nil {
-			NEXServer.Handlers["Syn"](addr, PRUDPPacket)
+			server.Handlers["Syn"](client, PRUDPPacket)
 		}
 	case 1:
-		handler := NEXServer.Handlers["Connect"]
+		handler := server.Handlers["Connect"]
 		if handler != nil {
-			NEXServer.Handlers["Connect"](addr, PRUDPPacket)
+			server.Handlers["Connect"](client, PRUDPPacket)
 		}
 	case 2:
-		handler := NEXServer.Handlers["Data"]
+		handler := server.Handlers["Data"]
 		if handler != nil {
-			NEXServer.Handlers["Data"](addr, PRUDPPacket)
+			server.Handlers["Data"](client, PRUDPPacket)
 		}
 	case 3:
-		handler := NEXServer.Handlers["Disconnect"]
+		handler := server.Handlers["Disconnect"]
 		if handler != nil {
-			NEXServer.Handlers["Disconnect"](addr, PRUDPPacket)
+			server.Handlers["Disconnect"](client, PRUDPPacket)
 		}
 	case 4:
-		handler := NEXServer.Handlers["Ping"]
+		handler := server.Handlers["Ping"]
 		if handler != nil {
-			NEXServer.Handlers["Ping"](addr, PRUDPPacket)
+			server.Handlers["Ping"](client, PRUDPPacket)
 		}
 	default:
 		fmt.Println("UNKNOWN TYPE", PRUDPPacket.Type)
@@ -128,16 +164,8 @@ func readPacket(NEXServer *Server) {
 func main() {
 	server := NewServer()
 
-	server.On("Syn", func(client *net.UDPAddr, packet General.Packet) {
-		fmt.Println("Handle PRUDP Packet")
-	})
-
-	server.On("Connect", func(client *net.UDPAddr, packet General.Packet) {
-		fmt.Println("Handle PRUDP Packet")
-	})
-
-	server.On("Data", func(client *net.UDPAddr, packet General.Packet) {
-		fmt.Println("Handle PRUDP Packet")
+	server.On("Syn", func(client Client, packet General.Packet) {
+		server.Send(client, []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 	})
 
 	server.Listen(":60000")

@@ -27,26 +27,11 @@ import (
 func main() {
     server := NEXServer.NewServer()
 
-    server.On("Syn", func(client *net.UDPAddr, packet General.Packet) {
-        fmt.Println("Handle SYN PRUDP Packet")
+    server.On("Syn", func(client NEXServer.Client, packet General.Packet) {
+        // handle packet
+        // build response
+        server.Send(client, []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
     })
-
-    server.On("Connect", func(client *net.UDPAddr, packet General.Packet) {
-        fmt.Println("Handle CONNECT PRUDP Packet")
-    })
-
-    server.On("Data", func(client *net.UDPAddr, packet General.Packet) {
-        fmt.Println("Handle DATA PRUDP Packet")
-    })
-
-    server.On("Disconnect", func(client *net.UDPAddr, packet General.Packet) {
-        fmt.Println("Handle DISCONNECT PRUDP Packet")
-    })
-
-    server.On("Ping", func(client *net.UDPAddr, packet General.Packet) {
-        fmt.Println("Handle PING PRUDP Packet")
-    })
-
 
     server.Listen(":60000")
 }
