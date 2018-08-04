@@ -86,7 +86,7 @@ func readPacket(server *Server) {
 
 	packet := buffer[0:len]
 
-	PRUDPPacket, _ := PRUDPLib.NewPacket(packet)
+	PRUDPPacket, _ := PRUDPLib.FromBytes(packet)
 
 	switch PRUDPPacket.Type {
 	case 0:
