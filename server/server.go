@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net"
 
-	PRUDPLib "github.com/PretendoNetwork/prudplib"
-	General "github.com/PretendoNetwork/prudplib/General"
+	PRUDPLib "github.com/PretendoNetwork/nex-go/prudp"
+	General "github.com/PretendoNetwork/nex-go/prudp/General"
 )
 
 // Server represents generic NEX server

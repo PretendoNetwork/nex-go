@@ -3,7 +3,7 @@ package nex
 import (
 	"net"
 
-	General "github.com/PretendoNetwork/prudplib/General"
+	General "github.com/PretendoNetwork/nex-go/prudp/General"
 )
 
 // Client represents generic NEX/PRUDP client
