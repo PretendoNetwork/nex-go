@@ -1,4 +1,4 @@
-package nex
+package rmc
 
 import (
 	"bytes"

@@ -76,9 +76,7 @@ func readPacket(server *Server) {
 
 	discriminator := addr.String()
 
-	if _, ok := server.Clients[discriminator]; ok {
-		fmt.Println("Stored User")
-	} else {
+	if _, ok := server.Clients[discriminator]; !ok {
 		server.Clients[discriminator] = NewClient(addr)
 	}
 
