@@ -3,7 +3,7 @@ package nex
 import (
 	"net"
 
-	General "github.com/PretendoNetwork/nex-go/prudp/General"
+	PRUDP "github.com/PretendoNetwork/nex-go/prudp"
 )
 
 // Client represents generic NEX/PRUDP client
@@ -26,8 +26,8 @@ type Client struct {
 	SecureKey           []byte
 	ConnectionSignature []byte
 	SessionID           int
-	Packets             []General.Packet
-	PacketQueue         map[string]General.Packet
+	Packets             []PRUDP.Packet
+	PacketQueue         map[string]PRUDP.Packet
 	SequenceIDIn        int
 	SequenceIDOut       int
 }
@@ -39,7 +39,7 @@ func NewClient(addr *net.UDPAddr) Client {
 		_UDPConn:    addr,
 		State:       0,
 		SessionID:   0,
-		PacketQueue: make(map[string]General.Packet),
+		PacketQueue: make(map[string]PRUDP.Packet),
 	}
 
 	return client

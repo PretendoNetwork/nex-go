@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	PRUDPLib "github.com/PretendoNetwork/nex-go/prudp"
-	General "github.com/PretendoNetwork/nex-go/prudp/General"
+	PRUDP "github.com/PretendoNetwork/nex-go/prudp"
 )
 
 // Server represents generic NEX server
@@ -15,13 +14,13 @@ import (
 type Server struct {
 	_UDPServer *net.UDPConn
 	Clients    map[string]Client
-	Handlers   map[string]func(Client, General.Packet)
+	Handlers   map[string]func(Client, PRUDP.Packet)
 }
 
 // NewServer returns a new NEX server
 func NewServer() *Server {
 	return &Server{
-		Handlers: make(map[string]func(Client, General.Packet)),
+		Handlers: make(map[string]func(Client, PRUDP.Packet)),
 		Clients:  make(map[string]Client),
 	}
 }
@@ -44,7 +43,7 @@ func (server *Server) Listen(port string) {
 }
 
 // On defines a datagram event handler
-func (server *Server) On(event string, handler func(Client, General.Packet)) {
+func (server *Server) On(event string, handler func(Client, PRUDP.Packet)) {
 	server.Handlers[event] = handler
 }
 
@@ -64,7 +63,7 @@ func (server *Server) Send(client Client, data interface{}) {
 	case []byte:
 		buffer := data.([]byte)
 		server._UDPServer.WriteToUDP(buffer, client._UDPConn)
-	case General.Packet:
+	case PRUDP.Packet:
 		// TODO
 	}
 }
@@ -82,37 +81,38 @@ func readPacket(server *Server) {
 
 	client := server.Clients[discriminator]
 
-	packet := buffer[0:len]
+	data := buffer[0:len]
 
-	PRUDPPacket, _ := PRUDPLib.FromBytes(packet)
+	var Packet PRUDP.Packet
+	Packet.FromBytes(data)
 
-	switch PRUDPPacket.Type {
+	switch Packet.Type {
 	case 0:
 		handler := server.Handlers["Syn"]
 		if handler != nil {
-			server.Handlers["Syn"](client, PRUDPPacket)
+			server.Handlers["Syn"](client, Packet)
 		}
 	case 1:
 		handler := server.Handlers["Connect"]
 		if handler != nil {
-			server.Handlers["Connect"](client, PRUDPPacket)
+			server.Handlers["Connect"](client, Packet)
 		}
 	case 2:
 		handler := server.Handlers["Data"]
 		if handler != nil {
-			server.Handlers["Data"](client, PRUDPPacket)
+			server.Handlers["Data"](client, Packet)
 		}
 	case 3:
 		handler := server.Handlers["Disconnect"]
 		if handler != nil {
-			server.Handlers["Disconnect"](client, PRUDPPacket)
+			server.Handlers["Disconnect"](client, Packet)
 		}
 	case 4:
 		handler := server.Handlers["Ping"]
 		if handler != nil {
-			server.Handlers["Ping"](client, PRUDPPacket)
+			server.Handlers["Ping"](client, Packet)
 		}
 	default:
-		fmt.Println("UNKNOWN TYPE", PRUDPPacket.Type)
+		fmt.Println("UNKNOWN TYPE", Packet.Type)
 	}
 }
