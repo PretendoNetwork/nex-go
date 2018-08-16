@@ -64,8 +64,8 @@ func (server *Server) Send(client Client, Packet interface{}) {
 		buffer := Packet.([]byte)
 		server._UDPServer.WriteToUDP(buffer, client._UDPConn)
 	case PRUDP.Packet:
-		buffer := Packet.(PRUDP.Packet).Bytes()
-		server._UDPServer.WriteToUDP(buffer, client._UDPConn)
+		//buffer := Packet.(PRUDP.Packet).Bytes()
+		//server._UDPServer.WriteToUDP(buffer, client._UDPConn)
 	}
 }
 
@@ -91,27 +91,27 @@ func readPacket(server *Server) {
 	case 0:
 		handler := server.Handlers["Syn"]
 		if handler != nil {
-			server.Handlers["Syn"](client, Packet)
+			server.Handlers["Syn"](client, *Packet)
 		}
 	case 1:
 		handler := server.Handlers["Connect"]
 		if handler != nil {
-			server.Handlers["Connect"](client, Packet)
+			server.Handlers["Connect"](client, *Packet)
 		}
 	case 2:
 		handler := server.Handlers["Data"]
 		if handler != nil {
-			server.Handlers["Data"](client, Packet)
+			server.Handlers["Data"](client, *Packet)
 		}
 	case 3:
 		handler := server.Handlers["Disconnect"]
 		if handler != nil {
-			server.Handlers["Disconnect"](client, Packet)
+			server.Handlers["Disconnect"](client, *Packet)
 		}
 	case 4:
 		handler := server.Handlers["Ping"]
 		if handler != nil {
-			server.Handlers["Ping"](client, Packet)
+			server.Handlers["Ping"](client, *Packet)
 		}
 	default:
 		fmt.Println("UNKNOWN TYPE", Packet.Type)
