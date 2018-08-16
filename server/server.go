@@ -58,13 +58,14 @@ func (server *Server) Kick(client Client) {
 }
 
 // Send writes data to client
-func (server *Server) Send(client Client, data interface{}) {
-	switch data.(type) {
+func (server *Server) Send(client Client, Packet interface{}) {
+	switch Packet.(type) {
 	case []byte:
-		buffer := data.([]byte)
+		buffer := Packet.([]byte)
 		server._UDPServer.WriteToUDP(buffer, client._UDPConn)
 	case PRUDP.Packet:
-		// TODO
+		buffer := Packet.(PRUDP.Packet).Bytes()
+		server._UDPServer.WriteToUDP(buffer, client._UDPConn)
 	}
 }
 
@@ -83,7 +84,7 @@ func readPacket(server *Server) {
 
 	data := buffer[0:len]
 
-	var Packet PRUDP.Packet
+	Packet := PRUDP.NewPacket()
 	Packet.FromBytes(data)
 
 	switch Packet.Type {

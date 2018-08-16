@@ -2,6 +2,7 @@ package prudp
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 )
 
@@ -74,26 +75,150 @@ func (PRUDPPacket *Packet) FromBytes(Data []byte) {
 	}
 }
 
+// Bytes converts a PRUDP packet to a byte array
+func (PRUDPPacket *Packet) Bytes() []byte {
+	PacketSize := 0
+
+	switch PRUDPPacket.Version {
+	case 0:
+		PacketSize += 12
+	case 1:
+		PacketSize += 30
+	}
+
+	PacketSize += len(PRUDPPacket.MetaData)
+	PacketSize += len(PRUDPPacket.Payload)
+
+	data := bytes.NewBuffer(make([]byte, 0, PacketSize))
+
+	switch PRUDPPacket.Version {
+	case 0:
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.Source))
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.Destination))
+		binary.Write(data, binary.LittleEndian, uint16((int(PRUDPPacket.Flags)<<4)|int(PRUDPPacket.Type)))
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.SessionID))
+		binary.Write(data, binary.LittleEndian, PRUDPPacket.Signature)
+		binary.Write(data, binary.LittleEndian, uint16(PRUDPPacket.SequenceID))
+		binary.Write(data, binary.LittleEndian, PRUDPPacket.MetaData)
+		binary.Write(data, binary.LittleEndian, PRUDPPacket.Payload)
+	case 1:
+		binary.Write(data, binary.LittleEndian, [2]byte{0xEA, 0xD0})
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.Version))
+		binary.Write(data, binary.LittleEndian, uint8(len(PRUDPPacket.MetaData)))
+		binary.Write(data, binary.LittleEndian, uint16(len(PRUDPPacket.Payload)))
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.Source))
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.Destination))
+		binary.Write(data, binary.LittleEndian, uint16((int(PRUDPPacket.Flags)<<4)|int(PRUDPPacket.Type)))
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.SessionID))
+		binary.Write(data, binary.LittleEndian, uint8(PRUDPPacket.MultiAckVersion))
+		binary.Write(data, binary.LittleEndian, uint16(PRUDPPacket.SequenceID))
+		binary.Write(data, binary.LittleEndian, PRUDPPacket.Signature)
+		binary.Write(data, binary.LittleEndian, PRUDPPacket.MetaData)
+		binary.Write(data, binary.LittleEndian, PRUDPPacket.Payload)
+	}
+
+	return data.Bytes()
+}
+
+// SetVersion sets the packets Version property
+func (PRUDPPacket *Packet) SetVersion(Version int) {
+	PRUDPPacket.Version = Version
+}
+
+// SetSource sets the packets Source property
+func (PRUDPPacket *Packet) SetSource(Source uint8) {
+	PRUDPPacket.Source = Source
+}
+
+// SetDestination sets the packets Destination property
+func (PRUDPPacket *Packet) SetDestination(Destination uint8) {
+	PRUDPPacket.Destination = Destination
+}
+
+// SetSessionID sets the packets SessionID property
+func (PRUDPPacket *Packet) SetSessionID(SessionID uint8) {
+	PRUDPPacket.SessionID = SessionID
+}
+
+func (PRUDPPacket *Packet) SetSignature(Signature []byte) {
+	PRUDPPacket.Signature = Signature
+}
+
+// SetSequenceID sets the packets SequenceID property
+func (PRUDPPacket *Packet) SetSequenceID(SequenceID uint16) {
+	PRUDPPacket.SequenceID = SequenceID
+}
+
+// SetMetaData sets the packets MetaData property
+func (PRUDPPacket *Packet) SetMetaData(MetaData []byte) {
+	PRUDPPacket.MetaData = MetaData
+}
+
+// SetPayload sets the packets Payload property
+func (PRUDPPacket *Packet) SetPayload(Payload []byte) {
+	PRUDPPacket.Payload = Payload
+}
+
+// SetMultiAckVersion sets the packets MultiAckVersion property
+func (PRUDPPacket *Packet) SetMultiAckVersion(MultiAckVersion uint8) {
+	PRUDPPacket.MultiAckVersion = MultiAckVersion
+}
+
+// SetType sets the packets Type property
+func (PRUDPPacket *Packet) SetType(Type int) {
+	PRUDPPacket.Type = uint16(Type)
+}
+
+// AddFlag adds a packet flag to the packet
+func (PRUDPPacket *Packet) AddFlag(Flag int) {
+	PRUDPPacket.Flags |= uint16(Flag)
+}
+
+// ClearFlag removes a packet flag from the packet
+func (PRUDPPacket *Packet) ClearFlag(Flag int) {
+	PRUDPPacket.Flags &^= uint16(Flag)
+}
+
+// NewPacket returns a new PRUDP packet generic
+func NewPacket() *Packet {
+	return &Packet{
+		Flags: 0,
+	}
+}
+
 /*
 func main() {
-	packet_hex := "afa16200966ae88231030000704a3f4fd43b79f560cd38ac27e957788338d16af252ca44e42d21956dcc6c08b433aa3fc486ac07b8eacecf12fca15a1200509c0e6bed36a6348276bd0a0c4275b60f624df8354ef6a90060d448f096db1798e4a1b8fad05e8c6d5e09237ac4e13f44bb26172aff00ee9239389f0e7a6b7c2dba46230f968507cb31c4291a4510f1474680d6b9c1dd3382684ffdf3add55a607729bcb6f9ebd8c705ff90a9f799c2c8a559701fabb59825f5481dbe14a5998e50dcd99747b39245e92d308a05185bbc47865abc716e5c7c7d62002190b27dd05514210dc47b32ab6b3b6c9ae1dac5751519"
+	packet_hex := "ead001032501afa1e200e0003600368ab97371f1b20d9eaef91a2dee89c802010080fdd5e239fbb18501721aedd4d097e285f9a435d0e79d565ab65e95224bf40441097976db3dcf9fc835bca9ab26c1706f63a50b136124a131c329632bbcb85c31c9dc50695a3f3dec213b1aba9a26e40f5963688861a40220bbb461feb7713186e6b25569852fcfa6bdd723a22178a99d66947cc0d0b5e3a78c6ed410132f2f504f5c4805a2a0c53669a8a32e80c885b9584cf9d74aef67dcde00631c3db4f581ee3936abc345a42b60a2b36d7a872eb3fd000d9a3c91b7cda9e78cd23801570f588af8136ea10db4bb9cef67b6653c04d8495ab3dd4fac0a3c54474e2172b2d6d8ed8b343d04f7ca9a1ac9fe78a0db397f2bfbd1882834eb467246d17c60a162914a54b98f23b56c5e7d9de39199d7df2d74bf09137ec2ba68442de0d6d9c2fb04fccbcd"
 	data, _ := hex.DecodeString(packet_hex)
 
-	var PRUDPPacket Packet
-	PRUDPPacket.FromBytes(data)
+	var Packet1 Packet
+	Packet1.FromBytes(data)
 
-	fmt.Println("PRUDPPacket.Version:------->", PRUDPPacket.Version)
-	fmt.Println("PRUDPPacket.Magic:--------->", PRUDPPacket.Magic)
-	fmt.Println("PRUDPPacket.Source:-------->", PRUDPPacket.Source)
-	fmt.Println("PRUDPPacket.Destination:--->", PRUDPPacket.Destination)
-	fmt.Println("PRUDPPacket.TypeFlags:----->", PRUDPPacket.TypeFlags)
-	fmt.Println("PRUDPPacket.SessionID:----->", PRUDPPacket.SessionID)
-	fmt.Println("PRUDPPacket.Signature:----->", PRUDPPacket.Signature)
-	fmt.Println("PRUDPPacket.SequenceID:---->", PRUDPPacket.SequenceID)
-	fmt.Println("PRUDPPacket.MetaData:------>", PRUDPPacket.MetaData)
-	fmt.Println("PRUDPPacket.Payload:------->", PRUDPPacket.Payload)
-	fmt.Println("PRUDPPacket.MultiAckVersion:", PRUDPPacket.MultiAckVersion)
-	fmt.Println("PRUDPPacket.Type:---------->", PRUDPPacket.Type)
-	fmt.Println("PRUDPPacket.Flags:--------->", PRUDPPacket.Flags)
+	Packet2 := NewPacket()
+
+	Packet2.SetVersion(Packet1.Version)
+	Packet2.SetSource(Packet1.Source)
+	Packet2.SetDestination(Packet1.Destination)
+	Packet2.SetSessionID(Packet1.SessionID)
+	Packet2.SetSignature(Packet1.Signature)
+	Packet2.SetSequenceID(Packet1.SequenceID)
+	Packet2.SetMultiAckVersion(Packet1.MultiAckVersion)
+	Packet2.SetType(int(Packet1.Type))
+
+	fmt.Println("Input data:\n", data)
+	fmt.Println("\n")
+	fmt.Println("Packet.Version:--------->", Packet1.Version)
+	fmt.Println("Packet.Magic:----------->", Packet1.Magic)
+	fmt.Println("Packet.Source:---------->", Packet1.Source)
+	fmt.Println("Packet.Destination:----->", Packet1.Destination)
+	fmt.Println("Packet.TypeFlags:------->", Packet1.TypeFlags)
+	fmt.Println("Packet.SessionID:------->", Packet1.SessionID)
+	fmt.Println("Packet.Signature:------->", Packet1.Signature)
+	fmt.Println("Packet.SequenceID:------>", Packet1.SequenceID)
+	fmt.Println("Packet.MultiAckVersion:->", Packet1.MultiAckVersion)
+	fmt.Println("Packet.Type:------------>", Packet1.Type)
+	fmt.Println("Packet.Flags:----------->", Packet1.Flags)
+	fmt.Println("\n")
+	fmt.Println("Packet.Bytes():\n", Packet1.Bytes())
 }
 */

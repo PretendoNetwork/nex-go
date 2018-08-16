@@ -100,8 +100,17 @@ func main() {
 	var Packet PacketV0
 	_ = Packet.FromBytes(data)
 
-	fmt.Println("Initial data bytes", data)
-	fmt.Println("Struct ---------->", Packet)
-	fmt.Println("Packet.Bytes() -->", Packet.Bytes())
+	fmt.Println("TypeFlags", ToHEX(Packet.Header.TypeFlags))
+	fmt.Println("Type", ToHEX(Packet.Type))
+	fmt.Println("Flags", ToHEX(Packet.Flags))
+	TypeFlags := (int(Packet.Flags) << 4) | int(Packet.Type)
+	fmt.Println("TypeFlags (computed)", ToHEX(uint16(TypeFlags)))
+
+	//Flags := PacketHeader.TypeFlags >> 4
+	//Type := PacketHeader.TypeFlags & 0xF
+}
+
+func ToHEX(data uint16) string {
+	return "0x" + hex.EncodeToString([]byte{byte(data)})
 }
 */
