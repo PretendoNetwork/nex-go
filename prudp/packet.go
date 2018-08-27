@@ -179,6 +179,11 @@ func (PRUDPPacket *Packet) ClearFlag(Flag int) {
 	PRUDPPacket.Flags &^= uint16(Flag)
 }
 
+// HasFlag checks if the packet has a flag
+func (PRUDPPacket *Packet) HasFlag(Flag int) bool {
+	return int(PRUDPPacket.Flags)&Flag != 0
+}
+
 // NewPacket returns a new PRUDP packet generic
 func NewPacket() *Packet {
 	return &Packet{
