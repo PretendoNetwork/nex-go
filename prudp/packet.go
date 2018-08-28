@@ -187,7 +187,19 @@ func (PRUDPPacket *Packet) HasFlag(Flag int) bool {
 // NewPacket returns a new PRUDP packet generic
 func NewPacket() *Packet {
 	return &Packet{
-		Flags: 0,
+		Version:         -1,
+		Magic:           []byte{},
+		Source:          0,
+		Destination:     0,
+		TypeFlags:       0,
+		SessionID:       0,
+		Signature:       []byte{},
+		SequenceID:      0,
+		MetaData:        []byte{},
+		Payload:         []byte{},
+		MultiAckVersion: 0,
+		Type:            0,
+		Flags:           0,
 	}
 }
 

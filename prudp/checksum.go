@@ -71,7 +71,7 @@ func main() {
 	//packet := "a1af90000000000000000065d9e3340000"
 
 	base := Sum([]byte(ACCESS_KEY))
-	checksum := CalculateV0PacketChecksum(base, []byte{161, 175, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}) // Returns as an int
+	checksum := CalculateV0PacketChecksum(base, []byte{161, 175, 16, 0, 0, 0, 0}) // Returns as an int
 
 	fmt.Println(hex.EncodeToString([]byte{161, 175, 144, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
 	fmt.Println(strconv.FormatInt(int64(checksum), 16)) // Print it as a HEX string
