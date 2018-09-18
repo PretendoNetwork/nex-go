@@ -1,18 +1,67 @@
-package rmc
+package nex
 
 import (
-	"fmt"
-
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"os"
 )
 
+// RMCRequest represents a RMC protocol request
+type RMCRequest struct {
+	Size       uint32
+	ProtocolID int
+	CallID     uint32
+	MethodID   uint32
+	Parameters []byte
+}
+
+// FromBytes converts a byte array (payload) to a workable RMCRequest
+func (Request *RMCRequest) FromBytes(Data []byte) (RMCRequest, error) {
+	buffer := bytes.NewReader(Data)
+	ret := RMCRequest{}
+
+	SizeBuffer := make([]byte, 4)
+	ProtocolIDBuffer := make([]byte, 1)
+	CallIDBuffer := make([]byte, 4)
+	MethodIDBuffer := make([]byte, 4)
+
+	_, err := buffer.Read(SizeBuffer)
+	if err != nil {
+		return ret, err
+	}
+
+	_, err = buffer.Read(ProtocolIDBuffer)
+	if err != nil {
+		return ret, err
+	}
+
+	_, err = buffer.Read(CallIDBuffer)
+	if err != nil {
+		return ret, err
+	}
+
+	_, err = buffer.Read(MethodIDBuffer)
+	if err != nil {
+		return ret, err
+	}
+
+	Size := binary.LittleEndian.Uint16(SizeBuffer)
+	ProtocolID := int(ProtocolIDBuffer[0])
+	CallID := binary.LittleEndian.Uint16(CallIDBuffer)
+	MethodID := binary.LittleEndian.Uint16(MethodIDBuffer)
+	Parameters := Data[Size-13:]
+
+	ret.Size = uint32(Size)
+	ret.ProtocolID = ProtocolID
+	ret.CallID = uint32(CallID)
+	ret.MethodID = uint32(MethodID)
+	ret.Parameters = Parameters
+
+	return ret, nil
+}
+
 // RMCResponse represents a RMC protocol response
-// Size      : The size of the response (minus this value)
-// ProtocolID: ID of the NEX protocol being used (not ORed)
-// Success   : 1 or 0 based on if the response is a success or error
-// Body      : The response
 type RMCResponse struct {
 	Size       uint32
 	ProtocolID int
@@ -21,9 +70,6 @@ type RMCResponse struct {
 }
 
 // RMCSuccess represents a successful RMC payload
-// CallID  : ID of this call (incrementing int)
-// MethodID: ID of the method (ORed with 0x8000)
-// Data    : The payload data
 type RMCSuccess struct {
 	CallID   uint32
 	MethodID uint32
@@ -31,8 +77,6 @@ type RMCSuccess struct {
 }
 
 // RMCError represents a RMC error payload
-// ErrorCode: The error code of the error
-// CallID   : ID of this call (incrementing int)
 type RMCError struct {
 	ErrorCode uint32
 	CallID    uint32
@@ -84,18 +128,3 @@ func (Response *RMCResponse) Bytes() []byte {
 
 	return data.Bytes()
 }
-
-/*
-func main() {
-	var response RMCResponse
-
-	ProtocolID := 0x66  // Friends service (WiiU) NOT ORED! IN REQUEST THIS WILL BE 0xE6 (0x66 | 0x80)
-	CallID := uint32(1) // dummy values. These would actually be gotten from a request
-	//MethodID   := uint32(1) // dummy values. These would actually be gotten from a request
-
-	response.ProtocolID = ProtocolID
-	response.Size = response.SetError(0x8068000B, CallID)
-
-	fmt.Println(response.Bytes())
-}
-*/
