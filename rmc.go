@@ -67,11 +67,11 @@ type RMCResponse struct {
 	ProtocolID int
 	Success    int
 	Body       interface{}
+	CallID     uint32
 }
 
 // RMCSuccess represents a successful RMC payload
 type RMCSuccess struct {
-	CallID   uint32
 	MethodID uint32
 	Data     []byte
 }
@@ -79,27 +79,30 @@ type RMCSuccess struct {
 // RMCError represents a RMC error payload
 type RMCError struct {
 	ErrorCode uint32
-	CallID    uint32
+}
+
+// NewRMCResponse returns a new RMCResponse
+func NewRMCResponse(ProtocolID int, CallID uint32) RMCResponse {
+	return RMCResponse{
+		ProtocolID: ProtocolID,
+		CallID:     CallID,
+	}
 }
 
 // SetSuccess sets the RMCResponse payload to an instance of RMCSuccess
-func (Response *RMCResponse) SetSuccess(CallID uint32, MethodID uint32, Data []byte) uint32 {
+func (Response *RMCResponse) SetSuccess(MethodID uint32, Data []byte) {
 	Response.Success = 1
-	Response.Body = RMCSuccess{CallID, MethodID | 0x8000, Data}
+	Response.Body = RMCSuccess{MethodID | 0x8000, Data}
 
-	size := 10 + len(Data)
-
-	return uint32(size)
+	Response.Size = uint32(14 + len(Data))
 }
 
 // SetError sets the RMCResponse payload to an instance of RMCError
-func (Response *RMCResponse) SetError(ErrorCode uint32, CallID uint32) uint32 {
+func (Response *RMCResponse) SetError(ErrorCode uint32) {
 	Response.Success = 0
-	Response.Body = RMCError{ErrorCode, CallID}
+	Response.Body = RMCError{ErrorCode}
 
-	size := 10
-
-	return uint32(size)
+	Response.Size = 14
 }
 
 // Bytes converts a RMCResponse struct into a usable byte array
@@ -113,14 +116,14 @@ func (Response *RMCResponse) Bytes() []byte {
 	if Response.Success == 1 {
 		body := Response.Body.(RMCSuccess)
 
-		binary.Write(data, binary.LittleEndian, uint32(body.CallID))
+		binary.Write(data, binary.LittleEndian, uint32(Response.CallID))
 		binary.Write(data, binary.LittleEndian, uint32(body.MethodID))
 		binary.Write(data, binary.LittleEndian, body.Data)
 	} else if Response.Success == 0 {
 		body := Response.Body.(RMCError)
 
 		binary.Write(data, binary.LittleEndian, uint32(body.ErrorCode))
-		binary.Write(data, binary.LittleEndian, uint32(body.CallID))
+		binary.Write(data, binary.LittleEndian, uint32(Response.CallID))
 	} else {
 		fmt.Println("Invalid RMC success type", Response.Success)
 		os.Exit(1)

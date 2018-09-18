@@ -153,10 +153,6 @@ func encodeV0(PRUDPPacket *Packet) []byte {
 	binary.Write(buffer, binary.LittleEndian, PRUDPPacket.Payload)
 	binary.Write(buffer, binary.LittleEndian, uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, buffer.Bytes(), checksumVersion)))
 
-	if PRUDPPacket.Type == Types["Data"] {
-		fmt.Println("buffer.Bytes()", hex.EncodeToString(buffer.Bytes()))
-	}
-
 	return buffer.Bytes()
 }
 

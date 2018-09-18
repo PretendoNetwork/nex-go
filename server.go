@@ -24,7 +24,7 @@ type Settings struct {
 	KerberosKeyDerivation   int
 	IntSize                 int
 	ServerVersion           int
-	ServerAccessKey         string
+	AccessKey               string
 }
 
 // Server represents generic NEX server
@@ -121,8 +121,8 @@ func readPacket(server *Server) {
 
 	if _, ok := server.Clients[discriminator]; !ok {
 		newClient := NewClient(addr, server)
-		newClient.SignatureBase = sum([]byte(server.Settings.ServerAccessKey))
-		newClient.SignatureKey = md5Hash(server.Settings.ServerAccessKey)
+		newClient.SignatureBase = sum([]byte(server.Settings.AccessKey))
+		newClient.SignatureKey = md5Hash(server.Settings.AccessKey)
 
 		server.Clients[discriminator] = &newClient
 	}
