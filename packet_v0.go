@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
-	"crypto/rc4"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -122,11 +121,17 @@ func encodeV0(PRUDPPacket *Packet) []byte {
 	}
 
 	if PRUDPPacket.Type == Types["Data"] && len(PRUDPPacket.Payload) > 0 {
-		key := []byte(PRUDPPacket.Sender.CipherKey)
-		src := PRUDPPacket.Payload
-		cipher, _ := rc4.NewCipher(key)
-		crypted := make([]byte, len(src))
-		cipher.XORKeyStream(crypted, src)
+		/*
+			key := []byte(PRUDPPacket.Sender.CipherKey)
+			src := PRUDPPacket.Payload
+			cipher, _ := rc4.NewCipher(key)
+			crypted := make([]byte, len(src))
+			cipher.XORKeyStream(crypted, src)
+		*/
+
+		crypted := make([]byte, len(PRUDPPacket.Payload))
+		PRUDPPacket.Sender.Cipher.XORKeyStream(crypted, PRUDPPacket.Payload)
+		PRUDPPacket.Payload = crypted
 
 		PRUDPPacket.Payload = crypted
 	}
@@ -147,6 +152,10 @@ func encodeV0(PRUDPPacket *Packet) []byte {
 	binary.Write(buffer, binary.LittleEndian, options)
 	binary.Write(buffer, binary.LittleEndian, PRUDPPacket.Payload)
 	binary.Write(buffer, binary.LittleEndian, uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, buffer.Bytes(), checksumVersion)))
+
+	if PRUDPPacket.Type == Types["Data"] {
+		fmt.Println("buffer.Bytes()", hex.EncodeToString(buffer.Bytes()))
+	}
 
 	return buffer.Bytes()
 }

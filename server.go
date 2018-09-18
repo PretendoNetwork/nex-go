@@ -2,7 +2,9 @@ package nex
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
+	"time"
 )
 
 // Settings is a port of the settings handler in Kinnay's NintendoClients repo
@@ -143,6 +145,9 @@ func readPacket(server *Server) {
 			handler(client, &Packet)
 		}
 	case 1:
+		rand.Seed(time.Now().UnixNano())
+		client.SessionID = rand.Intn(0xFF)
+
 		handler := server.Handlers["Connect"]
 		if handler != nil {
 			handler(client, &Packet)

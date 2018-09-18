@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"crypto/rc4"
 	"math/rand"
 	"net"
 	"time"
@@ -10,7 +11,7 @@ import (
 type Client struct {
 	_UDPConn                  *net.UDPAddr
 	Server                    *Server
-	CipherKey                 string
+	Cipher                    *rc4.Cipher
 	State                     int
 	SignatureKey              string
 	SignatureBase             int
@@ -25,8 +26,9 @@ type Client struct {
 }
 
 // SetCipher sets the client RC4 Cipher
-func (client *Client) SetCipherKey(key string) {
-	client.CipherKey = key
+func (client *Client) SetCipher(key string) {
+	cipher, _ := rc4.NewCipher([]byte(key))
+	client.Cipher = cipher
 }
 
 // NewClient returns a new generic client
@@ -42,15 +44,15 @@ func NewClient(addr *net.UDPAddr, server *Server) Client {
 
 	rand.Read(signature)
 
-	rand.Seed(time.Now().UnixNano())
+	cipher, _ := rc4.NewCipher([]byte("CD&ML"))
 
 	client := Client{
-		_UDPConn:                  addr,
-		Server:                    server,
-		CipherKey:                 "CD&ML",
+		_UDPConn: addr,
+		Server:   server,
+		Cipher:   cipher,
 		ServerConnectionSignature: signature,
 		State:       0,
-		SessionID:   rand.Intn(0xFF),
+		SessionID:   0,
 		PacketQueue: make(map[string]Packet),
 	}
 
