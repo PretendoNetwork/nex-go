@@ -23,8 +23,9 @@ type Packet struct {
 	SequenceID      uint16
 	FragmentID      int
 	Payload         []byte
-	MultiAckVersion uint8 // only present in v1
-	Checksum        int   // only present in v0
+	RMCRequest      RMCRequest // only present in Data packets
+	MultiAckVersion uint8      // only present in v1
+	Checksum        int        // only present in v0
 }
 
 // Go doesn't allow byte arrays, even with fixed sizes, to be type `const` :L
@@ -71,15 +72,10 @@ func (PRUDPPacket *Packet) FromBytes(Data []byte) {
 	PRUDPPacket.Signature = decoded["Signature"].([]byte)
 
 	PRUDPPacket.Payload = decoded["Payload"].([]byte)
-	/*
-		if PRUDPPacket.Type == Types["Data"] {
-			crypted := make([]byte, len(decoded["Payload"].([]byte)))
-			PRUDPPacket.Sender.Cipher.XORKeyStream(crypted, decoded["Payload"].([]byte))
-			PRUDPPacket.Payload = crypted
-		} else {
-			PRUDPPacket.Payload = decoded["Payload"].([]byte)
-		}
-	*/
+
+	if decoded["RMCRequest"] != nil {
+		PRUDPPacket.RMCRequest = decoded["RMCRequest"].(RMCRequest)
+	}
 }
 
 // Bytes converts a PRUDP packet to a byte array

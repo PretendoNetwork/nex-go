@@ -47,7 +47,11 @@ func main() {
 	})
 
 	Server.On("Data", func(Client *NEX.Client, Packet *NEX.Packet) {
-		response := NEX.NewRMCResponse(0x0A, uint32(Packet.SequenceID))
+		if Packet.HasFlag(NEX.Flags["NeedAck"]) {
+			Server.Acknowledge(Packet)
+		}
+
+		response := NEX.NewRMCResponse(0x0A, Packet.RMCRequest.Header.CallID)
 		response.SetError(uint32(0x8068000B))
 
 		ResponsePacket := NEX.NewPacket(Client)

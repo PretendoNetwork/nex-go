@@ -38,6 +38,12 @@ func init() {
 	Flags["MultiAck"] = 0x200
 }
 
+func readInt(data []byte, endianness binary.ByteOrder) (ret int) {
+	buf := bytes.NewBuffer(data)
+	binary.Read(buf, endianness, &ret)
+	return
+}
+
 func readUInt16(data []byte, endianness binary.ByteOrder) (ret uint16) {
 	buf := bytes.NewBuffer(data)
 	binary.Read(buf, endianness, &ret)

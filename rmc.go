@@ -7,58 +7,33 @@ import (
 	"os"
 )
 
-// RMCRequest represents a RMC protocol request
-type RMCRequest struct {
+// RMCRequestHeader represents a RMC protocol request header
+type RMCRequestHeader struct {
 	Size       uint32
-	ProtocolID int
+	ProtocolID uint8
 	CallID     uint32
 	MethodID   uint32
+}
+
+// RMCRequest represents a RMC protocol request
+type RMCRequest struct {
+	Header     RMCRequestHeader
 	Parameters []byte
 }
 
-// FromBytes converts a byte array (payload) to a workable RMCRequest
-func (Request *RMCRequest) FromBytes(Data []byte) (RMCRequest, error) {
+// NewRMCRequest returns a new RMCRequest
+func NewRMCRequest(Data []byte) RMCRequest {
 	buffer := bytes.NewReader(Data)
-	ret := RMCRequest{}
 
-	SizeBuffer := make([]byte, 4)
-	ProtocolIDBuffer := make([]byte, 1)
-	CallIDBuffer := make([]byte, 4)
-	MethodIDBuffer := make([]byte, 4)
-
-	_, err := buffer.Read(SizeBuffer)
-	if err != nil {
-		return ret, err
+	var Header RMCRequestHeader
+	if err := binary.Read(buffer, binary.LittleEndian, &Header); err != nil {
+		fmt.Println(err)
 	}
 
-	_, err = buffer.Read(ProtocolIDBuffer)
-	if err != nil {
-		return ret, err
+	return RMCRequest{
+		Header:     Header,
+		Parameters: Data[14:],
 	}
-
-	_, err = buffer.Read(CallIDBuffer)
-	if err != nil {
-		return ret, err
-	}
-
-	_, err = buffer.Read(MethodIDBuffer)
-	if err != nil {
-		return ret, err
-	}
-
-	Size := binary.LittleEndian.Uint16(SizeBuffer)
-	ProtocolID := int(ProtocolIDBuffer[0]) | 0x80
-	CallID := binary.LittleEndian.Uint16(CallIDBuffer)
-	MethodID := binary.LittleEndian.Uint16(MethodIDBuffer)
-	Parameters := Data[Size-13:]
-
-	ret.Size = uint32(Size)
-	ret.ProtocolID = ProtocolID
-	ret.CallID = uint32(CallID)
-	ret.MethodID = uint32(MethodID)
-	ret.Parameters = Parameters
-
-	return ret, nil
 }
 
 // RMCResponse represents a RMC protocol response

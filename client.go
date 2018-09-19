@@ -12,6 +12,7 @@ type Client struct {
 	_UDPConn                  *net.UDPAddr
 	Server                    *Server
 	Cipher                    *rc4.Cipher
+	Decipher                  *rc4.Cipher
 	State                     int
 	SignatureKey              string
 	SignatureBase             int
@@ -23,6 +24,7 @@ type Client struct {
 	PacketQueue               map[string]Packet
 	SequenceIDIn              Counter
 	SequenceIDOut             Counter
+	RMCCallID                 uint32
 }
 
 // SetCipher sets the client RC4 Cipher
@@ -45,11 +47,13 @@ func NewClient(addr *net.UDPAddr, server *Server) Client {
 	rand.Read(signature)
 
 	cipher, _ := rc4.NewCipher([]byte("CD&ML"))
+	decipher, _ := rc4.NewCipher([]byte("CD&ML"))
 
 	client := Client{
-		_UDPConn: addr,
-		Server:   server,
-		Cipher:   cipher,
+		_UDPConn:                  addr,
+		Server:                    server,
+		Cipher:                    cipher,
+		Decipher:                  decipher,
 		ServerConnectionSignature: signature,
 		State:       0,
 		SessionID:   0,

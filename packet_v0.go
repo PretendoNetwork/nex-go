@@ -33,7 +33,7 @@ func decodeV0(PRUDPPacket *Packet) map[string]interface{} {
 	var payloadSize uint16
 
 	if err := binary.Read(buffer, binary.LittleEndian, &PacketHeader); err != nil {
-		fmt.Println(err)
+		fmt.Println("err")
 	}
 
 	PacketSource := PacketHeader.Source
@@ -94,7 +94,7 @@ func decodeV0(PRUDPPacket *Packet) map[string]interface{} {
 
 	payload := rawPacket[uint16(offset) : uint16(offset)+payloadSize]
 
-	return map[string]interface{}{
+	decoded := map[string]interface{}{
 		"Source":          PacketSource,
 		"Destination":     PacketDestination,
 		"SourceType":      PacketSourceType,
@@ -110,6 +110,20 @@ func decodeV0(PRUDPPacket *Packet) map[string]interface{} {
 		"Payload":         payload,
 		"Checksum":        checksum,
 	}
+
+	var Payload []byte
+	Payload = decoded["Payload"].([]byte)
+
+	if PacketType == Types["Data"] && len(Payload) > 0 {
+		crypted := make([]byte, len(Payload))
+		PRUDPPacket.Sender.Decipher.XORKeyStream(crypted, Payload)
+
+		request := NewRMCRequest(crypted)
+
+		decoded["RMCRequest"] = request
+	}
+
+	return decoded
 }
 
 func encodeV0(PRUDPPacket *Packet) []byte {
@@ -121,18 +135,8 @@ func encodeV0(PRUDPPacket *Packet) []byte {
 	}
 
 	if PRUDPPacket.Type == Types["Data"] && len(PRUDPPacket.Payload) > 0 {
-		/*
-			key := []byte(PRUDPPacket.Sender.CipherKey)
-			src := PRUDPPacket.Payload
-			cipher, _ := rc4.NewCipher(key)
-			crypted := make([]byte, len(src))
-			cipher.XORKeyStream(crypted, src)
-		*/
-
 		crypted := make([]byte, len(PRUDPPacket.Payload))
 		PRUDPPacket.Sender.Cipher.XORKeyStream(crypted, PRUDPPacket.Payload)
-		PRUDPPacket.Payload = crypted
-
 		PRUDPPacket.Payload = crypted
 	}
 
@@ -234,14 +238,14 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 			data = buffer.Bytes()
 		}
 
-		if data != nil {
+		if len(data) > 0 {
 			key, _ := hex.DecodeString(PRUDPPacket.Sender.SignatureKey)
 			cipher := hmac.New(md5.New, key)
 			cipher.Write(data)
 			return cipher.Sum(nil)[:4]
 		}
 
-		buffer := bytes.NewBuffer(make([]byte, 4))
+		buffer := bytes.NewBuffer(make([]byte, 0, 4))
 		binary.Write(buffer, binary.LittleEndian, uint32(0x12345678))
 
 		return buffer.Bytes()
