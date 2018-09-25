@@ -30,26 +30,7 @@ func main() {
 		AccessKey:               "ridfebb9",
 	})
 
-	Server.On("Packet", func(Client *NEX.Client, Packet *NEX.Packet) {
-		fmt.Println("Packet event")
-	})
-
-	Server.On("Syn", func(Client *NEX.Client, Packet *NEX.Packet) {
-		if Packet.HasFlag(NEX.Flags["NeedAck"]) {
-			Server.Acknowledge(Packet)
-		}
-	})
-
-	Server.On("Connect", func(Client *NEX.Client, Packet *NEX.Packet) {
-		if Packet.HasFlag(NEX.Flags["NeedAck"]) {
-			Server.Acknowledge(Packet)
-		}
-	})
-
 	Server.On("Data", func(Client *NEX.Client, Packet *NEX.Packet) {
-		if Packet.HasFlag(NEX.Flags["NeedAck"]) {
-			Server.Acknowledge(Packet)
-		}
 
 		response := NEX.NewRMCResponse(0x0A, Packet.RMCRequest.Header.CallID)
 		response.SetError(uint32(0x8068000B))

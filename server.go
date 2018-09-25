@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"net"
@@ -122,7 +123,7 @@ func readPacket(server *Server) {
 	if _, ok := server.Clients[discriminator]; !ok {
 		newClient := NewClient(addr, server)
 		newClient.SignatureBase = sum([]byte(server.Settings.AccessKey))
-		newClient.SignatureKey = md5Hash(server.Settings.AccessKey)
+		newClient.SignatureKey = hex.EncodeToString(MD5Hash([]byte(server.Settings.AccessKey)))
 
 		server.Clients[discriminator] = &newClient
 	}
@@ -133,6 +134,10 @@ func readPacket(server *Server) {
 
 	Packet := NewPacket(client)
 	Packet.FromBytes(data)
+
+	if Packet.HasFlag(Flags["NeedAck"]) {
+		server.Acknowledge(&Packet)
+	}
 
 	if server.Handlers["Packet"] != nil {
 		server.Handlers["Packet"](client, &Packet)

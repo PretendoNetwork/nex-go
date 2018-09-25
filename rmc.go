@@ -32,7 +32,7 @@ func NewRMCRequest(Data []byte) RMCRequest {
 
 	return RMCRequest{
 		Header:     Header,
-		Parameters: Data[14:],
+		Parameters: Data[13:],
 	}
 }
 

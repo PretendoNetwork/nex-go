@@ -6,6 +6,13 @@ import (
 	"time"
 )
 
+type DataHolder struct {
+	Name       string
+	Length     uint32
+	DataLength uint32
+	Data       []byte
+}
+
 // String represents a NEX formatted string
 // Length: Length of the null-terminated string
 // String: Null-terminated string
@@ -39,7 +46,7 @@ func NewString(str string) String {
 	return String{uint16(Length), str}
 }
 
-func NewStationURL(protocol string, JSON map[string]string) String {
+func NewStationURL(protocol string, JSON map[string]string) string {
 	var URLBuffer bytes.Buffer
 
 	URLBuffer.WriteString(protocol + ":/")
@@ -52,7 +59,7 @@ func NewStationURL(protocol string, JSON map[string]string) String {
 	URL := URLBuffer.String()
 	URL = strings.TrimRight(URL, ";")
 
-	return NewString(URL)
+	return URL
 }
 
 func NewDateTime(current time.Time) DateTime {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"reflect"
 )
@@ -86,8 +85,8 @@ func sum(a interface{}) int {
 	return int(r)
 }
 
-func md5Hash(text string) string {
+func MD5Hash(text []byte) []byte {
 	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
+	hasher.Write(text)
+	return hasher.Sum(nil)
 }
