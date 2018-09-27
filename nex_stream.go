@@ -5,15 +5,18 @@ import (
 	"encoding/binary"
 )
 
+// InputStream represents a readable NEX stream
 type InputStream struct {
 	data []byte
 	pos  int
 }
 
+// OutputStream represents a writeable NEX stream
 type OutputStream struct {
 	data []byte
 }
 
+// NewInputStream returns a new InputStream
 func NewInputStream(data []byte) InputStream {
 	return InputStream{
 		data: data,
@@ -21,6 +24,7 @@ func NewInputStream(data []byte) InputStream {
 	}
 }
 
+// NewOutputStream returns a new OutputStream
 func NewOutputStream() OutputStream {
 	return OutputStream{
 		data: []byte{},
@@ -31,14 +35,17 @@ func NewOutputStream() OutputStream {
 	InputStream methods
 */
 
+// Seek sets the stream pointer to the given position
 func (stream *InputStream) Seek(pos int) {
 	stream.pos = pos
 }
 
+// Skip skips the given number of bytes
 func (stream *InputStream) Skip(len int) {
 	stream.pos += len
 }
 
+// Read returns a slice of the given length starting from the pointer position
 func (stream *InputStream) Read(len int) []byte {
 	data := stream.data[stream.pos : stream.pos+len]
 	stream.pos += len
@@ -46,14 +53,17 @@ func (stream *InputStream) Read(len int) []byte {
 	return data
 }
 
+// Bytes reads the given number of bytes
 func (stream *InputStream) Bytes(len int) []byte {
 	return stream.Read(len)
 }
 
+// Byte returns a single byte
 func (stream *InputStream) Byte() []byte {
 	return stream.Read(1)
 }
 
+// UInt8 reads an unsigned 1 byte integer
 func (stream *InputStream) UInt8() (ret uint8) {
 	data := stream.Byte()
 	buf := bytes.NewBuffer(data)
@@ -61,6 +71,7 @@ func (stream *InputStream) UInt8() (ret uint8) {
 	return
 }
 
+// UInt16LE reads an unsigned 2 byte integer in little endian
 func (stream *InputStream) UInt16LE() (ret uint16) {
 	data := stream.Bytes(2)
 	buf := bytes.NewBuffer(data)
@@ -68,6 +79,7 @@ func (stream *InputStream) UInt16LE() (ret uint16) {
 	return
 }
 
+// UInt32LE reads an unsigned 4 byte integer in little endian
 func (stream *InputStream) UInt32LE() (ret uint32) {
 	data := stream.Bytes(4)
 	buf := bytes.NewBuffer(data)
@@ -75,6 +87,7 @@ func (stream *InputStream) UInt32LE() (ret uint32) {
 	return
 }
 
+// UInt64LE reads an unsigned 8 byte integer in little endian
 func (stream *InputStream) UInt64LE() (ret uint64) {
 	data := stream.Bytes(8)
 	buf := bytes.NewBuffer(data)
@@ -82,6 +95,7 @@ func (stream *InputStream) UInt64LE() (ret uint64) {
 	return
 }
 
+// String reads a NEX string
 func (stream *InputStream) String() string {
 	length := stream.UInt16LE()
 	str := stream.Bytes(int(length))
@@ -89,14 +103,17 @@ func (stream *InputStream) String() string {
 	return string(str[:])[:length-1]
 }
 
+// Buffer reads a NEX buffer
 func (stream *InputStream) Buffer() []byte {
 	return stream.Bytes(int(stream.UInt32LE()))
 }
 
+// QBuffer reads a NEX qBuffer
 func (stream *InputStream) QBuffer() []byte {
 	return stream.Bytes(int(stream.UInt16LE()))
 }
 
+// DataHolder returns a NEX DataHolder
 func (stream *InputStream) DataHolder() DataHolder {
 	data := DataHolder{
 		Name:       stream.String(),
@@ -112,31 +129,41 @@ func (stream *InputStream) DataHolder() DataHolder {
 	OutputStream methods
 */
 
+// Bytes returns the streams raw bytes
 func (stream *OutputStream) Bytes() []byte {
 	return stream.data
 }
 
+// Write directly writes to the buffer
+func (stream *OutputStream) Write(data []byte) {
+	stream.data = append(stream.data, data...)
+}
+
+// UInt16LE writes a 2 byte unsigned integer in little endian
 func (stream *OutputStream) UInt16LE(val uint16) {
 	data := make([]byte, 2)
 	binary.LittleEndian.PutUint16(data, val)
 
-	stream.data = append(stream.data, data...)
+	stream.Write(data)
 }
 
+// UInt32LE writes a 4 byte unsigned integer in little endian
 func (stream *OutputStream) UInt32LE(val uint32) {
 	data := make([]byte, 4)
 	binary.LittleEndian.PutUint32(data, val)
 
-	stream.data = append(stream.data, data...)
+	stream.Write(data)
 }
 
+// UInt64LE writes a 8 byte unsigned integer in little endian
 func (stream *OutputStream) UInt64LE(val uint64) {
 	data := make([]byte, 8)
 	binary.LittleEndian.PutUint64(data, val)
 
-	stream.data = append(stream.data, data...)
+	stream.Write(data)
 }
 
+// String writes a NEX string
 func (stream *OutputStream) String(str string) {
 	if len(str) <= 0 {
 		stream.UInt16LE(uint16(0))
@@ -148,26 +175,22 @@ func (stream *OutputStream) String(str string) {
 
 		data := []byte(str)
 
-		stream.data = append(stream.data, data...)
+		stream.Write(data)
 	}
 }
 
+// Buffer writes a NEX buffer
 func (stream *OutputStream) Buffer(buffer []byte) {
 	length := len(buffer)
 
 	stream.UInt32LE(uint32(length))
-	stream.data = append(stream.data, buffer...)
+	stream.Write(buffer)
 }
 
+// QBuffer writes a NEX qBuffer
 func (stream *OutputStream) QBuffer(buffer []byte) {
 	length := len(buffer)
 
 	stream.UInt16LE(uint16(length))
-	stream.data = append(stream.data, buffer...)
+	stream.Write(buffer)
 }
-
-/*
-data := make([]byte, 0, 4)
-buffer := bytes.NewBuffer(data)
-binary.Write(buffer, binary.LittleEndian, uint32(0x8068000B))
-*/

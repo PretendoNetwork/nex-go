@@ -117,6 +117,7 @@ func (PRUDPPacket *Packet) SetSessionID(SessionID uint8) {
 	PRUDPPacket.SessionID = SessionID
 }
 
+// SetSignature sets the packets Signature property
 func (PRUDPPacket *Packet) SetSignature(Signature []byte) {
 	PRUDPPacket.Signature = Signature
 }

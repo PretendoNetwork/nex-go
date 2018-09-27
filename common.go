@@ -8,19 +8,26 @@ import (
 	"reflect"
 )
 
-type Counter struct { // we could potentially use this in the client to auto-increment SequenceIDOut
+// Counter represents an incremental counter
+type Counter struct {
 	value uint16
 }
 
+// Value returns the counters current value
 func (counter Counter) Value() uint16 {
 	return counter.value
 }
+
+// Increment increments the counter by 1 and returns the value
 func (counter *Counter) Increment() uint16 {
 	counter.value++
 	return counter.Value()
 }
 
+// Types represents the 5 NEX packet types
 var Types = make(map[string]uint16, 5)
+
+// Flags represents the 5 NEX packet flags
 var Flags = make(map[string]uint16, 5)
 
 func init() {
@@ -85,6 +92,7 @@ func sum(a interface{}) int {
 	return int(r)
 }
 
+// MD5Hash returns the MD5 hash of the input
 func MD5Hash(text []byte) []byte {
 	hasher := md5.New()
 	hasher.Write(text)

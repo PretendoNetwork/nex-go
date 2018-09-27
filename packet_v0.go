@@ -253,7 +253,7 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 
 	if PRUDPPacket.Signature != nil {
 		return PRUDPPacket.Signature
-	} else {
-		return make([]byte, 4)
 	}
+
+	return make([]byte, 4)
 }

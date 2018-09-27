@@ -24,25 +24,59 @@ type Settings struct {
 	KerberosKeySize         int
 	KerberosKeyDerivation   int
 	IntSize                 int
-	ServerVersion           int
+	Version                 int
 	AccessKey               string
+}
+
+// NewSettings returns a set of default server settings
+func NewSettings() Settings {
+	// Defaults
+	return Settings{
+		PrudpTransport:          0,
+		PrudpVersion:            1,
+		PrudpStreamType:         10,
+		PrudpFragmentSize:       1300,
+		PrudpResendTimeout:      1.5,
+		PrudpPingTimeout:        4,
+		PrudpSilenceTimeout:     7.5,
+		PrudpCompression:        0,
+		PrudpV0SignatureVersion: 0,
+		PrudpV0FlagsVersion:     1,
+		PrudpV0ChecksumVersion:  1,
+		KerberosKeySize:         32,
+		KerberosKeyDerivation:   0,
+		IntSize:                 4,
+		Version:                 0,
+	}
 }
 
 // Server represents generic NEX server
 type Server struct {
-	_UDPServer *net.UDPConn
-	Settings   Settings
-	Clients    map[string]*Client
-	Handlers   map[string]func(*Client, *Packet)
+	_UDPServer       *net.UDPConn
+	Settings         Settings
+	CompressPacket   func([]byte) []byte
+	DecompressPacket func([]byte) []byte
+	Clients          map[string]*Client
+	Handlers         map[string]func(*Client, *Packet)
 }
 
 // NewServer returns a new NEX server
 func NewServer(settings Settings) *Server {
-	return &Server{
+	server := &Server{
 		Settings: settings,
 		Handlers: make(map[string]func(*Client, *Packet)),
 		Clients:  make(map[string]*Client),
 	}
+
+	if settings.PrudpCompression == 0 {
+		compression := DummyCompression{}
+		server.CompressPacket = compression.Compress
+	} else {
+		compression := ZLibCompression{}
+		server.CompressPacket = compression.Compress
+	}
+
+	return server
 }
 
 // Listen starts a NEX server on a given port
@@ -104,6 +138,28 @@ func (server *Server) Acknowledge(Packet *Packet) {
 
 // Send writes data to client
 func (server *Server) Send(client *Client, packet *Packet) {
+	data := packet.Payload
+	times := len(data) / server.Settings.PrudpFragmentSize
+
+	fragmentID := 1
+	for i := 0; i <= times; i++ {
+		if len(data) < server.Settings.PrudpFragmentSize {
+			packet.SetPayload(data)
+			server.SendFragment(client, packet, 0)
+		} else {
+			packet.SetPayload(data[:server.Settings.PrudpFragmentSize])
+			server.SendFragment(client, packet, fragmentID)
+
+			data = data[server.Settings.PrudpFragmentSize:]
+			fragmentID++
+		}
+	}
+}
+
+// SendFragment sends a packet fragment to the client
+func (server *Server) SendFragment(client *Client, packet *Packet, fragmentID int) {
+	data := packet.Payload
+	packet.SetPayload(server.CompressPacket(data))
 	packet.SequenceID = client.SequenceIDOut.Increment()
 	server.SendRaw(client._UDPConn, packet.Bytes())
 }
