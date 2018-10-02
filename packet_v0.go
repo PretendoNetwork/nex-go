@@ -20,119 +20,99 @@ type PacketV0Header struct {
 }
 
 func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
-	buffer := bytes.NewReader(PRUDPPacket.Data)
-	rawPacket := PRUDPPacket.Data
-
-	var PacketHeader PacketV0Header
 	checksumVersion := PRUDPPacket.Sender.Server.Settings.PrudpV0ChecksumVersion
 	checksumSize := 1
 	if checksumVersion == 0 {
 		checksumSize = 4
 	}
 
-	var payloadSize uint16
+	stream := NewInputStream(PRUDPPacket.Data)
 
-	if err := binary.Read(buffer, binary.LittleEndian, &PacketHeader); err != nil {
-		fmt.Println("err")
-	}
+	source := stream.UInt8()
+	destination := stream.UInt8()
+	typeFlags := stream.UInt16LE()
+	sessionID := stream.UInt8()
+	signature := stream.Bytes(4)
+	sequenceID := stream.UInt16LE()
 
-	PacketSource := PacketHeader.Source
-	PacketDestination := PacketHeader.Destination
+	sourceType := source >> 4
+	sourcePort := source & 0xF
 
-	PacketSourceType := PacketSource >> 4
-	PacketSourcePort := PacketSource & 0xF
-	PacketDestinationType := PacketDestination >> 4
-	PacketDestinationPort := PacketDestination & 0xF
+	destinationType := destination >> 4
+	destinationPort := destination & 0xF
 
-	var PacketFlags uint16
-	var PacketType uint16
+	var packetType uint16
+	var flags uint16
 
 	if PRUDPPacket.Sender.Server.Settings.PrudpV0FlagsVersion == 0 {
-		PacketFlags = PacketHeader.TypeFlags >> 3
-		PacketType = PacketHeader.TypeFlags & 7
+		packetType = typeFlags & 7
+		flags = typeFlags >> 3
 	} else {
-		PacketFlags = PacketHeader.TypeFlags >> 4
-		PacketType = PacketHeader.TypeFlags & 0xF
+		packetType = typeFlags & 0xF
+		flags = typeFlags >> 4
 	}
-
-	offset := 11
-
-	PacketSignature := []byte{}
-	if PacketType == Types["Syn"] || PacketType == Types["Connect"] {
-		PacketSignature = rawPacket[offset : offset+4]
-		offset += 4
-	}
-
-	PacketFragmentID := 0
-	if PacketType == Types["Data"] {
-		PacketFragmentID = int(rawPacket[offset])
-		offset++
-	}
-
-	if PacketFlags&Flags["HasSize"] != 0 {
-		payloadSizeTemp := make([]byte, 2)
-		buffer.ReadAt(payloadSizeTemp, int64(offset))
-		payloadSize = readUInt16(payloadSizeTemp, binary.LittleEndian)
-		offset += 2
-	} else {
-		payloadSize = uint16(len(rawPacket) - offset - checksumSize)
-	}
-
-	checksumTemp := make([]byte, checksumSize)
-	buffer.ReadAt(checksumTemp, int64(uint16(offset)+payloadSize))
-	var checksum int
-
-	if checksumSize == 1 {
-		checksum = int(checksumTemp[0])
-	} else {
-		checksum = int(readUInt32(checksumTemp, binary.LittleEndian))
-	}
-
-	if CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, rawPacket[:uint16(offset)+payloadSize], checksumVersion) != checksum {
-		fmt.Println("[ERROR] Calculated checksum does not match decoded checksum!")
-	}
-
-	payload := rawPacket[uint16(offset) : uint16(offset)+payloadSize]
 
 	decoded := map[string]interface{}{
-		"Source":          PacketSource,
-		"Destination":     PacketDestination,
-		"SourceType":      PacketSourceType,
-		"SourcePort":      PacketSourcePort,
-		"DestinationType": PacketDestinationType,
-		"DestinationPort": PacketDestinationPort,
-		"SequenceID":      PacketHeader.SequenceID,
-		"SessionID":       PacketHeader.SessionID,
-		"Flags":           PacketFlags,
-		"Type":            PacketType,
-		"Signature":       PacketSignature,
-		"FragmentID":      PacketFragmentID,
-		"Payload":         payload,
-		"Checksum":        checksum,
+		"Source":          source,
+		"Destination":     destination,
+		"SourceType":      sourceType,
+		"SourcePort":      sourcePort,
+		"DestinationType": destinationType,
+		"DestinationPort": destinationPort,
+		"SequenceID":      sequenceID,
+		"SessionID":       sessionID,
+		"Flags":           flags,
+		"Type":            packetType,
+		"FragmentID":      0,
+		"Signature":       signature,
+		"Payload":         []byte{},
 	}
 
-	var Payload []byte
-	Payload = decoded["Payload"].([]byte)
+	if packetType == Types["Syn"] || packetType == Types["Connect"] {
+		decoded["Signature"] = stream.Bytes(4)
+	}
 
-	if PacketType == Types["Data"] && len(Payload) > 0 {
-		crypted := make([]byte, len(Payload))
-		PRUDPPacket.Sender.Decipher.XORKeyStream(crypted, Payload)
+	if packetType == Types["Data"] {
+		decoded["FragmentID"] = int(stream.UInt8())
+	}
+
+	var payloadSize uint16
+	if flags&Flags["HasSize"] != 0 {
+		payloadSize = stream.UInt16LE()
+	} else {
+		payloadSize = uint16(len(stream.data) - stream.pos - checksumSize)
+	}
+
+	payload := stream.Bytes(int(payloadSize))
+	decoded["Payload"] = payload
+
+	if packetType == Types["Data"] && len(payload) > 0 {
+		crypted := make([]byte, len(payload))
+		PRUDPPacket.Sender.Decipher.XORKeyStream(crypted, payload)
 
 		request := NewRMCRequest(crypted)
 
 		decoded["RMCRequest"] = request
 	}
 
+	var checksum int
+	if checksumSize == 1 {
+		checksum = int(stream.UInt8())
+	} else {
+		checksum = int(stream.UInt32LE())
+	}
+
+	decoded["Checksum"] = checksum
+
+	if CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.data[:len(stream.data)-checksumSize], checksumVersion) != checksum {
+		fmt.Println("[ERROR] Calculated checksum does not match decoded checksum!")
+	}
+
 	return decoded
 }
 
 func encodePacketV0(PRUDPPacket *Packet) []byte {
-
 	checksumVersion := PRUDPPacket.Sender.Server.Settings.PrudpV0ChecksumVersion
-	checksumSize := 1
-	if checksumVersion == 0 {
-		checksumSize = 4
-	}
 
 	if PRUDPPacket.Type == Types["Data"] && len(PRUDPPacket.Payload) > 0 {
 		crypted := make([]byte, len(PRUDPPacket.Payload))
@@ -140,23 +120,21 @@ func encodePacketV0(PRUDPPacket *Packet) []byte {
 		PRUDPPacket.Payload = crypted
 	}
 
-	length := 11 + checksumSize
-
-	buffer := bytes.NewBuffer(make([]byte, 0, length))
+	stream := NewOutputStream()
 	options := encodeOptionsV0(PRUDPPacket)
 
-	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Source))
-	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Destination))
-	binary.Write(buffer, binary.LittleEndian, uint16(int(PRUDPPacket.Type)|int(PRUDPPacket.Flags)<<4))
-	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Sender.SessionID))
-	binary.Write(buffer, binary.LittleEndian, CalculateV0Signature(PRUDPPacket))
-	binary.Write(buffer, binary.LittleEndian, uint16(PRUDPPacket.SequenceID))
+	stream.UInt8(PRUDPPacket.Source)
+	stream.UInt8(PRUDPPacket.Destination)
+	stream.UInt16LE(PRUDPPacket.Type | PRUDPPacket.Flags<<4)
+	stream.UInt8(uint8(PRUDPPacket.Sender.SessionID))
+	stream.Write(CalculateV0Signature(PRUDPPacket))
+	stream.UInt16LE(PRUDPPacket.SequenceID)
 
-	binary.Write(buffer, binary.LittleEndian, options)
-	binary.Write(buffer, binary.LittleEndian, PRUDPPacket.Payload)
-	binary.Write(buffer, binary.LittleEndian, uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, buffer.Bytes(), checksumVersion)))
+	stream.Write(options)
+	stream.Write(PRUDPPacket.Payload)
+	stream.UInt8(uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.Bytes(), checksumVersion)))
 
-	return buffer.Bytes()
+	return stream.Bytes()
 }
 
 // CalculateV0Checksum calculates the checksum of a prudpv0 packet
@@ -190,35 +168,21 @@ func CalculateV0Checksum(checksum int, packet []byte, version int) int {
 }
 
 func encodeOptionsV0(PRUDPPacket *Packet) []byte {
-	length := 0
+	stream := NewOutputStream()
 
 	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {
-		length += len(PRUDPPacket.Signature)
+		stream.Write(PRUDPPacket.Signature)
 	}
 
 	if PRUDPPacket.Type == Types["Data"] {
-		length++
+		stream.UInt8(uint8(PRUDPPacket.FragmentID))
 	}
 
 	if PRUDPPacket.HasFlag(Flags["HasSize"]) {
-		length += 2
+		stream.UInt16LE(uint16(len(PRUDPPacket.Payload)))
 	}
 
-	buffer := bytes.NewBuffer(make([]byte, 0, length))
-
-	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {
-		binary.Write(buffer, binary.LittleEndian, PRUDPPacket.Signature)
-	}
-
-	if PRUDPPacket.Type == Types["Data"] {
-		binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.FragmentID))
-	}
-
-	if PRUDPPacket.HasFlag(Flags["HasSize"]) {
-		binary.Write(buffer, binary.LittleEndian, uint16(len(PRUDPPacket.Payload)))
-	}
-
-	return buffer.Bytes()
+	return stream.Bytes()
 }
 
 // CalculateV0Signature calculates the signature of a prudpv0 packet

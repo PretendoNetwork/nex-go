@@ -70,15 +70,9 @@ func decodePacketV1(PRUDPPacket *Packet) map[string]interface{} {
 		}
 	}
 
-	//fmt.Println("CLIENT SIG", hex.EncodeToString(signature))
-
 	signatureCheck := CalculateV1Signature(PRUDPPacket.Sender, stream.data[2:14], optionsData, PRUDPPacket.Sender.ServerConnectionSignature, payload)
 	if !bytes.Equal(signatureCheck, checksum) {
 		fmt.Println("[ERROR] Calculated checksum does not match decoded checksum!")
-		//fmt.Println(hex.EncodeToString(PRUDPPacket.Sender.SecureKey))
-		//fmt.Println(hex.EncodeToString(PRUDPPacket.Sender.ServerConnectionSignature))
-		//fmt.Println(hex.EncodeToString(signatureCheck))
-		//fmt.Println(hex.EncodeToString(signature))
 	}
 
 	if packetType == Types["Data"] && len(payload) > 0 {
@@ -117,8 +111,6 @@ func encodePacketV1(PRUDPPacket *Packet) []byte {
 
 	stream.Write([]byte{0xEA, 0xD0})
 	stream.Write(headerStream.Bytes())
-
-	//stream.Write(PRUDPPacket.Signature)
 	stream.Write(CalculateV1Signature(PRUDPPacket.Sender, headerStream.Bytes(), options, PRUDPPacket.Sender.ClientConnectionSignature, PRUDPPacket.Payload))
 	stream.Write(options)
 	stream.Write(PRUDPPacket.Payload)
