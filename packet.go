@@ -44,7 +44,7 @@ func (PRUDPPacket *Packet) FromBytes(Data []byte) {
 
 	if bytes.Equal(PRUDPPacket.Data[:2], PRUDPV1Magic) {
 		PRUDPPacket.Version = 1
-		decoded = decodeV1(PRUDPPacket)
+		decoded = decodePacketV1(PRUDPPacket)
 		PRUDPPacket.MultiAckVersion = decoded["MultiAckVersion"].(uint8)
 	} else if bytes.Equal(PRUDPPacket.Data[:1], PRUDPLiteMagic) {
 		PRUDPPacket.Version = 2
@@ -54,7 +54,7 @@ func (PRUDPPacket *Packet) FromBytes(Data []byte) {
 		// assume v0?
 		// v0 doesn't have a dedicated magic, and the first 2 bytes aren't really static
 		PRUDPPacket.Version = 0
-		decoded = decodeV0(PRUDPPacket)
+		decoded = decodePacketV0(PRUDPPacket)
 		PRUDPPacket.Checksum = decoded["Checksum"].(int)
 	}
 
@@ -85,9 +85,9 @@ func (PRUDPPacket *Packet) Bytes() []byte {
 	var encoded []byte
 	switch PRUDPPacket.Version {
 	case 0:
-		encoded = encodeV0(PRUDPPacket)
+		encoded = encodePacketV0(PRUDPPacket)
 	case 1:
-		encoded = encodeV1(PRUDPPacket)
+		encoded = encodePacketV1(PRUDPPacket)
 	case 2: // Lite (Switch)
 		encoded = []byte{}
 	default:
