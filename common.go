@@ -30,6 +30,14 @@ var Types = make(map[string]uint16, 5)
 // Flags represents the 5 NEX packet flags
 var Flags = make(map[string]uint16, 5)
 
+//Options
+var OptionsAll = 0xFFFFFFFF
+var OptionsSupport = 0
+var OptionsConnectionSignature = 1
+var OptionsFragment = 2
+var Options3 = 3 // Unknown
+var Options4 = 4 // Unknown
+
 func init() {
 	Types["Syn"] = 0
 	Types["Connect"] = 1

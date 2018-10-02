@@ -44,7 +44,8 @@ func (PRUDPPacket *Packet) FromBytes(Data []byte) {
 
 	if bytes.Equal(PRUDPPacket.Data[:2], PRUDPV1Magic) {
 		PRUDPPacket.Version = 1
-		// handle v1
+		decoded = decodeV1(PRUDPPacket)
+		PRUDPPacket.MultiAckVersion = decoded["MultiAckVersion"].(uint8)
 	} else if bytes.Equal(PRUDPPacket.Data[:1], PRUDPLiteMagic) {
 		PRUDPPacket.Version = 2
 		// handle Lite?
@@ -86,8 +87,8 @@ func (PRUDPPacket *Packet) Bytes() []byte {
 	case 0:
 		encoded = encodeV0(PRUDPPacket)
 	case 1:
-		encoded = []byte{}
-	case 2:
+		encoded = encodeV1(PRUDPPacket)
+	case 2: // Lite (Switch)
 		encoded = []byte{}
 	default:
 		fmt.Println("Unknown PRUDP version:", PRUDPPacket.Version)

@@ -116,7 +116,7 @@ func (server *Server) Acknowledge(Packet *Packet) {
 	ack := NewPacket(Packet.Sender)
 
 	if Packet.Type == Types["Syn"] {
-		//Packet.Sender.ConnectionSignature = Packet.Signature
+		Packet.Sender.ServerConnectionSignature = Packet.Signature
 		ack.SetSignature(Packet.Signature)
 	}
 
@@ -191,19 +191,15 @@ func readPacket(server *Server) {
 	Packet := NewPacket(client)
 	Packet.FromBytes(data)
 
-	if Packet.HasFlag(Flags["NeedAck"]) {
-		server.Acknowledge(&Packet)
-	}
-
 	if server.Handlers["Packet"] != nil {
-		server.Handlers["Packet"](client, &Packet)
+		go server.Handlers["Packet"](client, &Packet)
 	}
 
 	switch Packet.Type {
 	case 0:
 		handler := server.Handlers["Syn"]
 		if handler != nil {
-			handler(client, &Packet)
+			go handler(client, &Packet)
 		}
 	case 1:
 		rand.Seed(time.Now().UnixNano())
@@ -211,22 +207,22 @@ func readPacket(server *Server) {
 
 		handler := server.Handlers["Connect"]
 		if handler != nil {
-			handler(client, &Packet)
+			go handler(client, &Packet)
 		}
 	case 2:
 		handler := server.Handlers["Data"]
 		if handler != nil {
-			handler(client, &Packet)
+			go handler(client, &Packet)
 		}
 	case 3:
 		handler := server.Handlers["Disconnect"]
 		if handler != nil {
-			handler(client, &Packet)
+			go handler(client, &Packet)
 		}
 	case 4:
 		handler := server.Handlers["Ping"]
 		if handler != nil {
-			handler(client, &Packet)
+			go handler(client, &Packet)
 		}
 	default:
 		fmt.Println("UNKNOWN TYPE", Packet.Type)
