@@ -139,7 +139,7 @@ func (stream *OutputStream) Write(data []byte) {
 	stream.data = append(stream.data, data...)
 }
 
-// UInt16LE writes a 2 byte unsigned integer in little endian
+// UInt8 writes a single unsigned byte to to the buffer
 func (stream *OutputStream) UInt8(val uint8) {
 	stream.Write([]byte{val})
 }

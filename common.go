@@ -30,12 +30,21 @@ var Types = make(map[string]uint16, 5)
 // Flags represents the 5 NEX packet flags
 var Flags = make(map[string]uint16, 5)
 
-//Options
+// OptionsAll is used with OptionsSupport to support all methods
 var OptionsAll = 0xFFFFFFFF
+
+// OptionsSupport is the ID for the Supported Methods option in PRUDP v1 packets
 var OptionsSupport = 0
+
+// OptionsConnectionSignature is the ID for the Connection Signature option in PRUDP v1 packets
 var OptionsConnectionSignature = 1
+
+// OptionsFragment is the ID for the Fragment ID option in PRUDP v1 packets
 var OptionsFragment = 2
+
+// Options3 is unknown
 var Options3 = 3 // Unknown
+// Options4 is unknown
 var Options4 = 4 // Unknown
 
 func init() {
