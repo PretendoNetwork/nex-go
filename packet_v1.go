@@ -9,22 +9,7 @@ import (
 	"fmt"
 )
 
-// PacketV1Header represents the start of a v1 PRUDP packet
-type PacketV1Header struct {
-	Magic           [2]byte
-	Version         uint8
-	OptionsSize     uint8
-	PayloadSize     uint16
-	Source          uint8
-	Destination     uint8
-	TypeFlags       uint16
-	SessionID       uint8
-	MultiAckVersion uint8
-	SequenceID      uint16
-	Signature       [16]byte
-}
-
-func decodeV1(PRUDPPacket *Packet) map[string]interface{} {
+func decodePacketV1(PRUDPPacket *Packet) map[string]interface{} {
 	stream := NewInputStream(PRUDPPacket.Data)
 	stream.Skip(2) // Magic
 	if stream.UInt8() != 1 {
@@ -108,14 +93,14 @@ func decodeV1(PRUDPPacket *Packet) map[string]interface{} {
 	return decoded
 }
 
-func encodeV1(PRUDPPacket *Packet) []byte {
+func encodePacketV1(PRUDPPacket *Packet) []byte {
 	if PRUDPPacket.Type == Types["Data"] && len(PRUDPPacket.Payload) > 0 {
 		crypted := make([]byte, len(PRUDPPacket.Payload))
 		PRUDPPacket.Sender.Cipher.XORKeyStream(crypted, PRUDPPacket.Payload)
 		PRUDPPacket.Payload = crypted
 	}
 
-	options := encodeV1Options(PRUDPPacket)
+	options := encodeOptionsV1(PRUDPPacket)
 
 	stream := NewOutputStream()
 	headerStream := NewOutputStream()
@@ -189,7 +174,7 @@ func decodeV1Options(data []byte) map[int]interface{} {
 	return options
 }
 
-func encodeV1Options(PRUDPPacket *Packet) []byte {
+func encodeOptionsV1(PRUDPPacket *Packet) []byte {
 	stream := NewOutputStream()
 
 	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {

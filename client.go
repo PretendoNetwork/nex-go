@@ -2,9 +2,7 @@ package nex
 
 import (
 	"crypto/rc4"
-	"math/rand"
 	"net"
-	"time"
 )
 
 // Client represents generic NEX/PRUDP client
@@ -36,27 +34,14 @@ func (client *Client) SetCipher(key string) {
 
 // NewClient returns a new generic client
 func NewClient(addr *net.UDPAddr, server *Server) Client {
-	rand.Seed(time.Now().UnixNano())
-	/*
-		var signature []byte
-		if server.Settings.PrudpVersion == 0 {
-			signature = make([]byte, 4)
-		} else {
-			signature = make([]byte, 16)
-		}
-
-		rand.Read(signature)
-	*/
-
 	cipher, _ := rc4.NewCipher([]byte("CD&ML"))
 	decipher, _ := rc4.NewCipher([]byte("CD&ML"))
 
 	client := Client{
-		_UDPConn: addr,
-		Server:   server,
-		Cipher:   cipher,
-		Decipher: decipher,
-		//ServerConnectionSignature: signature,
+		_UDPConn:    addr,
+		Server:      server,
+		Cipher:      cipher,
+		Decipher:    decipher,
 		State:       0,
 		SessionID:   0,
 		PacketQueue: make(map[string]Packet),

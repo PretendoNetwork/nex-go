@@ -19,7 +19,7 @@ type PacketV0Header struct {
 	SequenceID  uint16
 }
 
-func decodeV0(PRUDPPacket *Packet) map[string]interface{} {
+func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 	buffer := bytes.NewReader(PRUDPPacket.Data)
 	rawPacket := PRUDPPacket.Data
 
@@ -126,7 +126,7 @@ func decodeV0(PRUDPPacket *Packet) map[string]interface{} {
 	return decoded
 }
 
-func encodeV0(PRUDPPacket *Packet) []byte {
+func encodePacketV0(PRUDPPacket *Packet) []byte {
 
 	checksumVersion := PRUDPPacket.Sender.Server.Settings.PrudpV0ChecksumVersion
 	checksumSize := 1
@@ -140,11 +140,10 @@ func encodeV0(PRUDPPacket *Packet) []byte {
 		PRUDPPacket.Payload = crypted
 	}
 
-	// 11 = packet header size (fixed length)
 	length := 11 + checksumSize
 
 	buffer := bytes.NewBuffer(make([]byte, 0, length))
-	options := encodev0Options(PRUDPPacket)
+	options := encodeOptionsV0(PRUDPPacket)
 
 	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Source))
 	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Destination))
@@ -190,7 +189,7 @@ func CalculateV0Checksum(checksum int, packet []byte, version int) int {
 	return (checksum & 0xFF)
 }
 
-func encodev0Options(PRUDPPacket *Packet) []byte {
+func encodeOptionsV0(PRUDPPacket *Packet) []byte {
 	length := 0
 
 	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {
