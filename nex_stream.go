@@ -140,6 +140,11 @@ func (stream *OutputStream) Write(data []byte) {
 }
 
 // UInt16LE writes a 2 byte unsigned integer in little endian
+func (stream *OutputStream) UInt8(val uint8) {
+	stream.Write([]byte{val})
+}
+
+// UInt16LE writes a 2 byte unsigned integer in little endian
 func (stream *OutputStream) UInt16LE(val uint16) {
 	data := make([]byte, 2)
 	binary.LittleEndian.PutUint16(data, val)

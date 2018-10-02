@@ -144,7 +144,7 @@ func encodeV0(PRUDPPacket *Packet) []byte {
 	length := 11 + checksumSize
 
 	buffer := bytes.NewBuffer(make([]byte, 0, length))
-	options := encodeOptions(PRUDPPacket)
+	options := encodev0Options(PRUDPPacket)
 
 	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Source))
 	binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.Destination))
@@ -190,7 +190,7 @@ func CalculateV0Checksum(checksum int, packet []byte, version int) int {
 	return (checksum & 0xFF)
 }
 
-func encodeOptions(PRUDPPacket *Packet) []byte {
+func encodev0Options(PRUDPPacket *Packet) []byte {
 	length := 0
 
 	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {
