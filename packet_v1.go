@@ -219,6 +219,7 @@ func encodeV1Options(PRUDPPacket *Packet) []byte {
 	return stream.Bytes()
 }
 
+// CalculateV1Signature calculates the HMAC signature for a given packet
 func CalculateV1Signature(Client *Client, header []byte, options []byte, signature []byte, payload []byte) []byte {
 
 	signatureBase := bytes.NewBuffer(make([]byte, 0, 4))
