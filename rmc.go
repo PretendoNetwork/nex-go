@@ -7,31 +7,24 @@ import (
 	"os"
 )
 
-// RMCRequestHeader represents a RMC protocol request header
-type RMCRequestHeader struct {
+// RMCRequest represents a RMC protocol request
+type RMCRequest struct {
 	Size       uint32
 	ProtocolID uint8
 	CallID     uint32
 	MethodID   uint32
-}
-
-// RMCRequest represents a RMC protocol request
-type RMCRequest struct {
-	Header     RMCRequestHeader
 	Parameters []byte
 }
 
 // NewRMCRequest returns a new RMCRequest
 func NewRMCRequest(Data []byte) RMCRequest {
-	buffer := bytes.NewReader(Data)
-
-	var Header RMCRequestHeader
-	if err := binary.Read(buffer, binary.LittleEndian, &Header); err != nil {
-		fmt.Println(err)
-	}
+	stream := NewInputStream(Data)
 
 	return RMCRequest{
-		Header:     Header,
+		Size:       stream.UInt32LE(),
+		ProtocolID: stream.UInt8(),
+		CallID:     stream.UInt32LE(),
+		MethodID:   stream.UInt32LE(),
 		Parameters: Data[13:],
 	}
 }

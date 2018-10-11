@@ -9,16 +9,6 @@ import (
 	"fmt"
 )
 
-// PacketV0Header represents a v0 PRUDP packet header
-type PacketV0Header struct {
-	Source      uint8
-	Destination uint8
-	TypeFlags   uint16
-	SessionID   uint8
-	Signature   [4]byte
-	SequenceID  uint16
-}
-
 func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 	checksumVersion := PRUDPPacket.Sender.Server.Settings.PrudpV0ChecksumVersion
 	checksumSize := 1
