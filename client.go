@@ -25,11 +25,13 @@ type Client struct {
 	RMCCallID                 uint32
 }
 
-// SetCipher sets the client RC4 Cipher
-func (client *Client) SetCipher(key string) {
+// SetKey sets the client's secure key and recreates both Ciphers.
+func (client *Client) SetKey(key string) {
 	client.SecureKey = []byte(key)
 	cipher, _ := rc4.NewCipher([]byte(key))
 	client.Cipher = cipher
+	decipher, _ := rc4.NewCipher([]byte(key))
+	client.Decipher = decipher
 }
 
 // NewClient returns a new generic client
