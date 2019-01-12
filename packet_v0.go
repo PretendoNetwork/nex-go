@@ -208,5 +208,11 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 		return PRUDPPacket.Signature
 	}
 
-	return make([]byte, 4)
+	// todo: client/server?
+	if PRUDPPacket.Sender.ClientConnectionSignature != nil {
+		return PRUDPPacket.Sender.ClientConnectionSignature
+	}
+	else {
+		return make([]byte, 4)
+	}
 }

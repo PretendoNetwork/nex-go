@@ -62,7 +62,7 @@ func (Response *RMCResponse) SetSuccess(MethodID uint32, Data []byte) {
 	Response.Success = 1
 	Response.Body = RMCSuccess{MethodID | 0x8000, Data}
 
-	Response.Size = uint32(14 + len(Data))
+	Response.Size = uint32(10 + len(Data))
 }
 
 // SetError sets the RMCResponse payload to an instance of RMCError
@@ -70,7 +70,7 @@ func (Response *RMCResponse) SetError(ErrorCode uint32) {
 	Response.Success = 0
 	Response.Body = RMCError{ErrorCode}
 
-	Response.Size = 14
+	Response.Size = 10
 }
 
 // Bytes converts a RMCResponse struct into a usable byte array
