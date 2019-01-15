@@ -177,9 +177,8 @@ func (stream *InputStream) Bool() bool {
 	return stream.UInt8() != 0
 }
 
-// TODO: Variant is fucking cursed
+// TODO: Variant is cursed. We can get away with not implementing it.
 func (stream *InputStream) Variant() (ret Variant) {
-	// fuck you do nothing
 	return
 }
 
@@ -254,7 +253,7 @@ func (stream *OutputStream) Int64LE(val int64) {
 	stream.Write(data.Bytes())
 }
 
-// Float32LE reads an signed 4 byte float in little endian
+// Float32LE reads a 4 byte float in little endian
 func (stream *OutputStream) Float32LE(val float32) {
 	data := new(bytes.Buffer)
 	binary.Write(data, binary.LittleEndian, val)
@@ -268,9 +267,8 @@ func (stream *OutputStream) Float64LE(val float64) {
 	stream.Write(data.Bytes())
 }
 
-// TODO: Variant is fucking cursed
+// TODO: Variant is cursed. We can get away with not implementing it.
 func (stream *OutputStream) Variant(val Variant) {
-	// fuck you do nothing
 }
 
 // String writes a NEX string
