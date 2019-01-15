@@ -75,7 +75,7 @@ func (Response *RMCResponse) SetError(ErrorCode uint32) {
 
 // Bytes converts a RMCResponse struct into a usable byte array
 func (Response *RMCResponse) Bytes() []byte {
-	data := bytes.NewBuffer(make([]byte, 0, Response.Size+1))
+	data := bytes.NewBuffer(make([]byte, 0, Response.Size+4)) // +4 as Size does not include the size field itself.
 
 	binary.Write(data, binary.LittleEndian, uint32(Response.Size))
 	binary.Write(data, binary.LittleEndian, byte(Response.ProtocolID))
