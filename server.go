@@ -111,8 +111,7 @@ func (server *Server) Kick(client Client) {
 	}
 }
 
-// Acknowledge creates an acknowledgement packet based on the input packet
-func (server *Server) Acknowledge(Packet *Packet) {
+func (server *Server) createAckPacket(Packet *Packet) Packet {
 	ack := NewPacket(Packet.Sender)
 
 	if Packet.Type == Types["Syn"] {
@@ -132,7 +131,20 @@ func (server *Server) Acknowledge(Packet *Packet) {
 	ack.AddFlag(Flags["Ack"])
 	ack.FragmentID = Packet.FragmentID
 	ack.SequenceID = Packet.SequenceID
+	return ack
+}
 
+// AcknowledgeWithPayload creates an acknowledgement packet based on the input packet
+// with an additional payload.
+func (server *Server) AcknowledgeWithPayload(Packet *Packet, Payload []byte) {
+	ack := server.createAckPacket(Packet)
+	ack.Payload = Payload
+	server.SendRaw(Packet.Sender._UDPConn, ack.Bytes())
+}
+
+// Acknowledge creates an acknowledgement packet based on the input packet
+func (server *Server) Acknowledge(Packet *Packet) {
+	ack := server.createAckPacket(Packet)
 	server.SendRaw(Packet.Sender._UDPConn, ack.Bytes())
 }
 

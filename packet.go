@@ -173,7 +173,7 @@ func NewPacket(client *Client) Packet {
 		DestinationType: 0,
 		DestinationPort: 0,
 		SessionID:       0,
-		Signature:       []byte{},
+		Signature:       nil,
 		SequenceID:      0,
 		FragmentID:      0,
 		Payload:         []byte{},

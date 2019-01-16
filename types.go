@@ -13,6 +13,10 @@ type DataHolder struct {
 	Data       []byte
 }
 
+type Variant struct {
+	// TODO: fill out Variant.
+}
+
 // NewStationURL returns a new station URL string
 func NewStationURL(protocol string, JSON map[string]string) string {
 	var URLBuffer bytes.Buffer
