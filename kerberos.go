@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/rc4"
+	"encoding/binary"
 	"fmt"
 )
 
@@ -62,8 +63,36 @@ func (encryption *Kerberos) Validate(buffer []byte) bool {
 }
 
 // NewKerberos returns a new instances of basic Kerberos
-func NewKerberos(key string) Kerberos {
-	return Kerberos{
-		Key: key,
+func NewKerberos(pid uint32) Kerberos {
+	key := make([]byte, 4)
+	binary.LittleEndian.PutUint32(key, pid)
+	for i := 0; uint32(i) < 65000+pid%1024; i++ {
+		key = MD5Hash(key)
 	}
+	return Kerberos{
+		Key: string(binary.LittleEndian.Uint32(key)),
+	}
+}
+
+type Ticket struct {
+	SessionKey []byte
+	PID        uint32
+	TicketData []byte
+}
+
+func NewTicket(session_key []byte, pid uint32, ticketdat []byte) Ticket {
+	return Ticket{
+		SessionKey: session_key,
+		PID:        pid,
+		TicketData: ticketdat,
+	}
+}
+
+func (t Ticket) Encrypt(pid uint32) []byte {
+	kerb := NewKerberos(pid)
+	outputstr := NewOutputStream()
+	outputstr.Write(t.SessionKey)
+	outputstr.UInt32LE(t.PID)
+	outputstr.Buffer(t.TicketData)
+	return kerb.Encrypt(outputstr.Bytes())
 }

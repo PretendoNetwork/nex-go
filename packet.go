@@ -55,6 +55,10 @@ func (PRUDPPacket *Packet) FromBytes(Data []byte) {
 		// v0 doesn't have a dedicated magic, and the first 2 bytes aren't really static
 		PRUDPPacket.Version = 0
 		decoded = decodePacketV0(PRUDPPacket)
+		if decoded == nil {
+			PRUDPPacket.Flags = 0xFFFF
+			return
+		}
 		PRUDPPacket.Checksum = decoded["Checksum"].(int)
 	}
 

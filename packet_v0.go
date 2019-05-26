@@ -24,6 +24,11 @@ func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 	sessionID := stream.UInt8()
 	signature := stream.Bytes(4)
 	sequenceID := stream.UInt16LE()
+	if sequenceID == PRUDPPacket.Sender.SequenceIDIn.value {
+		PRUDPPacket.Sender.SequenceIDIn.Increment()
+	} else {
+		return nil
+	}
 
 	sourceType := source >> 4
 	sourcePort := source & 0xF
@@ -83,6 +88,8 @@ func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 		request := NewRMCRequest(crypted)
 
 		decoded["RMCRequest"] = request
+	} else {
+		decoded["RMCRequest"] = nil
 	}
 
 	var checksum int
@@ -121,7 +128,12 @@ func encodePacketV0(PRUDPPacket *Packet) []byte {
 	stream.UInt16LE(PRUDPPacket.SequenceID)
 
 	stream.Write(options)
-	stream.Write(PRUDPPacket.Payload)
+	if PRUDPPacket.Type == Types["Data"] && len(PRUDPPacket.Payload) > 0 {
+		crypted := make([]byte, len(PRUDPPacket.Payload))
+		PRUDPPacket.Sender.Cipher.XORKeyStream(crypted, PRUDPPacket.Payload)
+
+		stream.Write(PRUDPPacket.Payload)
+	}
 	stream.UInt8(uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.Bytes(), checksumVersion)))
 
 	return stream.Bytes()

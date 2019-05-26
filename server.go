@@ -204,14 +204,15 @@ func readPacket(server *Server) {
 	Packet.FromBytes(data)
 
 	if server.Handlers["Packet"] != nil {
-		go server.Handlers["Packet"](client, &Packet)
+		server.Handlers["Packet"](client, &Packet)
 	}
 
 	switch Packet.Type {
 	case 0:
+		client.SetKey("CD&ML")
 		handler := server.Handlers["Syn"]
 		if handler != nil {
-			go handler(client, &Packet)
+			handler(client, &Packet)
 		}
 	case 1:
 		rand.Seed(time.Now().UnixNano())
@@ -219,22 +220,22 @@ func readPacket(server *Server) {
 
 		handler := server.Handlers["Connect"]
 		if handler != nil {
-			go handler(client, &Packet)
+			handler(client, &Packet)
 		}
 	case 2:
 		handler := server.Handlers["Data"]
 		if handler != nil {
-			go handler(client, &Packet)
+			handler(client, &Packet)
 		}
 	case 3:
 		handler := server.Handlers["Disconnect"]
 		if handler != nil {
-			go handler(client, &Packet)
+			handler(client, &Packet)
 		}
 	case 4:
 		handler := server.Handlers["Ping"]
 		if handler != nil {
-			go handler(client, &Packet)
+			handler(client, &Packet)
 		}
 	default:
 		fmt.Println("UNKNOWN TYPE", Packet.Type)
