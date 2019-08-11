@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	
+	"github.com/superwhiskers/crunch"
 )
 
 // RMCRequest represents a RMC protocol request
@@ -18,13 +20,13 @@ type RMCRequest struct {
 
 // NewRMCRequest returns a new RMCRequest
 func NewRMCRequest(Data []byte) RMCRequest {
-	stream := NewInputStream(Data)
+	stream := crunch.NewBuffer(Data)
 
 	return RMCRequest{
-		Size:       stream.UInt32LE(),
-		ProtocolID: stream.UInt8(),
-		CallID:     stream.UInt32LE(),
-		MethodID:   stream.UInt32LE(),
+		Size:       stream.ReadU32LENext(1)[0],
+		ProtocolID: stream.ReadByteNext(),
+		CallID:     stream.ReadU32LENext(1)[0],
+		MethodID:   stream.ReadU32LENext(1)[0],
 		Parameters: Data[13:],
 	}
 }
