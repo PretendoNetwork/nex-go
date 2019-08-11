@@ -7,26 +7,28 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	
+	"github.com/superwhiskers/crunch"
 )
 
 func decodePacketV1(PRUDPPacket *Packet) map[string]interface{} {
-	stream := NewInputStream(PRUDPPacket.Data)
-	stream.Skip(2) // Magic
-	if stream.UInt8() != 1 {
+	stream := crunch.NewBuffer(PRUDPPacket.Data)
+	stream.SeekByte(2, true)
+	if stream.ReadByteNext() != 1 {
 		// invalid PRUDP version number?
 	}
 
-	optionsSize := stream.UInt8()
-	payloadSize := stream.UInt16LE()
-	source := stream.UInt8()
-	destination := stream.UInt8()
-	typeFlags := stream.UInt16LE()
-	sessionID := stream.UInt8()
-	multiAckVersion := stream.UInt8()
-	sequenceID := stream.UInt16LE()
-	checksum := stream.Bytes(16) // signature
-	optionsData := stream.Bytes(int(optionsSize))
-	payload := stream.Bytes(int(payloadSize))
+	optionsSize := stream.ReadByteNext()
+	payloadSize := stream.ReadU16LENext(1)[0]
+	source := stream.ReadByteNext()
+	destination := stream.ReadByteNext()
+	typeFlags := stream.ReadU16LENext(1)[0]
+	sessionID := stream.ReadByteNext()
+	multiAckVersion := stream.ReadByteNext()
+	sequenceID := stream.ReadU16LENext(1)[0]
+	checksum := stream.ReadBytesNext(16) // signature
+	optionsData := stream.ReadBytesNext(int64(optionsSize))
+	payload := stream.ReadBytesNext(int64(payloadSize))
 
 	sourceType := source >> 4
 	sourcePort := source & 0xF
@@ -70,7 +72,7 @@ func decodePacketV1(PRUDPPacket *Packet) map[string]interface{} {
 		}
 	}
 
-	signatureCheck := CalculateV1Signature(PRUDPPacket.Sender, stream.data[2:14], optionsData, PRUDPPacket.Sender.ServerConnectionSignature, payload)
+	signatureCheck := CalculateV1Signature(PRUDPPacket.Sender, stream.ReadBytes(2,14), optionsData, PRUDPPacket.Sender.ServerConnectionSignature, payload)
 	if !bytes.Equal(signatureCheck, checksum) {
 		fmt.Println("[ERROR] Calculated checksum does not match decoded checksum!")
 	}
@@ -96,42 +98,42 @@ func encodePacketV1(PRUDPPacket *Packet) []byte {
 
 	options := encodeOptionsV1(PRUDPPacket)
 
-	stream := NewOutputStream()
-	headerStream := NewOutputStream()
+	stream := crunch.NewBuffer()
+	headerStream := crunch.NewBuffer()
 
-	headerStream.UInt8(1)
-	headerStream.UInt8(uint8(len(options)))
-	headerStream.UInt16LE(uint16(len(PRUDPPacket.Payload)))
-	headerStream.UInt8(PRUDPPacket.Source)
-	headerStream.UInt8(PRUDPPacket.Destination)
-	headerStream.UInt16LE(uint16(int(PRUDPPacket.Type) | int(PRUDPPacket.Flags)<<4))
-	headerStream.UInt8(PRUDPPacket.SessionID)
-	headerStream.UInt8(PRUDPPacket.MultiAckVersion)
-	headerStream.UInt16LE(PRUDPPacket.SequenceID)
+	headerStream.WriteByteNext(1)
+	headerStream.WriteByteNext(uint8(len(options)))
+	headerStream.WriteU16LENext([]uint16{uint16(len(PRUDPPacket.Payload))})
+	headerStream.WriteByteNext(PRUDPPacket.Source)
+	headerStream.WriteByteNext(PRUDPPacket.Destination)
+	headerStream.WriteU16LENext([]uint16{uint16(int(PRUDPPacket.Type) | int(PRUDPPacket.Flags)<<4)})
+	headerStream.WriteByteNext(PRUDPPacket.SessionID)
+	headerStream.WriteByteNext(PRUDPPacket.MultiAckVersion)
+	headerStream.WriteU16LENext([]uint16{PRUDPPacket.SequenceID})
 
-	stream.Write([]byte{0xEA, 0xD0})
-	stream.Write(headerStream.Bytes())
-	stream.Write(CalculateV1Signature(PRUDPPacket.Sender, headerStream.Bytes(), options, PRUDPPacket.Sender.ClientConnectionSignature, PRUDPPacket.Payload))
-	stream.Write(options)
-	stream.Write(PRUDPPacket.Payload)
+	stream.WriteBytesNext([]byte{0xEA, 0xD0})
+	stream.WriteBytesNext(headerStream.Bytes())
+	stream.WriteBytesNext(CalculateV1Signature(PRUDPPacket.Sender, headerStream.Bytes(), options, PRUDPPacket.Sender.ClientConnectionSignature, PRUDPPacket.Payload))
+	stream.WriteBytesNext(options)
+	stream.WriteBytesNext(PRUDPPacket.Payload)
 
 	return stream.Bytes()
 }
 
 func decodeV1Options(data []byte) map[int]interface{} {
-	stream := NewInputStream(data)
+	stream := crunch.NewBuffer()
 	options := make(map[int]interface{})
 
-	for stream.pos < len(data) {
-		if len(data)-stream.pos < 2 {
+	for int(stream.ByteOffset()) < len(data) {
+		if len(data)-int(stream.ByteOffset()) < 2 {
 			fmt.Println("Line 86")
 			return nil
 		}
 
-		optType := int(stream.UInt8())
-		length := int(stream.UInt8())
+		optType := int(stream.ReadByteNext())
+		length := int(stream.ReadByteNext())
 
-		if len(data)-stream.pos < length {
+		if len(data)-int(stream.ByteOffset()) < length {
 			fmt.Println("Line 94")
 			return nil
 		}
@@ -141,25 +143,25 @@ func decodeV1Options(data []byte) map[int]interface{} {
 				fmt.Println("Line 100")
 				return nil
 			}
-			options[optType] = stream.UInt32LE()
+			options[optType] = stream.ReadU32LENext(1)[0]
 		} else if optType == OptionsConnectionSignature {
 			if length != 16 {
 				fmt.Println("Line 106")
 				return nil
 			}
-			options[optType] = stream.Bytes(16)
+			options[optType] = stream.ReadBytesNext(16)
 		} else if optType == OptionsFragment || optType == Options4 {
 			if length != 1 {
 				fmt.Println("Line 112")
 				return nil
 			}
-			options[optType] = int(stream.UInt8())
+			options[optType] = int(stream.ReadByteNext())
 		} else if optType == Options3 {
 			if length != 2 {
 				fmt.Println("Line 118")
 				return nil
 			}
-			options[optType] = stream.UInt16LE()
+			options[optType] = stream.ReadU16LENext(1)[0]
 		}
 	}
 
@@ -167,30 +169,30 @@ func decodeV1Options(data []byte) map[int]interface{} {
 }
 
 func encodeOptionsV1(PRUDPPacket *Packet) []byte {
-	stream := NewOutputStream()
+	stream := crunch.NewBuffer()
 
 	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {
-		stream.UInt8(uint8(OptionsSupport))
-		stream.UInt8(4)
-		stream.UInt32LE(uint32(OptionsAll))
+		stream.WriteByteNext(uint8(OptionsSupport))
+		stream.WriteByteNext(4)
+		stream.WriteU32LENext([]uint32{uint32(OptionsAll)})
 
-		stream.UInt8(uint8(OptionsConnectionSignature))
-		stream.UInt8(16)
-		stream.Write(PRUDPPacket.Signature)
+		stream.WriteByteNext(uint8(OptionsConnectionSignature))
+		stream.WriteByteNext(16)
+		stream.WriteBytesNext(PRUDPPacket.Signature)
 
 		if PRUDPPacket.Type == Types["Connect"] {
-			stream.UInt8(uint8(Options3))
-			stream.UInt8(2)
-			stream.UInt16LE(0xFFFF) // I dunno
+			stream.WriteByteNext(uint8(Options3))
+			stream.WriteByteNext(2)
+			stream.WriteU16LENext([]uint16{0xFFFF}) // I dunno
 		}
 
-		stream.UInt8(uint8(Options4))
-		stream.UInt8(1)
-		stream.UInt8(0)
+		stream.WriteByteNext(uint8(Options4))
+		stream.WriteByteNext(1)
+		stream.WriteByteNext(0)
 	} else if PRUDPPacket.Type == Types["Data"] {
-		stream.UInt8(uint8(OptionsFragment))
-		stream.UInt8(1)
-		stream.UInt8(uint8(PRUDPPacket.FragmentID))
+		stream.WriteByteNext(uint8(OptionsFragment))
+		stream.WriteByteNext(1)
+		stream.WriteByteNext(uint8(PRUDPPacket.FragmentID))
 	}
 
 	return stream.Bytes()
