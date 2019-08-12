@@ -1,8 +1,6 @@
 package nex
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"os"
 	
@@ -77,23 +75,23 @@ func (Response *RMCResponse) SetError(ErrorCode uint32) {
 
 // Bytes converts a RMCResponse struct into a usable byte array
 func (Response *RMCResponse) Bytes() []byte {
-	data := bytes.NewBuffer(make([]byte, 0, Response.Size+4)) // +4 as Size does not include the size field itself.
+	data := crunch.NewBuffer()
 
-	binary.Write(data, binary.LittleEndian, uint32(Response.Size))
-	binary.Write(data, binary.LittleEndian, byte(Response.ProtocolID))
-	binary.Write(data, binary.LittleEndian, byte(Response.Success))
+	data.WriteU32LENext([]uint32{Response.Size})
+	data.WriteByteNext(byte(Response.ProtocolID))
+	data.WriteByteNext(byte(Response.Success))
 
 	if Response.Success == 1 {
 		body := Response.Body.(RMCSuccess)
 
-		binary.Write(data, binary.LittleEndian, uint32(Response.CallID))
-		binary.Write(data, binary.LittleEndian, uint32(body.MethodID))
-		binary.Write(data, binary.LittleEndian, body.Data)
+		data.WriteU32LENext([]uint32{Response.CallID})
+		data.WriteU32LENext([]uint32{body.MethodID})
+		data.WriteBytesNext(body.Data)
 	} else if Response.Success == 0 {
 		body := Response.Body.(RMCError)
 
-		binary.Write(data, binary.LittleEndian, uint32(body.ErrorCode))
-		binary.Write(data, binary.LittleEndian, uint32(Response.CallID))
+		data.WriteU32LENext([]uint32{body.ErrorCode})
+		data.WriteU32LENext([]uint32{Response.CallID})
 	} else {
 		fmt.Println("Invalid RMC success type", Response.Success)
 		os.Exit(1)

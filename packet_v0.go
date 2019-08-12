@@ -1,7 +1,6 @@
 package nex
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
 	"encoding/binary"
@@ -204,13 +203,12 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 	if PRUDPPacket.Type == Types["Data"] || (PRUDPPacket.Type == Types["Disconnect"] && PRUDPPacket.Sender.Server.Settings.PrudpV0SignatureVersion == 0) {
 		data := PRUDPPacket.Payload
 		if PRUDPPacket.Sender.Server.Settings.PrudpV0SignatureVersion == 0 {
-			length := len(PRUDPPacket.Sender.SecureKey) + 2 + 1 + len(data)
-			buffer := bytes.NewBuffer(make([]byte, 0, length))
-
-			binary.Write(buffer, binary.LittleEndian, PRUDPPacket.Sender.SecureKey)
-			binary.Write(buffer, binary.LittleEndian, uint16(PRUDPPacket.SequenceID))
-			binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.FragmentID))
-			binary.Write(buffer, binary.LittleEndian, data)
+			buffer := crunch.NewBuffer()
+			
+			buffer.WriteBytesNext(PRUDPPacket.Sender.SecureKey)
+			buffer.WriteU16LENext([]uint16{PRUDPPacket.SequenceID})
+			buffer.WriteByteNext(uint8(PRUDPPacket.FragmentID))
+			buffer.WriteBytesNext(data)
 
 			data = buffer.Bytes()
 		}
@@ -222,8 +220,8 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 			return cipher.Sum(nil)[:4]
 		}
 
-		buffer := bytes.NewBuffer(make([]byte, 0, 4))
-		binary.Write(buffer, binary.LittleEndian, uint32(0x12345678))
+		buffer := crunch.NewBuffer()
+		buffer.WriteU32LENext([]uint32{0x12345678})
 
 		return buffer.Bytes()
 	}

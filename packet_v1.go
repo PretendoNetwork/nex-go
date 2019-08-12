@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	
@@ -201,8 +200,8 @@ func encodeOptionsV1(PRUDPPacket *Packet) []byte {
 // CalculateV1Signature calculates the HMAC signature for a given packet
 func CalculateV1Signature(Client *Client, header []byte, options []byte, signature []byte, payload []byte) []byte {
 
-	signatureBase := bytes.NewBuffer(make([]byte, 0, 4))
-	binary.Write(signatureBase, binary.LittleEndian, uint32(Client.SignatureBase))
+	signatureBase := crunch.NewBuffer()
+	signatureBase.WriteU32LENext([]uint32{uint32(Client.SignatureBase)})
 
 	key, _ := hex.DecodeString(Client.SignatureKey)
 	mac := hmac.New(md5.New, key)
