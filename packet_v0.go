@@ -1,12 +1,13 @@
 package nex
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	
+	"github.com/superwhiskers/crunch"
 )
 
 func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
@@ -16,14 +17,23 @@ func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 		checksumSize = 4
 	}
 
-	stream := NewInputStream(PRUDPPacket.Data)
-
+	/*stream := NewInputStream(PRUDPPacket.Data)
 	source := stream.UInt8()
 	destination := stream.UInt8()
 	typeFlags := stream.UInt16LE()
 	sessionID := stream.UInt8()
 	signature := stream.Bytes(4)
-	sequenceID := stream.UInt16LE()
+	sequenceID := stream.UInt16LE()*/
+	
+	stream := crunch.NewBuffer(PRUDPPacket.Data)
+	
+	source := stream.ReadByteNext()
+	destination := stream.ReadByteNext()
+	typeFlags := stream.ReadU16LENext(1)[0]
+	sessionID := stream.ReadByteNext()
+	signature := stream.ReadBytesNext(4)
+	sequenceID := stream.ReadU16LENext(1)[0]
+	
 	if sequenceID == PRUDPPacket.Sender.SequenceIDIn.value {
 		PRUDPPacket.Sender.SequenceIDIn.Increment()
 	} else {
@@ -64,21 +74,21 @@ func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 	}
 
 	if packetType == Types["Syn"] || packetType == Types["Connect"] {
-		decoded["Signature"] = stream.Bytes(4)
+		decoded["Signature"] = stream.ReadBytesNext(4)
 	}
 
 	if packetType == Types["Data"] {
-		decoded["FragmentID"] = int(stream.UInt8())
+		decoded["FragmentID"] = int(stream.ReadByteNext())
 	}
 
 	var payloadSize uint16
 	if flags&Flags["HasSize"] != 0 {
-		payloadSize = stream.UInt16LE()
+		payloadSize = stream.ReadU16LENext(1)[0]
 	} else {
-		payloadSize = uint16(len(stream.data) - stream.pos - checksumSize)
+		payloadSize = uint16(len(stream.Bytes()) - int(stream.ByteOffset()) - checksumSize)
 	}
 
-	payload := stream.Bytes(int(payloadSize))
+	payload := stream.ReadBytesNext(int64(payloadSize))
 	decoded["Payload"] = payload
 
 	if packetType == Types["Data"] && len(payload) > 0 {
@@ -94,14 +104,14 @@ func decodePacketV0(PRUDPPacket *Packet) map[string]interface{} {
 
 	var checksum int
 	if checksumSize == 1 {
-		checksum = int(stream.UInt8())
+		checksum = int(stream.ReadByteNext())
 	} else {
-		checksum = int(stream.UInt32LE())
+		checksum = int(stream.ReadU32LENext(1)[0])
 	}
 
 	decoded["Checksum"] = checksum
 
-	if CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.data[:len(stream.data)-checksumSize], checksumVersion) != checksum {
+	if CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.ReadBytes(int64(len(stream.Bytes())-checksumSize), int64(checksumSize)), checksumVersion) != checksum {
 		fmt.Println("[ERROR] Calculated checksum does not match decoded checksum!")
 	}
 
@@ -117,24 +127,25 @@ func encodePacketV0(PRUDPPacket *Packet) []byte {
 		PRUDPPacket.Payload = crypted
 	}
 
-	stream := NewOutputStream()
+	// stream := NewOutputStream()
+	stream := crunch.NewBuffer()
 	options := encodeOptionsV0(PRUDPPacket)
 
-	stream.UInt8(PRUDPPacket.Source)
-	stream.UInt8(PRUDPPacket.Destination)
-	stream.UInt16LE(PRUDPPacket.Type | PRUDPPacket.Flags<<4)
-	stream.UInt8(uint8(PRUDPPacket.Sender.SessionID))
-	stream.Write(CalculateV0Signature(PRUDPPacket))
-	stream.UInt16LE(PRUDPPacket.SequenceID)
+	stream.WriteByteNext(PRUDPPacket.Source)
+	stream.WriteByteNext(PRUDPPacket.Destination)
+	stream.WriteU16LENext([]uint16{PRUDPPacket.Type | PRUDPPacket.Flags << 4})
+	stream.WriteByteNext(uint8(PRUDPPacket.Sender.SessionID))
+	stream.WriteBytesNext(CalculateV0Signature(PRUDPPacket))
+	stream.WriteU16LENext([]uint16{PRUDPPacket.SequenceID})
 
-	stream.Write(options)
+	stream.WriteBytesNext(options)
 	if PRUDPPacket.Type == Types["Data"] && len(PRUDPPacket.Payload) > 0 {
 		crypted := make([]byte, len(PRUDPPacket.Payload))
 		PRUDPPacket.Sender.Cipher.XORKeyStream(crypted, PRUDPPacket.Payload)
 
-		stream.Write(PRUDPPacket.Payload)
+		stream.WriteBytesNext(PRUDPPacket.Payload)
 	}
-	stream.UInt8(uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.Bytes(), checksumVersion)))
+	stream.WriteByteNext(uint8(CalculateV0Checksum(PRUDPPacket.Sender.SignatureBase, stream.Bytes(), checksumVersion)))
 
 	return stream.Bytes()
 }
@@ -170,18 +181,18 @@ func CalculateV0Checksum(checksum int, packet []byte, version int) int {
 }
 
 func encodeOptionsV0(PRUDPPacket *Packet) []byte {
-	stream := NewOutputStream()
+	stream := crunch.NewBuffer()
 
 	if PRUDPPacket.Type == Types["Syn"] || PRUDPPacket.Type == Types["Connect"] {
-		stream.Write(PRUDPPacket.Signature)
+		stream.WriteBytesNext(PRUDPPacket.Signature)
 	}
 
 	if PRUDPPacket.Type == Types["Data"] {
-		stream.UInt8(uint8(PRUDPPacket.FragmentID))
+		stream.WriteByteNext(uint8(PRUDPPacket.FragmentID))
 	}
 
 	if PRUDPPacket.HasFlag(Flags["HasSize"]) {
-		stream.UInt16LE(uint16(len(PRUDPPacket.Payload)))
+		stream.WriteU16LENext([]uint16{uint16(len(PRUDPPacket.Payload))})
 	}
 
 	return stream.Bytes()
@@ -192,13 +203,12 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 	if PRUDPPacket.Type == Types["Data"] || (PRUDPPacket.Type == Types["Disconnect"] && PRUDPPacket.Sender.Server.Settings.PrudpV0SignatureVersion == 0) {
 		data := PRUDPPacket.Payload
 		if PRUDPPacket.Sender.Server.Settings.PrudpV0SignatureVersion == 0 {
-			length := len(PRUDPPacket.Sender.SecureKey) + 2 + 1 + len(data)
-			buffer := bytes.NewBuffer(make([]byte, 0, length))
-
-			binary.Write(buffer, binary.LittleEndian, PRUDPPacket.Sender.SecureKey)
-			binary.Write(buffer, binary.LittleEndian, uint16(PRUDPPacket.SequenceID))
-			binary.Write(buffer, binary.LittleEndian, uint8(PRUDPPacket.FragmentID))
-			binary.Write(buffer, binary.LittleEndian, data)
+			buffer := crunch.NewBuffer()
+			
+			buffer.WriteBytesNext(PRUDPPacket.Sender.SecureKey)
+			buffer.WriteU16LENext([]uint16{PRUDPPacket.SequenceID})
+			buffer.WriteByteNext(uint8(PRUDPPacket.FragmentID))
+			buffer.WriteBytesNext(data)
 
 			data = buffer.Bytes()
 		}
@@ -210,8 +220,8 @@ func CalculateV0Signature(PRUDPPacket *Packet) []byte {
 			return cipher.Sum(nil)[:4]
 		}
 
-		buffer := bytes.NewBuffer(make([]byte, 0, 4))
-		binary.Write(buffer, binary.LittleEndian, uint32(0x12345678))
+		buffer := crunch.NewBuffer()
+		buffer.WriteU32LENext([]uint32{0x12345678})
 
 		return buffer.Bytes()
 	}

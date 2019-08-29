@@ -7,6 +7,8 @@ import (
 	"crypto/rc4"
 	"encoding/binary"
 	"fmt"
+	
+	"github.com/superwhiskers/crunch"
 )
 
 // Kerberos represents a basic Kerberos handling struct
@@ -90,9 +92,10 @@ func NewTicket(session_key []byte, pid uint32, ticketdat []byte) Ticket {
 
 func (t Ticket) Encrypt(pid uint32) []byte {
 	kerb := NewKerberos(pid)
-	outputstr := NewOutputStream()
-	outputstr.Write(t.SessionKey)
-	outputstr.UInt32LE(t.PID)
-	outputstr.Buffer(t.TicketData)
+	outputstr := crunch.NewBuffer()
+	outputstr.WriteBytesNext(t.SessionKey)
+	outputstr.WriteU32LENext([]uint32{t.PID})
+	outputstr.WriteU32LENext([]uint32{uint32(len(t.TicketData))})
+	outputstr.WriteBytesNext(t.TicketData)
 	return kerb.Encrypt(outputstr.Bytes())
 }
