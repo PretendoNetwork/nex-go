@@ -5,19 +5,43 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/rc4"
-	"encoding/binary"
 	"fmt"
-	
-	"github.com/superwhiskers/crunch"
 )
 
-// Kerberos represents a basic Kerberos handling struct
-type Kerberos struct {
-	Key string
+type KerberosEncryption struct {
+	key    []byte
+	cipher *rc4.Cipher
 }
 
-// Decrypt decrypts the data of Kerberos response
-func (encryption *Kerberos) Decrypt(buffer []byte) []byte {
+type Ticket struct {
+	sessionKey []byte
+	serverPID  uint32
+	ticketData []byte
+}
+
+type TicketData struct {
+	ticketKey  []byte
+	ticketInfo []byte
+}
+
+type TicketInfo struct {
+	datetime   uint64
+	userPID    uint32
+	sessionKey []byte
+}
+
+func (encryption *KerberosEncryption) Encrypt(buffer []byte) []byte {
+	encrypted := make([]byte, len(buffer))
+	encryption.cipher.XORKeyStream(encrypted, buffer)
+
+	mac := hmac.New(md5.New, []byte(encryption.key))
+	mac.Write(encrypted)
+	hmac := mac.Sum(nil)
+
+	return append(encrypted, hmac...)
+}
+
+func (encryption *KerberosEncryption) Decrypt(buffer []byte) []byte {
 	if !encryption.Validate(buffer) {
 		fmt.Println("INVALID KERB CHECKSUM")
 	}
@@ -25,77 +49,33 @@ func (encryption *Kerberos) Decrypt(buffer []byte) []byte {
 	offset := len(buffer)
 	offset = offset + -0x10
 
-	data := buffer[:offset]
+	encrypted := buffer[:offset]
 
-	RC4, _ := rc4.NewCipher([]byte(encryption.Key))
+	decrypted := make([]byte, len(encrypted))
+	encryption.cipher.XORKeyStream(decrypted, encrypted)
 
-	crypted := make([]byte, len(data))
-	RC4.XORKeyStream(crypted, data)
-
-	return crypted
+	return decrypted
 }
 
-// Encrypt encrypts the data of Kerberos request
-func (encryption *Kerberos) Encrypt(buffer []byte) []byte {
-	RC4, _ := rc4.NewCipher([]byte(encryption.Key))
-
-	crypted := make([]byte, len(buffer))
-	RC4.XORKeyStream(crypted, buffer)
-
-	cipher := hmac.New(md5.New, []byte(encryption.Key))
-	cipher.Write(crypted)
-	checksum := cipher.Sum(nil)
-
-	return append(crypted, checksum...)
-}
-
-// Validate validates the Kerberos data
-func (encryption *Kerberos) Validate(buffer []byte) bool {
+func (encryption *KerberosEncryption) Validate(buffer []byte) bool {
 	offset := len(buffer)
 	offset = offset + -0x10
 
 	data := buffer[:offset]
 	checksum := buffer[offset:]
 
-	cipher := hmac.New(md5.New, []byte(encryption.Key))
+	cipher := hmac.New(md5.New, []byte(encryption.key))
 	cipher.Write(data)
 	mac := cipher.Sum(nil)
 
 	return bytes.Equal(mac, checksum)
 }
 
-// NewKerberos returns a new instances of basic Kerberos
-func NewKerberos(pid uint32) Kerberos {
-	key := make([]byte, 4)
-	binary.LittleEndian.PutUint32(key, pid)
-	for i := 0; uint32(i) < 65000+pid%1024; i++ {
-		key = MD5Hash(key)
-	}
-	return Kerberos{
-		Key: string(binary.LittleEndian.Uint32(key)),
-	}
-}
+func NewKerberosEncryption(key []byte) *KerberosEncryption {
+	cipher, _ := rc4.NewCipher(key)
 
-type Ticket struct {
-	SessionKey []byte
-	PID        uint32
-	TicketData []byte
-}
-
-func NewTicket(session_key []byte, pid uint32, ticketdat []byte) Ticket {
-	return Ticket{
-		SessionKey: session_key,
-		PID:        pid,
-		TicketData: ticketdat,
+	return &KerberosEncryption{
+		key:    key,
+		cipher: cipher,
 	}
-}
-
-func (t Ticket) Encrypt(pid uint32) []byte {
-	kerb := NewKerberos(pid)
-	outputstr := crunch.NewBuffer()
-	outputstr.WriteBytesNext(t.SessionKey)
-	outputstr.WriteU32LENext([]uint32{t.PID})
-	outputstr.WriteU32LENext([]uint32{uint32(len(t.TicketData))})
-	outputstr.WriteBytesNext(t.TicketData)
-	return kerb.Encrypt(outputstr.Bytes())
 }

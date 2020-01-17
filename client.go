@@ -5,49 +5,122 @@ import (
 	"net"
 )
 
-// Client represents generic NEX/PRUDP client
+// Client represents a connected or non-connected PRUDP client
 type Client struct {
-	_UDPConn                  *net.UDPAddr
-	Server                    *Server
-	Cipher                    *rc4.Cipher
-	Decipher                  *rc4.Cipher
-	State                     int
-	SignatureKey              string
-	SignatureBase             int
-	SecureKey                 []byte
-	ServerConnectionSignature []byte
-	ClientConnectionSignature []byte
-	SessionID                 int
-	Packets                   []Packet
-	PacketQueue               map[string]Packet
-	SequenceIDIn              Counter
-	SequenceIDOut             Counter
-	RMCCallID                 uint32
+	address                   *net.UDPAddr
+	server                    *Server
+	cipher                    *rc4.Cipher
+	decipher                  *rc4.Cipher
+	Kkey                      string
+	state                     int
+	signatureKey              []byte
+	signatureBase             int
+	secureKey                 []byte
+	serverConnectionSignature []byte
+	clientConnectionSignature []byte
+	sessionID                 int
+	sessionKey                []byte
+	packets                   []Packet
+	sequenceIDIn              *Counter
+	sequenceIDOut             *Counter
+	rmcCallID                 uint32
 }
 
-// SetKey sets the client's secure key and recreates both Ciphers.
-func (client *Client) SetKey(key string) {
-	client.SecureKey = []byte(key)
-	cipher, _ := rc4.NewCipher([]byte(key))
-	client.Cipher = cipher
-	decipher, _ := rc4.NewCipher([]byte(key))
-	client.Decipher = decipher
+// GetAddress returns the clients UDP address
+func (client *Client) GetAddress() *net.UDPAddr {
+	return client.address
 }
 
-// NewClient returns a new generic client
-func NewClient(addr *net.UDPAddr, server *Server) Client {
-	cipher, _ := rc4.NewCipher([]byte("CD&ML"))
-	decipher, _ := rc4.NewCipher([]byte("CD&ML"))
+// GetServer returns the server the client is currently connected to
+func (client *Client) GetServer() *Server {
+	return client.server
+}
 
+// UpdateRC4Key sets the client RC4 stream key
+func (client *Client) UpdateRC4Key(RC4Key []byte) {
+	//client.Kkey = RC4Key
+	cipher, _ := rc4.NewCipher(RC4Key)
+	client.cipher = cipher
+
+	decipher, _ := rc4.NewCipher(RC4Key)
+	client.decipher = decipher
+}
+
+// GetCipher returns the RC4 cipher stream for out-bound packets
+func (client *Client) GetCipher() *rc4.Cipher {
+	return client.cipher
+}
+
+// GetDecipher returns the RC4 cipher stream for in-bound packets
+func (client *Client) GetDecipher() *rc4.Cipher {
+	return client.decipher
+}
+
+// UpdateAccessKey sets the client signature base and signature key
+func (client *Client) UpdateAccessKey(accessKey string) {
+	client.signatureBase = sum([]byte(accessKey))
+	client.signatureKey = MD5Hash([]byte(accessKey))
+}
+
+// GetSignatureBase returns the v0 checksum signature base
+func (client *Client) GetSignatureBase() int {
+	return client.signatureBase
+}
+
+// GetSignatureKey returns signature key
+func (client *Client) GetSignatureKey() []byte {
+	return client.signatureKey
+}
+
+// SetServerConnectionSignature sets the clients server-side connection signature
+func (client *Client) SetServerConnectionSignature(serverConnectionSignature []byte) {
+	client.serverConnectionSignature = serverConnectionSignature
+}
+
+// GetServerConnectionSignature returns the clients server-side connection signature
+func (client *Client) GetServerConnectionSignature() []byte {
+	return client.serverConnectionSignature
+}
+
+// SetClientConnectionSignature sets the clients client-side connection signature
+func (client *Client) SetClientConnectionSignature(clientConnectionSignature []byte) {
+	client.clientConnectionSignature = clientConnectionSignature
+}
+
+// GetClientConnectionSignature returns the clients client-side connection signature
+func (client *Client) GetClientConnectionSignature() []byte {
+	return client.clientConnectionSignature
+}
+
+// GetSequenceIDCounterOut returns the clients packet SequenceID counter for out-going packets
+func (client *Client) GetSequenceIDCounterOut() *Counter {
+	return client.sequenceIDOut
+}
+
+// GetSequenceIDCounterIn returns the clients packet SequenceID counter for incoming packets
+func (client *Client) GetSequenceIDCounterIn() *Counter {
+	return client.sequenceIDIn
+}
+
+// NewClient returns a new PRUDP client
+func NewClient(address *net.UDPAddr, server *Server) *Client {
 	client := Client{
-		_UDPConn:    addr,
-		Server:      server,
-		Cipher:      cipher,
-		Decipher:    decipher,
-		State:       0,
-		SessionID:   0,
-		PacketQueue: make(map[string]Packet),
+		address:       address,
+		server:        server,
+		sequenceIDIn:  NewCounter(0),
+		sequenceIDOut: NewCounter(0),
 	}
 
-	return client
+	client.UpdateAccessKey(client.GetServer().GetAccessKey())
+	client.UpdateRC4Key([]byte("CD&ML"))
+
+	if server.GetPrudpVersion() == 0 {
+		client.SetServerConnectionSignature(make([]byte, 4))
+		client.SetClientConnectionSignature(make([]byte, 4))
+	} else {
+		client.SetServerConnectionSignature(make([]byte, 16))
+		client.SetClientConnectionSignature(make([]byte, 16))
+	}
+
+	return &client
 }

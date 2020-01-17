@@ -1,101 +1,108 @@
 package nex
 
-import (
-	"fmt"
-	"os"
-	
-	"github.com/superwhiskers/crunch"
-)
-
-// RMCRequest represents a RMC protocol request
+// RMCRequest represets a RMC request
 type RMCRequest struct {
-	Size       uint32
-	ProtocolID uint8
-	CallID     uint32
-	MethodID   uint32
-	Parameters []byte
+	protocolID uint8
+	callID     uint32
+	methodID   uint32
+	parameters []byte
 }
 
-// NewRMCRequest returns a new RMCRequest
-func NewRMCRequest(Data []byte) RMCRequest {
-	stream := crunch.NewBuffer(Data)
+// GetProtocolID sets the RMC request protocolID
+func (request *RMCRequest) GetProtocolID() uint8 {
+	return request.protocolID
+}
 
-	return RMCRequest{
-		Size:       stream.ReadU32LENext(1)[0],
-		ProtocolID: stream.ReadByteNext(),
-		CallID:     stream.ReadU32LENext(1)[0],
-		MethodID:   stream.ReadU32LENext(1)[0],
-		Parameters: Data[13:],
+// GetCallID sets the RMC request callID
+func (request *RMCRequest) GetCallID() uint32 {
+	return request.callID
+}
+
+// GetMethodID sets the RMC request methodID
+func (request *RMCRequest) GetMethodID() uint32 {
+	return request.methodID
+}
+
+// GetParameters sets the RMC request parameters
+func (request *RMCRequest) GetParameters() []byte {
+	return request.parameters
+}
+
+// NewRMCRequest returns a new parsed RMCRequest
+func NewRMCRequest(data []byte) RMCRequest {
+	stream := NewStream(data)
+
+	_ = stream.ReadU32LENext(1)[0]
+	protocolID := stream.ReadByteNext() ^ 0x80
+	callID := stream.ReadU32LENext(1)[0]
+	methodID := stream.ReadU32LENext(1)[0]
+	parameters := data[13:]
+
+	request := RMCRequest{
+		protocolID: protocolID,
+		callID:     callID,
+		methodID:   methodID,
+		parameters: parameters,
 	}
+
+	return request
 }
 
-// RMCResponse represents a RMC protocol response
+// RMCResponse represents a RMC response
 type RMCResponse struct {
-	Size       uint32
-	ProtocolID int
-	Success    int
-	Body       interface{}
-	CallID     uint32
-}
-
-// RMCSuccess represents a successful RMC payload
-type RMCSuccess struct {
-	MethodID uint32
-	Data     []byte
-}
-
-// RMCError represents a RMC error payload
-type RMCError struct {
-	ErrorCode uint32
-}
-
-// NewRMCResponse returns a new RMCResponse
-func NewRMCResponse(ProtocolID int, CallID uint32) RMCResponse {
-	return RMCResponse{
-		ProtocolID: ProtocolID,
-		CallID:     CallID,
-	}
+	size       uint32
+	protocolID uint8
+	success    int
+	callID     uint32
+	methodID   uint32
+	data       []byte
+	errorCode  uint32
 }
 
 // SetSuccess sets the RMCResponse payload to an instance of RMCSuccess
-func (Response *RMCResponse) SetSuccess(MethodID uint32, Data []byte) {
-	Response.Success = 1
-	Response.Body = RMCSuccess{MethodID | 0x8000, Data}
+func (response *RMCResponse) SetSuccess(methodID uint32, data []byte) {
+	response.success = 1
+	response.methodID = methodID
+	response.data = data
 
-	Response.Size = uint32(10 + len(Data))
+	response.size = uint32(16 + len(data))
 }
 
 // SetError sets the RMCResponse payload to an instance of RMCError
-func (Response *RMCResponse) SetError(ErrorCode uint32) {
-	Response.Success = 0
-	Response.Body = RMCError{ErrorCode}
+func (response *RMCResponse) SetError(errorCode uint32) {
+	response.success = 0
+	response.errorCode = errorCode
 
-	Response.Size = 10
+	response.size = 14
 }
 
 // Bytes converts a RMCResponse struct into a usable byte array
-func (Response *RMCResponse) Bytes() []byte {
-	data := crunch.NewBuffer()
+func (response *RMCResponse) Bytes() []byte {
+	data := NewStream()
+	data.Grow(int64(response.size + 4))
 
-	data.WriteU32LENext([]uint32{Response.Size})
-	data.WriteByteNext(byte(Response.ProtocolID))
-	data.WriteByteNext(byte(Response.Success))
+	data.WriteU32LENext([]uint32{response.size})
+	data.WriteByteNext(byte(response.protocolID))
+	data.WriteByteNext(byte(response.success))
 
-	if Response.Success == 1 {
-		body := Response.Body.(RMCSuccess)
-
-		data.WriteU32LENext([]uint32{Response.CallID})
-		data.WriteU32LENext([]uint32{body.MethodID})
-		data.WriteBytesNext(body.Data)
-	} else if Response.Success == 0 {
-		body := Response.Body.(RMCError)
-
-		data.WriteU32LENext([]uint32{body.ErrorCode})
-		data.WriteU32LENext([]uint32{Response.CallID})
+	if response.success == 1 {
+		data.WriteU32LENext([]uint32{response.callID})
+		data.WriteU32LENext([]uint32{response.methodID | 0x8000})
+		data.WriteBytesNext(response.data)
 	} else {
-		fmt.Println("Invalid RMC success type", Response.Success)
-		os.Exit(1)
+		data.WriteU32LENext([]uint32{response.errorCode})
+		data.WriteU32LENext([]uint32{response.callID})
 	}
 
 	return data.Bytes()
+}
+
+// NewRMCResponse returns a new RMCResponse
+func NewRMCResponse(protocolID uint8, callID uint32) RMCResponse {
+	response := RMCResponse{
+		protocolID: protocolID,
+		callID:     callID,
+	}
+
+	return response
 }

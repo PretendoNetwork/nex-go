@@ -1,187 +1,170 @@
 package nex
 
-import (
-	"bytes"
-	"fmt"
-)
-
-// Packet represents a generic PRUDP packet of any type
+// Packet represents a generic PRUDP packet
 type Packet struct {
-	Sender          *Client
-	Data            []byte
-	Version         int
-	Type            uint16
-	Flags           uint16
-	Source          uint8
-	Destination     uint8
-	SourceType      uint8
-	SourcePort      uint8
-	DestinationType uint8
-	DestinationPort uint8
-	SessionID       uint8
-	Signature       []byte
-	SequenceID      uint16
-	FragmentID      int
-	Payload         []byte
-	RMCRequest      RMCRequest // only present in Data packets
-	MultiAckVersion uint8      // only present in v1
-	Checksum        int        // only present in v0
+	sender              *Client
+	data                []byte
+	version             uint8
+	source              uint8
+	destination         uint8
+	packetType          uint16
+	flags               uint16
+	sessionID           uint8
+	signature           []byte
+	sequenceID          uint16
+	connectionSignature []byte
+	fragmentID          uint8
+	payload             []byte
+	rmcRequest          RMCRequest
+	PacketInterface
 }
 
-// Go doesn't allow byte arrays, even with fixed sizes, to be type `const` :L
-// Casting to `var` instead
-var (
-	PRUDPV1Magic   = []byte{0xEA, 0xD0}
-	PRUDPLiteMagic = []byte{0x80}
-)
-
-// FromBytes converts a byte array to a generic PRUDP packet
-func (PRUDPPacket *Packet) FromBytes(Data []byte) {
-	PRUDPPacket.Data = Data
-	//header := PRUDPPacket.decodeHeader()
-
-	var decoded map[string]interface{}
-
-	if bytes.Equal(PRUDPPacket.Data[:2], PRUDPV1Magic) {
-		PRUDPPacket.Version = 1
-		decoded = decodePacketV1(PRUDPPacket)
-		PRUDPPacket.MultiAckVersion = decoded["MultiAckVersion"].(uint8)
-	} else if bytes.Equal(PRUDPPacket.Data[:1], PRUDPLiteMagic) {
-		PRUDPPacket.Version = 2
-		// handle Lite?
-		// we aren't doing Switch stuff but I dunno why not have a check anyway!
-	} else {
-		// assume v0?
-		// v0 doesn't have a dedicated magic, and the first 2 bytes aren't really static
-		PRUDPPacket.Version = 0
-		decoded = decodePacketV0(PRUDPPacket)
-		if decoded == nil {
-			PRUDPPacket.Flags = 0xFFFF
-			return
-		}
-		PRUDPPacket.Checksum = decoded["Checksum"].(int)
-	}
-
-	PRUDPPacket.Type = decoded["Type"].(uint16)
-	PRUDPPacket.Flags = decoded["Flags"].(uint16)
-	PRUDPPacket.SourceType = decoded["SourceType"].(uint8)
-	PRUDPPacket.SourcePort = decoded["SourcePort"].(uint8)
-	PRUDPPacket.DestinationType = decoded["DestinationType"].(uint8)
-	PRUDPPacket.DestinationPort = decoded["DestinationPort"].(uint8)
-	PRUDPPacket.FragmentID = decoded["FragmentID"].(int)
-
-	PRUDPPacket.Source = decoded["Source"].(uint8)
-	PRUDPPacket.Destination = decoded["Destination"].(uint8)
-	PRUDPPacket.SequenceID = decoded["SequenceID"].(uint16)
-	PRUDPPacket.SessionID = decoded["SessionID"].(uint8)
-	PRUDPPacket.Signature = decoded["Signature"].([]byte)
-
-	PRUDPPacket.Payload = decoded["Payload"].([]byte)
-
-	if decoded["RMCRequest"] != nil {
-		PRUDPPacket.RMCRequest = decoded["RMCRequest"].(RMCRequest)
-	}
+func (packet *Packet) Data() []byte {
+	return packet.data
 }
 
-// Bytes converts a PRUDP packet to a byte array
-func (PRUDPPacket *Packet) Bytes() []byte {
-
-	var encoded []byte
-	switch PRUDPPacket.Version {
-	case 0:
-		encoded = encodePacketV0(PRUDPPacket)
-	case 1:
-		encoded = encodePacketV1(PRUDPPacket)
-	case 2: // Lite (Switch)
-		encoded = []byte{}
-	default:
-		fmt.Println("Unknown PRUDP version:", PRUDPPacket.Version)
-		encoded = []byte{}
-	}
-
-	return encoded
+// GetSender returns the packet sender
+func (packet *Packet) GetSender() *Client {
+	return packet.sender
 }
 
-// SetVersion sets the packets Version property
-func (PRUDPPacket *Packet) SetVersion(Version int) {
-	PRUDPPacket.Version = Version
+// SetVersion sets the packet PRUDP version
+func (packet *Packet) SetVersion(version uint8) {
+	packet.version = version
 }
 
-// SetSource sets the packets Source property
-func (PRUDPPacket *Packet) SetSource(Source uint8) {
-	PRUDPPacket.Source = Source
+// GetVersion gets the packet PRUDP version
+func (packet *Packet) GetVersion() uint8 {
+	return packet.version
 }
 
-// SetDestination sets the packets Destination property
-func (PRUDPPacket *Packet) SetDestination(Destination uint8) {
-	PRUDPPacket.Destination = Destination
+// SetSource sets the packet source
+func (packet *Packet) SetSource(source uint8) {
+	packet.source = source
 }
 
-// SetSessionID sets the packets SessionID property
-func (PRUDPPacket *Packet) SetSessionID(SessionID uint8) {
-	PRUDPPacket.SessionID = SessionID
+// GetSource returns the packet source
+func (packet *Packet) GetSource() uint8 {
+	return packet.source
 }
 
-// SetSignature sets the packets Signature property
-func (PRUDPPacket *Packet) SetSignature(Signature []byte) {
-	PRUDPPacket.Signature = Signature
+// SetDestination sets the packet destination
+func (packet *Packet) SetDestination(destination uint8) {
+	packet.destination = destination
 }
 
-// SetSequenceID sets the packets SequenceID property
-func (PRUDPPacket *Packet) SetSequenceID(SequenceID uint16) {
-	PRUDPPacket.SequenceID = SequenceID
+// GetDestination returns the packet destination
+func (packet *Packet) GetDestination() uint8 {
+	return packet.destination
 }
 
-// SetPayload sets the packets Payload property
-func (PRUDPPacket *Packet) SetPayload(Payload []byte) {
-	PRUDPPacket.Payload = Payload
+// SetType sets the packet type
+func (packet *Packet) SetType(packetType uint16) {
+	packet.packetType = packetType
 }
 
-// SetMultiAckVersion sets the packets MultiAckVersion property
-func (PRUDPPacket *Packet) SetMultiAckVersion(MultiAckVersion uint8) {
-	PRUDPPacket.MultiAckVersion = MultiAckVersion
+// GetType returns the packet type
+func (packet *Packet) GetType() uint16 {
+	return packet.packetType
 }
 
-// SetType sets the packets Type property
-func (PRUDPPacket *Packet) SetType(Type uint16) {
-	PRUDPPacket.Type = Type
+// SetFlags sets the packet flag bitmask
+func (packet *Packet) SetFlags(bitmask uint16) {
+	packet.flags = bitmask
 }
 
-// AddFlag adds a packet flag to the packet
-func (PRUDPPacket *Packet) AddFlag(Flag uint16) {
-	PRUDPPacket.Flags |= Flag
+// GetFlags returns the packet flag bitmask
+func (packet *Packet) GetFlags() uint16 {
+	return packet.flags
 }
 
-// ClearFlag removes a packet flag from the packet
-func (PRUDPPacket *Packet) ClearFlag(Flag uint16) {
-	PRUDPPacket.Flags &^= Flag
+// HasFlag checks if the packet has the given flag
+func (packet *Packet) HasFlag(flag uint16) bool {
+	return packet.flags&flag != 0
 }
 
-// HasFlag checks if the packet has a flag
-func (PRUDPPacket *Packet) HasFlag(Flag uint16) bool {
-	return PRUDPPacket.Flags&Flag != 0
+// AddFlag adds the given flag to the packet flag bitmask
+func (packet *Packet) AddFlag(flag uint16) {
+	packet.flags |= flag
+}
+
+// ClearFlag removes the given flag from the packet bitmask
+func (packet *Packet) ClearFlag(flag uint16) {
+	packet.flags &^= flag
+}
+
+// SetSessionID sets the packet sessionID
+func (packet *Packet) SetSessionID(sessionID uint8) {
+	packet.sessionID = sessionID
+}
+
+// GetSessionID returns the packet sessionID
+func (packet *Packet) GetSessionID() uint8 {
+	return packet.sessionID
+}
+
+// SetSignature sets the packet signature
+func (packet *Packet) SetSignature(signature []byte) {
+	packet.signature = signature
+}
+
+// GetSignature returns the packet signature
+func (packet *Packet) GetSignature() []byte {
+	return packet.signature
+}
+
+// SetSequenceID sets the packet sequenceID
+func (packet *Packet) SetSequenceID(sequenceID uint16) {
+	packet.sequenceID = sequenceID
+}
+
+// GetSequenceID returns the packet sequenceID
+func (packet *Packet) GetSequenceID() uint16 {
+	return packet.sequenceID
+}
+
+// SetConnectionSignature sets the packet connection signature
+func (packet *Packet) SetConnectionSignature(connectionSignature []byte) {
+	packet.connectionSignature = connectionSignature
+}
+
+// GetConnectionSignature returns the packet connection signature
+func (packet *Packet) GetConnectionSignature() []byte {
+	return packet.connectionSignature
+}
+
+// SetFragmentID sets the packet fragmentID
+func (packet *Packet) SetFragmentID(fragmentID uint8) {
+	packet.fragmentID = fragmentID
+}
+
+// GetFragmentID returns the packet fragmentID
+func (packet *Packet) GetFragmentID() uint8 {
+	return packet.fragmentID
+}
+
+// SetPayload sets the packet payload
+func (packet *Packet) SetPayload(payload []byte) {
+	packet.payload = payload
+}
+
+// GetPayload returns the packet payload
+func (packet *Packet) GetPayload() []byte {
+	return packet.payload
+}
+
+// GetRMCRequest returns the packet RMC request
+func (packet *Packet) GetRMCRequest() RMCRequest {
+	return packet.rmcRequest
 }
 
 // NewPacket returns a new PRUDP packet generic
-func NewPacket(client *Client) Packet {
-	return Packet{
-		Sender:          client,
-		Data:            []byte{},
-		Version:         0,
-		Type:            0,
-		Flags:           0,
-		Source:          0,
-		Destination:     0,
-		SourceType:      0,
-		SourcePort:      0,
-		DestinationType: 0,
-		DestinationPort: 0,
-		SessionID:       0,
-		Signature:       nil,
-		SequenceID:      0,
-		FragmentID:      0,
-		Payload:         []byte{},
-		MultiAckVersion: 0,
-		Checksum:        0,
+func NewPacket(client *Client, data []byte) Packet {
+	packet := Packet{
+		sender:  client,
+		data:    data,
+		payload: []byte{},
 	}
+
+	return packet
 }
