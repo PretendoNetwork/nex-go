@@ -6,6 +6,7 @@ import (
 	"github.com/superwhiskers/crunch"
 )
 
+// Stream is an extension of github.com/superwhiskers/crunch with NEX type support
 type Stream struct {
 	*crunch.Buffer
 }

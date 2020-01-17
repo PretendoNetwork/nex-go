@@ -16,6 +16,7 @@ func (counter *Counter) Increment() uint64 {
 	return counter.Value()
 }
 
+// NewCounter returns a new Counter, with a starting number
 func NewCounter(start uint64) *Counter {
 	counter := &Counter{value: start}
 

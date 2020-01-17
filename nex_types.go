@@ -5,10 +5,12 @@ import (
 	"strings"
 )
 
+// DateTime represents a NEX DateTime type
 type DateTime struct {
 	value uint64
 }
 
+// Now gets current time and converts it into a format DateTime can understand
 func (datetime *DateTime) Now() uint64 {
 	timestamp := time.Now()
 
@@ -24,12 +26,12 @@ func (datetime *DateTime) Now() uint64 {
 	return datetime.value
 }
 
+// NewDateTime returns a new DateTime instance
 func NewDateTime(value uint64) *DateTime {
 	return &DateTime{value: value}
 }
 
-
-
+// StationURL contains the data for a NEX station URL
 type StationURL struct {
 	// Using pointers to check for nil
 	scheme        *string
@@ -49,18 +51,22 @@ type StationURL struct {
 	prid          *string
 }
 
+// SetAddress sets the StationURL address
 func (station *StationURL) SetAddress(address *string) {
 	station.address = address
 }
 
+// SetPort sets the StationURL port
 func (station *StationURL) SetPort(port *string) {
 	station.port = port
 }
 
+// SetType sets the StationURL transportType
 func (station *StationURL) SetType(transportType *string) {
 	station.transportType = transportType
 }
 
+// FromString parses the StationURL data from a string
 func (station *StationURL) FromString(str string) {
 	split := strings.Split(str, ":/")
 
@@ -109,6 +115,8 @@ func (station *StationURL) FromString(str string) {
 	}
 }
 
+
+// EncodeToString encodes the StationURL into a string
 func (station *StationURL) EncodeToString() string {
 	fields := []string{}
 
@@ -171,6 +179,7 @@ func (station *StationURL) EncodeToString() string {
 	return *station.scheme + ":/" + strings.Join(fields, ";")
 }
 
+// NewStationURL returns a new StationURL instance
 func NewStationURL(str string) *StationURL {
 	station := &StationURL{}
 

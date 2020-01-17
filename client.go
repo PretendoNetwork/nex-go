@@ -11,7 +11,6 @@ type Client struct {
 	server                    *Server
 	cipher                    *rc4.Cipher
 	decipher                  *rc4.Cipher
-	Kkey                      string
 	state                     int
 	signatureKey              []byte
 	signatureBase             int
@@ -38,7 +37,6 @@ func (client *Client) GetServer() *Server {
 
 // UpdateRC4Key sets the client RC4 stream key
 func (client *Client) UpdateRC4Key(RC4Key []byte) {
-	//client.Kkey = RC4Key
 	cipher, _ := rc4.NewCipher(RC4Key)
 	client.cipher = cipher
 

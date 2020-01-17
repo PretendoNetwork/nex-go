@@ -19,6 +19,7 @@ type Packet struct {
 	PacketInterface
 }
 
+// Data returns bytes used to create the packet (this is not the same as Bytes())
 func (packet *Packet) Data() []byte {
 	return packet.data
 }
