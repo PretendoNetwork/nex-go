@@ -48,6 +48,14 @@ func (stream *Stream) WriteNEXBuffer(data []byte) {
 	stream.WriteBytes(stream.ByteOffset(), data)
 }
 
+// ReadNEXBufferNext reads a NEX qBuffer type
+func (stream *Stream) ReadNEXQBufferNext() []byte {
+	length := stream.ReadU16LENext(1)[0]
+	data := stream.ReadBytesNext(int64(length))
+
+	return data
+}
+
 // NewStream returns a new NEX stream
 func NewStream(data ...[]byte) *Stream {
 	var buff *crunch.Buffer
