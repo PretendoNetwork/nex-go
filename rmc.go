@@ -50,7 +50,6 @@ func NewRMCRequest(data []byte) RMCRequest {
 
 // RMCResponse represents a RMC response
 type RMCResponse struct {
-	size       uint32
 	protocolID uint8
 	success    int
 	callID     uint32
@@ -64,35 +63,39 @@ func (response *RMCResponse) SetSuccess(methodID uint32, data []byte) {
 	response.success = 1
 	response.methodID = methodID
 	response.data = data
-
-	response.size = uint32(16 + len(data))
 }
 
 // SetError sets the RMCResponse payload to an instance of RMCError
 func (response *RMCResponse) SetError(errorCode uint32) {
 	response.success = 0
 	response.errorCode = errorCode
-
-	response.size = 14
 }
 
 // Bytes converts a RMCResponse struct into a usable byte array
 func (response *RMCResponse) Bytes() []byte {
-	data := NewStream()
-	data.Grow(int64(response.size + 4))
+	body := NewStream()
 
-	data.WriteU32LENext([]uint32{response.size})
-	data.WriteByteNext(byte(response.protocolID))
-	data.WriteByteNext(byte(response.success))
+	body.Grow(2)
+	body.WriteByteNext(byte(response.protocolID))
+	body.WriteByteNext(byte(response.success))
 
 	if response.success == 1 {
-		data.WriteU32LENext([]uint32{response.callID})
-		data.WriteU32LENext([]uint32{response.methodID | 0x8000})
-		data.WriteBytesNext(response.data)
+		body.Grow(8)
+		body.WriteU32LENext([]uint32{response.callID})
+		body.WriteU32LENext([]uint32{response.methodID | 0x8000})
+
+		body.Grow(int64(len(response.data)))
+		body.WriteBytesNext(response.data)
 	} else {
-		data.WriteU32LENext([]uint32{response.errorCode})
-		data.WriteU32LENext([]uint32{response.callID})
+		body.Grow(8)
+		body.WriteU32LENext([]uint32{response.errorCode})
+		body.WriteU32LENext([]uint32{response.callID})
 	}
+
+	data := NewStream()
+	data.Grow(int64(4 + len(body.Bytes())))
+
+	data.WriteNEXBufferNext(body.Bytes())
 
 	return data.Bytes()
 }
