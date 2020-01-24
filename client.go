@@ -100,6 +100,16 @@ func (client *Client) GetSequenceIDCounterIn() *Counter {
 	return client.sequenceIDIn
 }
 
+// SetSessionKey sets the clients session key
+func (client *Client) SetSessionKey(sessionKey []byte) {
+	client.sessionKey = sessionKey
+}
+
+// GetSessionKey returns the clients session key
+func (client *Client) GetSessionKey() []byte {
+	return client.sessionKey
+}
+
 // NewClient returns a new PRUDP client
 func NewClient(address *net.UDPAddr, server *Server) *Client {
 	client := Client{
@@ -116,8 +126,8 @@ func NewClient(address *net.UDPAddr, server *Server) *Client {
 		client.SetServerConnectionSignature(make([]byte, 4))
 		client.SetClientConnectionSignature(make([]byte, 4))
 	} else {
-		client.SetServerConnectionSignature(make([]byte, 16))
-		client.SetClientConnectionSignature(make([]byte, 16))
+		client.SetServerConnectionSignature([]byte{})
+		client.SetClientConnectionSignature([]byte{})
 	}
 
 	return &client

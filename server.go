@@ -2,6 +2,7 @@ package nex
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 )
 
@@ -16,6 +17,7 @@ type Server struct {
 	prudpV1EventHandles   map[string][]func(*PacketV1)
 	accessKey             string
 	prudpVersion          int
+	nexMinorVersion       int
 	fragmentSize          int16
 	resendTimeout         float32
 	usePacketCompression  bool
@@ -73,39 +75,28 @@ func (server *Server) handleSocketMessage() {
 		packet = NewPacketV1(client, data)
 	}
 
+	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
+		return
+	}
+
+	if packet.HasFlag(FlagNeedsAck) {
+		if packet.GetType() != ConnectPacket || (packet.GetType() == ConnectPacket && len(packet.GetPayload()) <= 0) {
+			go server.AcknowledgePacket(packet, nil)
+		}
+	}
+
 	switch packet.GetType() {
 	case SynPacket:
-		if packet.HasFlag(FlagNeedsAck) {
-			server.AcknowledgePacket(packet, nil)
-		}
-
 		server.Emit("Syn", packet)
 	case ConnectPacket:
 		packet.GetSender().SetClientConnectionSignature(packet.GetConnectionSignature())
 
-		// Connect packets with a payload need to be handled manually by the server in order to verify the client
-		if packet.HasFlag(FlagNeedsAck) && len(packet.GetPayload()) <= 0 {
-			server.AcknowledgePacket(packet, nil)
-		}
-
 		server.Emit("Connect", packet)
 	case DataPacket:
-		if packet.HasFlag(FlagNeedsAck) {
-			server.AcknowledgePacket(packet, nil)
-		}
-
 		server.Emit("Data", packet)
 	case DisconnectPacket:
-		if packet.HasFlag(FlagNeedsAck) {
-			server.AcknowledgePacket(packet, nil)
-		}
-
 		server.Emit("Disconnect", packet)
 	case PingPacket:
-		if packet.HasFlag(FlagNeedsAck) {
-			server.AcknowledgePacket(packet, nil)
-		}
-
 		server.Emit("Ping", packet)
 	}
 
@@ -133,7 +124,7 @@ func (server *Server) Emit(event string, packet interface{}) {
 	for i := 0; i < len(eventName); i++ {
 		handler := eventName[i]
 		packet := packet.(PacketInterface)
-		handler(packet)
+		go handler(packet)
 	}
 
 	// Check if the packet type matches one of the allowed types and run the given handler
@@ -143,13 +134,13 @@ func (server *Server) Emit(event string, packet interface{}) {
 		eventName := server.prudpV0EventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
-			handler(packet.(*PacketV0))
+			go handler(packet.(*PacketV0))
 		}
 	case *PacketV1:
 		eventName := server.prudpV1EventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
-			handler(packet.(*PacketV1))
+			go handler(packet.(*PacketV1))
 		}
 	}
 }
@@ -177,6 +168,61 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 		ackPacket.SetPayload(payload)
 	}
 
+	if server.GetPrudpVersion() == 1 {
+		packet := packet.(*PacketV1)
+		ackPacket := ackPacket.(*PacketV1)
+
+		ackPacket.SetVersion(1)
+		ackPacket.SetSubstreamID(0)
+		ackPacket.AddFlag(FlagHasSize)
+
+		if packet.GetType() == SynPacket {
+			serverConnectionSignature := make([]byte, 16)
+			rand.Read(serverConnectionSignature)
+
+			ackPacket.GetSender().SetServerConnectionSignature(serverConnectionSignature)
+
+			ackPacket.SetSupportedFunctions(packet.GetSupportedFunctions())
+			ackPacket.SetMaximumSubstreamID(0)
+
+			ackPacket.SetConnectionSignature(serverConnectionSignature)
+		}
+
+		if packet.GetType() == ConnectPacket {
+
+			ackPacket.SetConnectionSignature(make([]byte, 16))
+
+			ackPacket.SetSupportedFunctions(packet.GetSupportedFunctions())
+
+			ackPacket.SetInitialSequenceID(10000)
+
+			ackPacket.SetMaximumSubstreamID(0)
+		}
+
+		if packet.GetType() == DataPacket {
+			// Aggregate acknowledgement
+			ackPacket.ClearFlag(FlagAck)
+			ackPacket.AddFlag(FlagMultiAck)
+
+			payloadStream := NewStream()
+
+			// New version
+			if server.GetNexMinorVersion() >= 2 {
+				ackPacket.SetSequenceID(0)
+				ackPacket.SetSubstreamID(1)
+
+				payloadStream.Grow(4)
+
+				// I'm lazy so just ack one packet
+				payloadStream.WriteByteNext(0)                                 // substream ID
+				payloadStream.WriteByteNext(0)                                 // length of additional sequence ids
+				payloadStream.WriteU16LENext([]uint16{packet.GetSequenceID()}) // Sequence id
+			}
+
+			ackPacket.SetPayload(payloadStream.Bytes())
+		}
+	}
+
 	data := ackPacket.Bytes()
 
 	server.SendRaw(sender.GetAddress(), data)
@@ -200,6 +246,16 @@ func (server *Server) GetPrudpVersion() int {
 // SetPrudpVersion sets the server PRUDP version
 func (server *Server) SetPrudpVersion(prudpVersion int) {
 	server.prudpVersion = prudpVersion
+}
+
+// GetNexMinorVersion returns the server NEX version
+func (server *Server) GetNexMinorVersion() int {
+	return server.nexMinorVersion
+}
+
+// SetNexMinorVersion sets the server NEX version
+func (server *Server) SetNexMinorVersion(nexMinorVersion int) {
+	server.nexMinorVersion = nexMinorVersion
 }
 
 // GetChecksumVersion returns the server packet checksum version
