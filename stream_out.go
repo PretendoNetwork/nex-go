@@ -31,7 +31,7 @@ func (stream *StreamOut) WriteBuffer(data []byte) {
 }
 
 func (stream *StreamOut) WriteStructureNext(structure StructureInterface) {
-	content := structure.Bytes()
+	content := structure.Bytes(NewStreamOut(stream.server))
 
 	if stream.server.GetNexMinorVersion() >= 3 {
 		stream.Grow(5)

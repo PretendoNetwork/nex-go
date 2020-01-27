@@ -8,7 +8,7 @@ import (
 type StructureInterface interface {
 	GetHierarchy() []StructureInterface
 	ExtractFromStream(*StreamIn)
-	Bytes() []byte
+	Bytes(*StreamOut) []byte
 }
 
 type Structure struct {
@@ -35,8 +35,8 @@ func (nullData *NullData) ExtractFromStream(stream *StreamIn) {
 	stream.SeekByte(0, true)
 }
 
-func (nullData *NullData) Bytes() []byte {
-	return make([]byte, 0)
+func (nullData *NullData) Bytes(stream *StreamOut) []byte {
+	return stream.Bytes()
 }
 
 type RVConnectionData struct {
@@ -65,9 +65,7 @@ func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
 	rvConnectionData.time = time
 }
 
-func (rvConnectionData *RVConnectionData) Bytes() []byte {
-	stream := NewStreamOut(nil)
-
+func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 	stream.Grow(int64(2 + len(rvConnectionData.stationURL) + 1))
 	stream.WriteStringNext(rvConnectionData.stationURL)
 
