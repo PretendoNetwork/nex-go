@@ -30,7 +30,7 @@ func (request *RMCRequest) GetParameters() []byte {
 
 // NewRMCRequest returns a new parsed RMCRequest
 func NewRMCRequest(data []byte) RMCRequest {
-	stream := NewStream(data)
+	stream := NewStreamIn(data, nil)
 
 	_ = stream.ReadU32LENext(1)[0]
 	protocolID := stream.ReadByteNext() ^ 0x80
@@ -73,7 +73,7 @@ func (response *RMCResponse) SetError(errorCode uint32) {
 
 // Bytes converts a RMCResponse struct into a usable byte array
 func (response *RMCResponse) Bytes() []byte {
-	body := NewStream()
+	body := NewStreamOut(nil)
 
 	body.Grow(2)
 	body.WriteByteNext(byte(response.protocolID))
@@ -92,10 +92,10 @@ func (response *RMCResponse) Bytes() []byte {
 		body.WriteU32LENext([]uint32{response.callID})
 	}
 
-	data := NewStream()
+	data := NewStreamOut(nil)
 	data.Grow(int64(4 + len(body.Bytes())))
 
-	data.WriteNEXBufferNext(body.Bytes())
+	data.WriteBufferNext(body.Bytes())
 
 	return data.Bytes()
 }

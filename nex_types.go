@@ -5,6 +5,90 @@ import (
 	"strings"
 )
 
+type StructureInterface interface {
+	GetHierarchy() []StructureInterface
+	ExtractFromStream(*StreamIn)
+	Bytes() []byte
+}
+
+type Structure struct {
+	StructureInterface
+}
+
+func (structure *Structure) GetHierarchy() []StructureInterface {
+	return make([]StructureInterface, 0)
+}
+
+type NullData struct {
+	*Structure
+}
+
+func NewNullData() *NullData {
+	structure := &Structure{}
+	nullData := &NullData{structure}
+
+	return nullData
+}
+
+func (nullData *NullData) ExtractFromStream(stream *StreamIn) {
+	// Basically do nothing. Does a relative seek with 0
+	stream.SeekByte(0, true)
+}
+
+func (nullData *NullData) Bytes() []byte {
+	return make([]byte, 0)
+}
+
+type RVConnectionData struct {
+	stationURL string
+	specialProtocols []byte
+	stationURLSpecialProtocols string
+	time uint64
+
+	hierarchy []StructureInterface
+	Structure
+}
+
+func (rvConnectionData *RVConnectionData) SetStationURL(stationURL string) {
+	rvConnectionData.stationURL = stationURL
+}
+
+func (rvConnectionData *RVConnectionData) SetSpecialProtocols(specialProtocols []byte) {
+	rvConnectionData.specialProtocols = specialProtocols
+}
+
+func (rvConnectionData *RVConnectionData) SetStationURLSpecialProtocols(stationURLSpecialProtocols string) {
+	rvConnectionData.stationURLSpecialProtocols = stationURLSpecialProtocols
+}
+
+func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
+	rvConnectionData.time = time
+}
+
+func (rvConnectionData *RVConnectionData) Bytes() []byte {
+	stream := NewStreamOut(nil)
+
+	stream.Grow(int64(2 + len(rvConnectionData.stationURL) + 1))
+	stream.WriteStringNext(rvConnectionData.stationURL)
+
+	stream.Grow(4)
+	stream.WriteU32LENext([]uint32{0}) // Always 0
+
+	stream.Grow(int64(2 + len(rvConnectionData.stationURLSpecialProtocols) + 1))
+	stream.WriteStringNext(rvConnectionData.stationURLSpecialProtocols)
+
+	stream.Grow(8)
+	stream.WriteU64LENext([]uint64{rvConnectionData.time})
+
+	return stream.Bytes()
+}
+
+func NewRVConnectionData() *RVConnectionData {
+	rvConnectionData := &RVConnectionData{}
+
+	return rvConnectionData
+}
+
 // DateTime represents a NEX DateTime type
 type DateTime struct {
 	value uint64

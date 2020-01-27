@@ -204,7 +204,7 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 			ackPacket.ClearFlag(FlagAck)
 			ackPacket.AddFlag(FlagMultiAck)
 
-			payloadStream := NewStream()
+			payloadStream := NewStreamOut(server)
 
 			// New version
 			if server.GetNexMinorVersion() >= 2 {

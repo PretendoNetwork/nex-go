@@ -72,7 +72,7 @@ func (packet *PacketV1) GetMaximumSubstreamID() uint8 {
 
 // Decode decodes the packet
 func (packet *PacketV1) Decode() {
-	stream := NewStream(packet.Data())
+	stream := NewStreamIn(packet.Data(), packet.GetSender().GetServer())
 
 	packet.magic = stream.ReadBytesNext(2)
 
@@ -167,7 +167,7 @@ func (packet *PacketV1) Bytes() []byte {
 		typeFlags = packet.GetType() | packet.GetFlags()<<4
 	}
 
-	stream := NewStream()
+	stream := NewStreamOut(packet.GetSender().GetServer())
 	stream.Grow(30)
 
 	stream.WriteBytesNext([]byte{0xEA, 0xD0})
@@ -206,7 +206,7 @@ func (packet *PacketV1) Bytes() []byte {
 }
 
 func (packet *PacketV1) decodeOptions(options []byte) {
-	optionsStream := NewStream(options)
+	optionsStream := NewStreamIn(options, packet.GetSender().GetServer())
 
 	for optionsStream.ByteOffset() != optionsStream.ByteCapacity() {
 		optionID := optionsStream.ReadByteNext()
@@ -230,7 +230,7 @@ func (packet *PacketV1) decodeOptions(options []byte) {
 }
 
 func (packet *PacketV1) encodeOptions() []byte {
-	stream := NewStream()
+	stream := NewStreamOut(packet.GetSender().GetServer())
 
 	if packet.GetType() == SynPacket || packet.GetType() == ConnectPacket {
 		stream.Grow(6)

@@ -35,7 +35,7 @@ func (packet *PacketV0) Decode() {
 		checksumSize = 1
 	}
 
-	stream := NewStream(packet.data)
+	stream := NewStreamIn(packet.Data(), packet.GetSender().GetServer())
 
 	packet.SetSource(uint8(stream.ReadByteNext()))
 	packet.SetDestination(uint8(stream.ReadByteNext()))
@@ -129,7 +129,7 @@ func (packet *PacketV0) Bytes() []byte {
 		typeFlags = packet.GetType() | packet.GetFlags()<<4
 	}
 
-	stream := NewStream()
+	stream := NewStreamOut(packet.GetSender().GetServer())
 
 	packetSize := 11
 
@@ -176,7 +176,7 @@ func (packet *PacketV0) calculateSignature() []byte {
 			payload := packet.GetPayload()
 
 			if payload == nil || len(payload) <= 0 {
-				signature := NewStream(make([]byte, 4))
+				signature := NewStreamIn(make([]byte, 4), packet.GetSender().GetServer())
 				signature.WriteU32LENext([]uint32{0x12345678})
 
 				return signature.Bytes()
@@ -204,7 +204,7 @@ func (packet *PacketV0) calculateSignature() []byte {
 }
 
 func (packet *PacketV0) encodeOptions() []byte {
-	stream := NewStream()
+	stream := NewStreamOut(packet.GetSender().GetServer())
 
 	if packet.GetType() == SynPacket {
 		stream.Grow(4)
