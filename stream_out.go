@@ -1,7 +1,7 @@
 package nex
 
 import (
-	"github.com/superwhiskers/crunch"
+	crunch "github.com/superwhiskers/crunch/v3"
 )
 
 // StreamOut is an extension of github.com/superwhiskers/crunch with NEX type support

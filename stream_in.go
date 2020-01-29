@@ -3,7 +3,7 @@ package nex
 import (
 	"strings"
 
-	"github.com/superwhiskers/crunch"
+	crunch "github.com/superwhiskers/crunch/v3"
 )
 
 // StreamIn is an input stream extension of github.com/superwhiskers/crunch with NEX type support
