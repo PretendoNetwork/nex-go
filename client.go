@@ -3,6 +3,7 @@ package nex
 import (
 	"crypto/rc4"
 	"net"
+	"time"
 )
 
 // Client represents a connected or non-connected PRUDP client
@@ -11,7 +12,7 @@ type Client struct {
 	server                    *Server
 	cipher                    *rc4.Cipher
 	decipher                  *rc4.Cipher
-	state                     int
+	lastPing                  time.Time
 	signatureKey              []byte
 	signatureBase             int
 	secureKey                 []byte
@@ -33,6 +34,16 @@ func (client *Client) GetAddress() *net.UDPAddr {
 // GetServer returns the server the client is currently connected to
 func (client *Client) GetServer() *Server {
 	return client.server
+}
+
+// SetLastPing returns the server the client is currently connected to
+func (client *Client) SetLastPing(lastPing time.Time) {
+	client.lastPing = lastPing
+}
+
+// GetLastPing returns the server the client is currently connected to
+func (client *Client) GetLastPing() time.Time {
+	return client.lastPing
 }
 
 // UpdateRC4Key sets the client RC4 stream key

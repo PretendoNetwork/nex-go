@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"time"
 )
 
 // Server represents a PRUDP server
@@ -104,7 +105,9 @@ func (server *Server) handleSocketMessage() {
 		server.Kick(client)
 		server.Emit("Disconnect", packet)
 	case PingPacket:
+		client.SetLastPing(time.Now())
 		server.Emit("Ping", packet)
+
 		fmt.Println("ping packet")
 	}
 
@@ -153,6 +156,15 @@ func (server *Server) Emit(event string, packet interface{}) {
 	}
 }
 
+// ClientConnected checks if a given client is stored on the server
+func (server *Server) ClientConnected(client *Client) bool {
+	discriminator := client.GetAddress().String()
+
+	_, connected := server.clients[discriminator]
+
+	return connected
+}
+
 // Kick removes a client from the server
 func (server *Server) Kick(client *Client) {
 	discriminator := client.GetAddress().String()
@@ -160,6 +172,26 @@ func (server *Server) Kick(client *Client) {
 	if _, ok := server.clients[discriminator]; ok {
 		delete(server.clients, discriminator)
 		fmt.Println("Kicked user", discriminator)
+	}
+}
+
+// StartPing starts the client<->server ping process and loop
+func (server *Server) StartPing(client *Client) {
+	interval := time.Duration(server.pingTimeout) * time.Second
+
+	// Basically JavaScript setInterval
+	for range time.Tick(interval) {
+		if !server.ClientConnected(client) {
+			break
+		}
+
+		lastPing := client.GetLastPing()
+		lastPingSince := time.Since(lastPing)
+
+		// Give it a 1 second buffer just in case
+		if lastPingSince.Seconds() > float64(server.pingTimeout+1) {
+			server.Kick(client)
+		}
 	}
 }
 
@@ -242,6 +274,12 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	}
 
 	data := ackPacket.Bytes()
+
+	// Client should now be connected! Start checking pings
+	if packet.GetType() == ConnectPacket {
+		sender.SetLastPing(time.Now())
+		go server.StartPing(sender)
+	}
 
 	server.SendRaw(sender.GetAddress(), data)
 }
@@ -392,7 +430,7 @@ func NewServer() *Server {
 		prudpVersion:          1,
 		fragmentSize:          1300,
 		resendTimeout:         1.5,
-		pingTimeout:           4,
+		pingTimeout:           5,
 		signatureVersion:      0,
 		flagsVersion:          1,
 		checksumVersion:       1,
