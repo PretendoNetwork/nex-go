@@ -1,7 +1,6 @@
 package nex
 
 const (
-
 	// FlagAck is the ID for the PRUDP Ack Flag
 	FlagAck      uint16 = 0x1
 

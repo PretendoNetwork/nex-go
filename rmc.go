@@ -1,5 +1,7 @@
 package nex
 
+import "errors"
+
 // RMCRequest represets a RMC request
 type RMCRequest struct {
 	protocolID uint8
@@ -29,10 +31,19 @@ func (request *RMCRequest) GetParameters() []byte {
 }
 
 // NewRMCRequest returns a new parsed RMCRequest
-func NewRMCRequest(data []byte) RMCRequest {
+func NewRMCRequest(data []byte) (RMCRequest, error) {
+	if len(data) < 13 {
+		return RMCRequest{}, errors.New("[RMC] Data size less than minimum")
+	}
+
 	stream := NewStreamIn(data, nil)
 
-	_ = stream.ReadU32LENext(1)[0]
+	size := int(stream.ReadU32LENext(1)[0])
+
+	if size != (len(data) - 4) {
+		return RMCRequest{}, errors.New("[RMC] Data size does not match")
+	}
+
 	protocolID := stream.ReadByteNext() ^ 0x80
 	callID := stream.ReadU32LENext(1)[0]
 	methodID := stream.ReadU32LENext(1)[0]
@@ -45,7 +56,7 @@ func NewRMCRequest(data []byte) RMCRequest {
 		parameters: parameters,
 	}
 
-	return request
+	return request, nil
 }
 
 // RMCResponse represents a RMC response

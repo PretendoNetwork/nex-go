@@ -1,13 +1,13 @@
 package nex
 
 import (
-	"time"
 	"strings"
+	"time"
 )
 
 type StructureInterface interface {
 	GetHierarchy() []StructureInterface
-	ExtractFromStream(*StreamIn)
+	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
 }
 
@@ -30,9 +30,11 @@ func NewNullData() *NullData {
 	return nullData
 }
 
-func (nullData *NullData) ExtractFromStream(stream *StreamIn) {
+func (nullData *NullData) ExtractFromStream(stream *StreamIn) error {
 	// Basically do nothing. Does a relative seek with 0
 	stream.SeekByte(0, true)
+
+	return nil
 }
 
 func (nullData *NullData) Bytes(stream *StreamOut) []byte {
@@ -40,10 +42,10 @@ func (nullData *NullData) Bytes(stream *StreamOut) []byte {
 }
 
 type RVConnectionData struct {
-	stationURL string
-	specialProtocols []byte
+	stationURL                 string
+	specialProtocols           []byte
 	stationURLSpecialProtocols string
-	time uint64
+	time                       uint64
 
 	hierarchy []StructureInterface
 	Structure
@@ -196,7 +198,6 @@ func (station *StationURL) FromString(str string) {
 		}
 	}
 }
-
 
 // EncodeToString encodes the StationURL into a string
 func (station *StationURL) EncodeToString() string {

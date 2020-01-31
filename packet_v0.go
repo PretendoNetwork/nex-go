@@ -4,27 +4,33 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
 // PacketV0 reresents a PRUDPv0 packet
 type PacketV0 struct {
 	Packet
-	checksum uint16
+	checksum uint32
 }
 
 // SetChecksum sets the packet checksum
-func (packet *PacketV0) SetChecksum(checksum uint16) {
+func (packet *PacketV0) SetChecksum(checksum uint32) {
 	packet.checksum = checksum
 }
 
 // GetChecksum returns the packet checksum
-func (packet *PacketV0) GetChecksum() uint16 {
+func (packet *PacketV0) GetChecksum() uint32 {
 	return packet.checksum
 }
 
 // Decode decodes the packet
-func (packet *PacketV0) Decode() {
+func (packet *PacketV0) Decode() error {
+
+	if len(packet.Data()) < 9 {
+		return errors.New("[PRUDPv0] Packet length less than header minimum")
+	}
+
 	var checksumSize int
 	var payloadSize uint16
 	var typeFlags uint16
@@ -54,21 +60,41 @@ func (packet *PacketV0) Decode() {
 		packet.SetFlags(typeFlags >> 4)
 	}
 
+	if _, ok := validTypes[packet.GetType()]; !ok {
+		return errors.New("[PRUDPv0] Packet type not valid type")
+	}
+
 	if packet.GetType() == SynPacket || packet.GetType() == ConnectPacket {
+		if len(packet.Data()[stream.ByteOffset():]) < 4 {
+			return errors.New("[PRUDPv0] Packet specific data not large enough for connection signature")
+		}
+
 		packet.SetConnectionSignature(stream.ReadBytesNext(4))
 	}
 
 	if packet.GetType() == DataPacket {
+		if len(packet.Data()[stream.ByteOffset():]) < 1 {
+			return errors.New("[PRUDPv0] Packet specific data not large enough for fragment ID")
+		}
+
 		packet.SetFragmentID(uint8(stream.ReadByteNext()))
 	}
 
 	if packet.HasFlag(FlagHasSize) {
+		if len(packet.Data()[stream.ByteOffset():]) < 2 {
+			return errors.New("[PRUDPv0] Packet specific data not large enough for payload size")
+		}
+
 		payloadSize = stream.ReadU16LENext(1)[0]
 	} else {
 		payloadSize = uint16(len(packet.data) - int(stream.ByteOffset()) - checksumSize)
 	}
 
 	if payloadSize > 0 {
+		if len(packet.Data()[stream.ByteOffset():]) < int(payloadSize) {
+			return errors.New("[PRUDPv0] Packet data length less than payload length")
+		}
+
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
 
 		packet.SetPayload(payloadCrypted)
@@ -77,16 +103,24 @@ func (packet *PacketV0) Decode() {
 			ciphered := make([]byte, payloadSize)
 			packet.GetSender().GetDecipher().XORKeyStream(ciphered, payloadCrypted)
 
-			request := NewRMCRequest(ciphered)
+			request, err := NewRMCRequest(ciphered)
+
+			if err != nil {
+				return errors.New("[PRUDPv0] Error parsing RMC request: " + err.Error())
+			}
 
 			packet.rmcRequest = request
 		}
 	}
 
+	if len(packet.Data()[stream.ByteOffset():]) < int(checksumSize) {
+		return errors.New("[PRUDPv0] Packet data length less than checksum length")
+	}
+
 	if checksumSize == 1 {
-		packet.SetChecksum(uint16(stream.ReadByteNext()))
+		packet.SetChecksum(uint32(stream.ReadByteNext()))
 	} else {
-		packet.SetChecksum(stream.ReadU16LENext(1)[0])
+		packet.SetChecksum(stream.ReadU32LENext(1)[0])
 	}
 
 	packetBody := stream.Bytes()
@@ -96,6 +130,8 @@ func (packet *PacketV0) Decode() {
 	if calculatedChecksum != packet.GetChecksum() {
 		fmt.Println("[ERROR] Calculated checksum did not match")
 	}
+
+	return nil
 }
 
 // Bytes encodes the packet and returns a byte array
@@ -159,8 +195,8 @@ func (packet *PacketV0) Bytes() []byte {
 	checksum := packet.calculateChecksum(stream.Bytes())
 
 	if packet.GetSender().GetServer().GetChecksumVersion() == 0 {
-		stream.Grow(2)
-		stream.WriteU16LENext([]uint16{checksum})
+		stream.Grow(4)
+		stream.WriteU32LENext([]uint32{checksum})
 	} else {
 		stream.Grow(1)
 		stream.WriteByteNext(byte(checksum))
@@ -235,7 +271,7 @@ func (packet *PacketV0) encodeOptions() []byte {
 	return stream.Bytes()
 }
 
-func (packet *PacketV0) calculateChecksum(data []byte) uint16 {
+func (packet *PacketV0) calculateChecksum(data []byte) uint32 {
 	signatureBase := packet.GetSender().GetSignatureBase()
 	steps := len(data) / 4
 	var temp uint32
@@ -254,17 +290,21 @@ func (packet *PacketV0) calculateChecksum(data []byte) uint16 {
 	checksum += sum(data[len(data) & ^3:])
 	checksum += sum(buff)
 
-	return uint16(checksum & 0xFF)
+	return uint32(checksum & 0xFF)
 }
 
 // NewPacketV0 returns a new PRUDPv0 packet
-func NewPacketV0(client *Client, data []byte) *PacketV0 {
+func NewPacketV0(client *Client, data []byte) (*PacketV0, error) {
 	packet := NewPacket(client, data)
 	packetv0 := PacketV0{Packet: packet}
 
 	if data != nil {
-		packetv0.Decode()
+		err := packetv0.Decode()
+
+		if err != nil {
+			return &PacketV0{}, errors.New("[PRUDPv0] Error decoding packet data: " + err.Error())
+		}
 	}
 
-	return &packetv0
+	return &packetv0, nil
 }

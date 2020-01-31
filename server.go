@@ -68,11 +68,17 @@ func (server *Server) handleSocketMessage() {
 	data := buffer[0:length]
 
 	var packet PacketInterface
+	var err error
 
 	if server.GetPrudpVersion() == 0 {
-		packet = NewPacketV0(client, data)
+		packet, err = NewPacketV0(client, data)
 	} else {
-		packet = NewPacketV1(client, data)
+		packet, err = NewPacketV1(client, data)
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
@@ -152,9 +158,9 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	var ackPacket PacketInterface
 
 	if server.GetPrudpVersion() == 0 {
-		ackPacket = NewPacketV0(sender, nil)
+		ackPacket, _ = NewPacketV0(sender, nil)
 	} else {
-		ackPacket = NewPacketV1(sender, nil)
+		ackPacket, _ = NewPacketV1(sender, nil)
 	}
 
 	ackPacket.SetSource(packet.GetDestination())

@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"encoding/binary"
+	"errors"
 	"fmt"
 )
 
@@ -71,21 +72,23 @@ func (packet *PacketV1) GetMaximumSubstreamID() uint8 {
 }
 
 // Decode decodes the packet
-func (packet *PacketV1) Decode() {
+func (packet *PacketV1) Decode() error {
+	if len(packet.Data()) < 30 { // magic + header + signature
+		return errors.New("[PRUDPv1] Packet length less than minimum")
+	}
+
 	stream := NewStreamIn(packet.Data(), packet.GetSender().GetServer())
 
 	packet.magic = stream.ReadBytesNext(2)
 
 	if !bytes.Equal(packet.magic, []byte{0xEA, 0xD0}) {
-		// handle error?
-		return
+		return errors.New("PRUDPv1 packet magic did not match")
 	}
 
 	packet.SetVersion(uint8(stream.ReadByteNext()))
 
 	if packet.GetVersion() != 1 {
-		// handle error?
-		return
+		return errors.New("PRUDPv1 version did not match")
 	}
 
 	optionsLength := stream.ReadByteNext()
@@ -104,17 +107,29 @@ func (packet *PacketV1) Decode() {
 		packet.SetFlags(typeFlags >> 4)
 	}
 
+	if _, ok := validTypes[packet.GetType()]; !ok {
+		return errors.New("[PRUDPv1] Packet type not valid type")
+	}
+
 	packet.SetSessionID(uint8(stream.ReadByteNext()))
 	packet.SetSubstreamID(uint8(stream.ReadByteNext()))
 	packet.SetSequenceID(stream.ReadU16LENext(1)[0])
 
 	packet.SetSignature(stream.ReadBytesNext(16))
 
+	if len(packet.Data()[stream.ByteOffset():]) < int(optionsLength) {
+		return errors.New("[PRUDPv1] Packet specific data size does not match")
+	}
+
 	options := stream.ReadBytesNext(int64(optionsLength))
 
 	packet.decodeOptions(options)
 
 	if payloadSize > 0 {
+		if len(packet.Data()[stream.ByteOffset():]) < int(payloadSize) {
+			return errors.New("[PRUDPv1] Packet data length less than payload length")
+		}
+
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
 
 		packet.SetPayload(payloadCrypted)
@@ -124,7 +139,11 @@ func (packet *PacketV1) Decode() {
 
 			packet.GetSender().GetDecipher().XORKeyStream(ciphered, payloadCrypted)
 
-			request := NewRMCRequest(ciphered)
+			request, err := NewRMCRequest(ciphered)
+
+			if err != nil {
+				return errors.New("[PRUDPv1] Error parsing RMC request: " + err.Error())
+			}
 
 			packet.rmcRequest = request
 		}
@@ -135,6 +154,8 @@ func (packet *PacketV1) Decode() {
 	if !bytes.Equal(calculatedSignature, packet.GetSignature()) {
 		fmt.Println("[ERROR] Calculated signature did not match")
 	}
+
+	return nil
 }
 
 // Bytes encodes the packet and returns a byte array
@@ -283,13 +304,17 @@ func (packet *PacketV1) calculateSignature(header []byte, connectionSignature []
 }
 
 // NewPacketV1 returns a new PRUDPv1 packet
-func NewPacketV1(client *Client, data []byte) *PacketV1 {
+func NewPacketV1(client *Client, data []byte) (*PacketV1, error) {
 	packet := NewPacket(client, data)
 	packetv1 := PacketV1{Packet: packet}
 
 	if data != nil {
-		packetv1.Decode()
+		err := packetv1.Decode()
+
+		if err != nil {
+			return &PacketV1{}, errors.New("[PRUDPv1] Error decoding packet data: " + err.Error())
+		}
 	}
 
-	return &packetv1
+	return &packetv1, nil
 }
