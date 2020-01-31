@@ -101,9 +101,11 @@ func (server *Server) handleSocketMessage() {
 	case DataPacket:
 		server.Emit("Data", packet)
 	case DisconnectPacket:
+		server.Kick(client)
 		server.Emit("Disconnect", packet)
 	case PingPacket:
 		server.Emit("Ping", packet)
+		fmt.Println("ping packet")
 	}
 
 	server.Emit("Packet", packet)
@@ -148,6 +150,16 @@ func (server *Server) Emit(event string, packet interface{}) {
 			handler := eventName[i]
 			go handler(packet.(*PacketV1))
 		}
+	}
+}
+
+// Kick removes a client from the server
+func (server *Server) Kick(client *Client) {
+	discriminator := client.GetAddress().String()
+
+	if _, ok := server.clients[discriminator]; ok {
+		delete(server.clients, discriminator)
+		fmt.Println("Kicked user", discriminator)
 	}
 }
 
