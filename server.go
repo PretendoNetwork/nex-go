@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"runtime"
 	"time"
 )
 
@@ -36,26 +37,55 @@ func (server *Server) Listen(address string) {
 
 	protocol := "udp"
 
-	udpAddress, _ := net.ResolveUDPAddr(protocol, address)
-	socket, _ := net.ListenUDP(protocol, udpAddress)
+	udpAddress, err := net.ResolveUDPAddr(protocol, address)
+
+	if err != nil {
+		panic(err)
+	}
+
+	socket, err := net.ListenUDP(protocol, udpAddress)
+
+	if err != nil {
+		panic(err)
+	}
 
 	server.SetSocket(socket)
+
+	quit := make(chan struct{})
+
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go server.listenDatagram(quit)
+	}
 
 	fmt.Println("NEX server listening on address", udpAddress)
 
 	server.Emit("Listening", nil)
 
-	for {
-		server.handleSocketMessage()
-	}
+	<-quit
 }
 
-func (server *Server) handleSocketMessage() {
+func (server *Server) listenDatagram(quit chan struct{}) {
+	err := error(nil)
+
+	for err == nil {
+		err = server.handleSocketMessage()
+	}
+
+	panic(err)
+
+	quit <- struct{}{}
+}
+
+func (server *Server) handleSocketMessage() error {
 	var buffer [64000]byte
 
 	socket := server.GetSocket()
 
-	length, addr, _ := socket.ReadFromUDP(buffer[0:])
+	length, addr, err := socket.ReadFromUDP(buffer[0:])
+
+	if err != nil {
+		return err
+	}
 
 	discriminator := addr.String()
 
@@ -69,7 +99,6 @@ func (server *Server) handleSocketMessage() {
 	data := buffer[0:length]
 
 	var packet PacketInterface
-	var err error
 
 	if server.GetPrudpVersion() == 0 {
 		packet, err = NewPacketV0(client, data)
@@ -79,11 +108,11 @@ func (server *Server) handleSocketMessage() {
 
 	if err != nil {
 		fmt.Println(err)
-		return
+		return nil
 	}
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
-		return
+		return nil
 	}
 
 	if packet.HasFlag(FlagNeedsAck) {
@@ -112,6 +141,8 @@ func (server *Server) handleSocketMessage() {
 	}
 
 	server.Emit("Packet", packet)
+
+	return nil
 }
 
 // On sets the data event handler
