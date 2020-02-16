@@ -4,13 +4,13 @@ import (
 	crunch "github.com/superwhiskers/crunch/v3"
 )
 
-// StreamOut is an extension of github.com/superwhiskers/crunch with NEX type support
+// StreamOut is an abstraction of github.com/superwhiskers/crunch with nex type support
 type StreamOut struct {
 	*crunch.Buffer
 	server *Server
 }
 
-// WriteStringNext reads and returns a NEX string type
+// WriteStringNext reads and returns a nex string type
 func (stream *StreamOut) WriteStringNext(str string) {
 	str = str + "\x00"
 
@@ -18,18 +18,19 @@ func (stream *StreamOut) WriteStringNext(str string) {
 	stream.WriteBytesNext([]byte(str))
 }
 
-// WriteBufferNext writes a NEX Buffer type
+// WriteBufferNext writes a nex Buffer type
 func (stream *StreamOut) WriteBufferNext(data []byte) {
 	stream.WriteU32LENext([]uint32{uint32(len(data))})
 	stream.WriteBytesNext(data)
 }
 
-// WriteBuffer writes a NEX Buffer type and does not move the position
+// WriteBuffer writes a nex Buffer type and does not move the position
 func (stream *StreamOut) WriteBuffer(data []byte) {
 	stream.WriteU32LENext([]uint32{uint32(len(data))})
 	stream.WriteBytes(stream.ByteOffset(), data)
 }
 
+// WriteStructureNext writes a nex Structure type
 func (stream *StreamOut) WriteStructureNext(structure StructureInterface) {
 	content := structure.Bytes(NewStreamOut(stream.server))
 
@@ -43,7 +44,7 @@ func (stream *StreamOut) WriteStructureNext(structure StructureInterface) {
 	stream.WriteBytesNext(content)
 }
 
-// NewStreamOut returns a new NEX output stream
+// NewStreamOut returns a new nex output stream
 func NewStreamOut(server *Server) *StreamOut {
 	buff := crunch.NewBuffer()
 

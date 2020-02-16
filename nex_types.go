@@ -5,24 +5,29 @@ import (
 	"time"
 )
 
+// StructureInterface implements all Structure methods
 type StructureInterface interface {
 	GetHierarchy() []StructureInterface
 	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
 }
 
+// Structure represents a nex Structure type
 type Structure struct {
 	StructureInterface
 }
 
+// GetHierarchy returns a Structure hierarchy
 func (structure *Structure) GetHierarchy() []StructureInterface {
 	return make([]StructureInterface, 0)
 }
 
+// NullData represents a structure with no data
 type NullData struct {
 	*Structure
 }
 
+// NewNullData returns a new NullData Structure
 func NewNullData() *NullData {
 	structure := &Structure{}
 	nullData := &NullData{structure}
@@ -30,6 +35,7 @@ func NewNullData() *NullData {
 	return nullData
 }
 
+// ExtractFromStream does nothing for NullData
 func (nullData *NullData) ExtractFromStream(stream *StreamIn) error {
 	// Basically do nothing. Does a relative seek with 0
 	stream.SeekByte(0, true)
@@ -37,10 +43,12 @@ func (nullData *NullData) ExtractFromStream(stream *StreamIn) error {
 	return nil
 }
 
+// Bytes does nothing for NullData
 func (nullData *NullData) Bytes(stream *StreamOut) []byte {
 	return stream.Bytes()
 }
 
+// RVConnectionData represents a nex RVConnectionData type
 type RVConnectionData struct {
 	stationURL                 string
 	specialProtocols           []byte
@@ -51,22 +59,27 @@ type RVConnectionData struct {
 	Structure
 }
 
+// SetStationURL sets the RVConnectionData station URL
 func (rvConnectionData *RVConnectionData) SetStationURL(stationURL string) {
 	rvConnectionData.stationURL = stationURL
 }
 
+// SetSpecialProtocols sets the RVConnectionData special protocol list (unused by Nintendo)
 func (rvConnectionData *RVConnectionData) SetSpecialProtocols(specialProtocols []byte) {
 	rvConnectionData.specialProtocols = specialProtocols
 }
 
+// SetStationURLSpecialProtocols sets the RVConnectionData special station URL (unused by Nintendo)
 func (rvConnectionData *RVConnectionData) SetStationURLSpecialProtocols(stationURLSpecialProtocols string) {
 	rvConnectionData.stationURLSpecialProtocols = stationURLSpecialProtocols
 }
 
+// SetTime sets the RVConnectionData time
 func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
 	rvConnectionData.time = time
 }
 
+// Bytes encodes the RVConnectionData and returns a byte array
 func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 	stream.Grow(int64(2 + len(rvConnectionData.stationURL) + 1))
 	stream.WriteStringNext(rvConnectionData.stationURL)
@@ -83,6 +96,7 @@ func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 	return stream.Bytes()
 }
 
+// NewRVConnectionData returns a new RVConnectionData
 func NewRVConnectionData() *RVConnectionData {
 	rvConnectionData := &RVConnectionData{}
 

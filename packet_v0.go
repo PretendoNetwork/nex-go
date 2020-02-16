@@ -223,15 +223,15 @@ func (packet *PacketV0) calculateSignature() []byte {
 			cipher.Write(payload)
 
 			return cipher.Sum(nil)[:4]
-		} else {
-			clientConnectionSignature := packet.GetSender().GetClientConnectionSignature()
-
-			if clientConnectionSignature != nil {
-				return clientConnectionSignature
-			} else {
-				return []byte{0x0, 0x0, 0x0, 0x0}
-			}
 		}
+
+		clientConnectionSignature := packet.GetSender().GetClientConnectionSignature()
+
+		if clientConnectionSignature != nil {
+			return clientConnectionSignature
+		}
+
+		return []byte{0x0, 0x0, 0x0, 0x0}
 	}
 
 	// Normal signature handling

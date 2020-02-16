@@ -7,13 +7,13 @@ import (
 	crunch "github.com/superwhiskers/crunch/v3"
 )
 
-// StreamIn is an input stream extension of github.com/superwhiskers/crunch with NEX type support
+// StreamIn is an input stream abstraction of github.com/superwhiskers/crunch with nex type support
 type StreamIn struct {
 	*crunch.Buffer
 	server *Server
 }
 
-// ReadStringNext reads and returns a NEX string type
+// ReadStringNext reads and returns a nex string type
 func (stream *StreamIn) ReadStringNext() (string, error) {
 	length := stream.ReadU16LENext(1)[0]
 
@@ -27,7 +27,7 @@ func (stream *StreamIn) ReadStringNext() (string, error) {
 	return strings.TrimRight(str, "\x00"), nil
 }
 
-// ReadBufferNext reads a NEX Buffer type
+// ReadBufferNext reads a nex Buffer type
 func (stream *StreamIn) ReadBufferNext() ([]byte, error) {
 	length := stream.ReadU32LENext(1)[0]
 
@@ -40,7 +40,7 @@ func (stream *StreamIn) ReadBufferNext() ([]byte, error) {
 	return data, nil
 }
 
-// ReadQBufferNext reads a NEX qBuffer type
+// ReadQBufferNext reads a nex qBuffer type
 func (stream *StreamIn) ReadQBufferNext() ([]byte, error) {
 	length := stream.ReadU16LENext(1)[0]
 
@@ -53,6 +53,7 @@ func (stream *StreamIn) ReadQBufferNext() ([]byte, error) {
 	return data, nil
 }
 
+// ReadStructureNext reads a nex Structure type
 func (stream *StreamIn) ReadStructureNext(structure StructureInterface) (StructureInterface, error) {
 	hierarchy := structure.GetHierarchy()
 

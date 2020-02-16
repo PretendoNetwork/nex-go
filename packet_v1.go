@@ -47,26 +47,32 @@ func (packet *PacketV1) GetSubstreamID() uint8 {
 	return packet.substreamID
 }
 
+// SetSupportedFunctions sets the packet supported functions flags
 func (packet *PacketV1) SetSupportedFunctions(supportedFunctions uint32) {
 	packet.supportedFunctions = supportedFunctions
 }
 
+// GetSupportedFunctions returns the packet supported functions flags
 func (packet *PacketV1) GetSupportedFunctions() uint32 {
 	return packet.supportedFunctions
 }
 
+// SetInitialSequenceID sets the packet initial sequence ID for unreliable packets
 func (packet *PacketV1) SetInitialSequenceID(initialSequenceID uint16) {
 	packet.initialSequenceID = initialSequenceID
 }
 
+// GetInitialSequenceID returns the packet initial sequence ID for unreliable packets
 func (packet *PacketV1) GetInitialSequenceID() uint16 {
 	return packet.initialSequenceID
 }
 
+// SetMaximumSubstreamID sets the packet maximum substream ID
 func (packet *PacketV1) SetMaximumSubstreamID(maximumSubstreamID uint8) {
 	packet.maximumSubstreamID = maximumSubstreamID
 }
 
+// GetMaximumSubstreamID returns the packet maximum substream ID
 func (packet *PacketV1) GetMaximumSubstreamID() uint8 {
 	return packet.maximumSubstreamID
 }
