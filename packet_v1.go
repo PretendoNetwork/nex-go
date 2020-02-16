@@ -13,19 +13,19 @@ import (
 var OptionAllFunctions = 0xFFFFFFFF
 
 // OptionSupportedFunctions is the ID for the Supported Functions option in PRUDP v1 packets
-var OptionSupportedFunctions = 0
+var OptionSupportedFunctions uint8 = 0
 
 // OptionConnectionSignature is the ID for the Connection Signature option in PRUDP v1 packets
-var OptionConnectionSignature = 1
+var OptionConnectionSignature uint8 = 1
 
 // OptionFragmentID is the ID for the Fragment ID option in PRUDP v1 packets
-var OptionFragmentID = 2
+var OptionFragmentID uint8 = 2
 
 // OptionInitialSequenceID is the ID for the initial sequence ID option in PRUDP v1 packets
-var OptionInitialSequenceID = 3
+var OptionInitialSequenceID uint8 = 3
 
 // OptionMaxSubstreamID is the ID for the max substream ID option in PRUDP v1 packets
-var OptionMaxSubstreamID = 4
+var OptionMaxSubstreamID uint8 = 4
 
 // PacketV1 reresents a PRUDPv1 packet
 type PacketV1 struct {
@@ -91,19 +91,19 @@ func (packet *PacketV1) Decode() error {
 		return errors.New("PRUDPv1 packet magic did not match")
 	}
 
-	packet.SetVersion(uint8(stream.ReadByteNext()))
+	packet.SetVersion(stream.ReadUInt8())
 
 	if packet.GetVersion() != 1 {
 		return errors.New("PRUDPv1 version did not match")
 	}
 
-	optionsLength := stream.ReadByteNext()
-	payloadSize := stream.ReadU16LENext(1)[0]
+	optionsLength := stream.ReadUInt8()
+	payloadSize := stream.ReadUInt16LE()
 
-	packet.SetSource(uint8(stream.ReadByteNext()))
-	packet.SetDestination(uint8(stream.ReadByteNext()))
+	packet.SetSource(stream.ReadUInt8())
+	packet.SetDestination(stream.ReadUInt8())
 
-	typeFlags := stream.ReadU16LENext(1)[0]
+	typeFlags := stream.ReadUInt16LE()
 
 	if packet.GetSender().GetServer().GetFlagsVersion() == 0 {
 		packet.SetType(typeFlags & 7)
@@ -117,9 +117,9 @@ func (packet *PacketV1) Decode() error {
 		return errors.New("[PRUDPv1] Packet type not valid type")
 	}
 
-	packet.SetSessionID(uint8(stream.ReadByteNext()))
-	packet.SetSubstreamID(uint8(stream.ReadByteNext()))
-	packet.SetSequenceID(stream.ReadU16LENext(1)[0])
+	packet.SetSessionID(stream.ReadUInt8())
+	packet.SetSubstreamID(stream.ReadUInt8())
+	packet.SetSequenceID(stream.ReadUInt16LE())
 
 	packet.SetSignature(stream.ReadBytesNext(16))
 
@@ -236,10 +236,10 @@ func (packet *PacketV1) decodeOptions(options []byte) {
 	optionsStream := NewStreamIn(options, packet.GetSender().GetServer())
 
 	for optionsStream.ByteOffset() != optionsStream.ByteCapacity() {
-		optionID := optionsStream.ReadByteNext()
-		optionSize := optionsStream.ReadByteNext()
+		optionID := optionsStream.ReadUInt8()
+		optionSize := optionsStream.ReadUInt8()
 
-		switch int(optionID) {
+		switch optionID {
 		case OptionSupportedFunctions:
 			// Only need the LSB
 			lsb := optionsStream.ReadBytesNext(int64(optionSize))[0]
@@ -247,11 +247,11 @@ func (packet *PacketV1) decodeOptions(options []byte) {
 		case OptionConnectionSignature:
 			packet.SetConnectionSignature(optionsStream.ReadBytesNext(int64(optionSize)))
 		case OptionFragmentID:
-			packet.SetFragmentID(uint8(optionsStream.ReadByteNext()))
+			packet.SetFragmentID(optionsStream.ReadUInt8())
 		case OptionInitialSequenceID:
-			packet.SetInitialSequenceID(optionsStream.ReadU16LENext(1)[0])
+			packet.SetInitialSequenceID(optionsStream.ReadUInt16LE())
 		case OptionMaxSubstreamID:
-			packet.SetMaximumSubstreamID(uint8(optionsStream.ReadByteNext()))
+			packet.SetMaximumSubstreamID(optionsStream.ReadUInt8())
 		}
 	}
 }
@@ -261,29 +261,29 @@ func (packet *PacketV1) encodeOptions() []byte {
 
 	if packet.GetType() == SynPacket || packet.GetType() == ConnectPacket {
 		stream.Grow(6)
-		stream.WriteByteNext(uint8(OptionSupportedFunctions))
+		stream.WriteByteNext(OptionSupportedFunctions)
 		stream.WriteByteNext(4)
 		stream.WriteU32LENext([]uint32{packet.supportedFunctions})
 
 		stream.Grow(18)
-		stream.WriteByteNext(uint8(OptionConnectionSignature))
+		stream.WriteByteNext(OptionConnectionSignature)
 		stream.WriteByteNext(16)
 		stream.WriteBytesNext(packet.GetConnectionSignature())
 
 		if packet.GetType() == ConnectPacket {
 			stream.Grow(4)
-			stream.WriteByteNext(uint8(OptionInitialSequenceID))
+			stream.WriteByteNext(OptionInitialSequenceID)
 			stream.WriteByteNext(2)
 			stream.WriteU16LENext([]uint16{packet.initialSequenceID})
 		}
 
 		stream.Grow(3)
-		stream.WriteByteNext(uint8(OptionMaxSubstreamID))
+		stream.WriteByteNext(OptionMaxSubstreamID)
 		stream.WriteByteNext(1)
 		stream.WriteByteNext(packet.maximumSubstreamID)
 	} else if packet.GetType() == DataPacket {
 		stream.Grow(3)
-		stream.WriteByteNext(uint8(OptionFragmentID))
+		stream.WriteByteNext(OptionFragmentID)
 		stream.WriteByteNext(1)
 		stream.WriteByteNext(packet.GetFragmentID())
 	}

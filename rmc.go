@@ -38,15 +38,15 @@ func NewRMCRequest(data []byte) (RMCRequest, error) {
 
 	stream := NewStreamIn(data, nil)
 
-	size := int(stream.ReadU32LENext(1)[0])
+	size := int(stream.ReadUInt32LE())
 
 	if size != (len(data) - 4) {
 		return RMCRequest{}, errors.New("[RMC] Data size does not match")
 	}
 
-	protocolID := stream.ReadByteNext() ^ 0x80
-	callID := stream.ReadU32LENext(1)[0]
-	methodID := stream.ReadU32LENext(1)[0]
+	protocolID := stream.ReadUInt8() ^ 0x80
+	callID := stream.ReadUInt32LE()
+	methodID := stream.ReadUInt32LE()
 	parameters := data[13:]
 
 	request := RMCRequest{

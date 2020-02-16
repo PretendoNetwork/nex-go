@@ -43,14 +43,14 @@ func (packet *PacketV0) Decode() error {
 
 	stream := NewStreamIn(packet.Data(), packet.GetSender().GetServer())
 
-	packet.SetSource(uint8(stream.ReadByteNext()))
-	packet.SetDestination(uint8(stream.ReadByteNext()))
+	packet.SetSource(stream.ReadUInt8())
+	packet.SetDestination(stream.ReadUInt8())
 
-	typeFlags = stream.ReadU16LENext(1)[0]
+	typeFlags = stream.ReadUInt16LE()
 
-	packet.SetSessionID(uint8(stream.ReadByteNext()))
+	packet.SetSessionID(stream.ReadUInt8())
 	packet.SetSignature(stream.ReadBytesNext(4))
-	packet.SetSequenceID(stream.ReadU16LENext(1)[0])
+	packet.SetSequenceID(stream.ReadUInt16LE())
 
 	if packet.GetSender().GetServer().GetFlagsVersion() == 0 {
 		packet.SetType(typeFlags & 7)
@@ -77,7 +77,7 @@ func (packet *PacketV0) Decode() error {
 			return errors.New("[PRUDPv0] Packet specific data not large enough for fragment ID")
 		}
 
-		packet.SetFragmentID(uint8(stream.ReadByteNext()))
+		packet.SetFragmentID(stream.ReadUInt8())
 	}
 
 	if packet.HasFlag(FlagHasSize) {
@@ -85,7 +85,7 @@ func (packet *PacketV0) Decode() error {
 			return errors.New("[PRUDPv0] Packet specific data not large enough for payload size")
 		}
 
-		payloadSize = stream.ReadU16LENext(1)[0]
+		payloadSize = stream.ReadUInt16LE()
 	} else {
 		payloadSize = uint16(len(packet.data) - int(stream.ByteOffset()) - checksumSize)
 	}
@@ -118,9 +118,9 @@ func (packet *PacketV0) Decode() error {
 	}
 
 	if checksumSize == 1 {
-		packet.SetChecksum(uint32(stream.ReadByteNext()))
+		packet.SetChecksum(uint32(stream.ReadUInt8()))
 	} else {
-		packet.SetChecksum(stream.ReadU32LENext(1)[0])
+		packet.SetChecksum(stream.ReadUInt32LE())
 	}
 
 	packetBody := stream.Bytes()

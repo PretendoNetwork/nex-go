@@ -13,9 +13,29 @@ type StreamIn struct {
 	server *Server
 }
 
+// ReadUInt8 reads a uint8
+func (stream *StreamIn) ReadUInt8() uint8 {
+	return uint8(stream.ReadByteNext())
+}
+
+// ReadUInt16LE reads a uint16
+func (stream *StreamIn) ReadUInt16LE() uint16 {
+	return stream.ReadU16LENext(1)[0]
+}
+
+// ReadUInt32LE reads a uint32
+func (stream *StreamIn) ReadUInt32LE() uint32 {
+	return stream.ReadU32LENext(1)[0]
+}
+
+// ReadUInt64LE reads a uint64
+func (stream *StreamIn) ReadUInt64LE() uint64 {
+	return stream.ReadU64LENext(1)[0]
+}
+
 // ReadStringNext reads and returns a nex string type
 func (stream *StreamIn) ReadStringNext() (string, error) {
-	length := stream.ReadU16LENext(1)[0]
+	length := stream.ReadUInt16LE()
 
 	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
 		return "", errors.New("[StreamIn] Nex string length longer than data size")
@@ -29,7 +49,7 @@ func (stream *StreamIn) ReadStringNext() (string, error) {
 
 // ReadBufferNext reads a nex Buffer type
 func (stream *StreamIn) ReadBufferNext() ([]byte, error) {
-	length := stream.ReadU32LENext(1)[0]
+	length := stream.ReadUInt32LE()
 
 	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
 		return []byte{}, errors.New("[StreamIn] Nex buffer length longer than data size")
@@ -42,7 +62,7 @@ func (stream *StreamIn) ReadBufferNext() ([]byte, error) {
 
 // ReadQBufferNext reads a nex qBuffer type
 func (stream *StreamIn) ReadQBufferNext() ([]byte, error) {
-	length := stream.ReadU16LENext(1)[0]
+	length := stream.ReadUInt16LE()
 
 	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
 		return []byte{}, errors.New("[StreamIn] Nex qBuffer length longer than data size")
@@ -67,8 +87,8 @@ func (stream *StreamIn) ReadStructureNext(structure StructureInterface) (Structu
 
 	if stream.server.GetNexMinorVersion() >= 3 {
 		// skip the new struct header as we don't really need the data there
-		_ = stream.ReadByteNext()   // structure header version
-		_ = stream.ReadU32LENext(1) // structure content length
+		_ = stream.ReadUInt8()    // structure header version
+		_ = stream.ReadUInt32LE() // structure content length
 	}
 
 	err := structure.ExtractFromStream(stream)
