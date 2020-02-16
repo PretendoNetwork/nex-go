@@ -166,16 +166,15 @@ func (packet *PacketV0) Bytes() []byte {
 	}
 
 	stream := NewStreamOut(packet.GetSender().GetServer())
+	packetSignature := packet.calculateSignature()
 
-	packetSize := 11
-
-	stream.Grow(int64(packetSize))
-	stream.WriteByteNext(packet.GetSource())
-	stream.WriteByteNext(packet.GetDestination())
-	stream.WriteU16LENext([]uint16{typeFlags})
-	stream.WriteByteNext(packet.GetSessionID())
-	stream.WriteBytesNext(packet.calculateSignature())
-	stream.WriteU16LENext([]uint16{packet.GetSequenceID()})
+	stream.WriteUInt8(packet.GetSource())
+	stream.WriteUInt8(packet.GetDestination())
+	stream.WriteUInt16LE(typeFlags)
+	stream.WriteUInt8(packet.GetSessionID())
+	stream.Grow(int64(len(packetSignature)))
+	stream.WriteBytesNext(packetSignature)
+	stream.WriteUInt16LE(packet.GetSequenceID())
 
 	options := packet.encodeOptions()
 	optionsLength := len(options)
@@ -195,11 +194,9 @@ func (packet *PacketV0) Bytes() []byte {
 	checksum := packet.calculateChecksum(stream.Bytes())
 
 	if packet.GetSender().GetServer().GetChecksumVersion() == 0 {
-		stream.Grow(4)
-		stream.WriteU32LENext([]uint32{checksum})
+		stream.WriteUInt32LE(checksum)
 	} else {
-		stream.Grow(1)
-		stream.WriteByteNext(byte(checksum))
+		stream.WriteUInt8(uint8(checksum))
 	}
 
 	return stream.Bytes()
@@ -213,7 +210,7 @@ func (packet *PacketV0) calculateSignature() []byte {
 
 			if payload == nil || len(payload) <= 0 {
 				signature := NewStreamIn(make([]byte, 4), packet.GetSender().GetServer())
-				signature.WriteU32LENext([]uint32{0x12345678})
+				signature.WriteUInt32LE(0x12345678)
 
 				return signature.Bytes()
 			}
@@ -253,8 +250,7 @@ func (packet *PacketV0) encodeOptions() []byte {
 	}
 
 	if packet.GetType() == DataPacket {
-		stream.Grow(1)
-		stream.WriteByteNext(byte(packet.GetFragmentID()))
+		stream.WriteUInt8(packet.GetFragmentID())
 	}
 
 	if packet.HasFlag(FlagHasSize) {
@@ -262,9 +258,9 @@ func (packet *PacketV0) encodeOptions() []byte {
 		payload := packet.GetPayload()
 
 		if payload != nil {
-			stream.WriteU16LENext([]uint16{uint16(len(payload))})
+			stream.WriteUInt16LE(uint16(len(payload)))
 		} else {
-			stream.WriteU16LENext([]uint16{0})
+			stream.WriteUInt16LE(0)
 		}
 	}
 

@@ -10,34 +10,56 @@ type StreamOut struct {
 	server *Server
 }
 
-// WriteStringNext reads and returns a nex string type
-func (stream *StreamOut) WriteStringNext(str string) {
-	str = str + "\x00"
+// WriteUInt8 writes a uint8
+func (stream *StreamOut) WriteUInt8(u8 uint8) {
+	stream.Grow(1)
+	stream.WriteByteNext(byte(u8))
+}
 
-	stream.WriteU16LENext([]uint16{uint16(len(str))})
+// WriteUInt16LE writes a uint16 as LE
+func (stream *StreamOut) WriteUInt16LE(u16 uint16) {
+	stream.Grow(2)
+	stream.WriteU16LENext([]uint16{u16})
+}
+
+// WriteUInt32LE writes a uint32 as LE
+func (stream *StreamOut) WriteUInt32LE(u32 uint32) {
+	stream.Grow(4)
+	stream.WriteU32LENext([]uint32{u32})
+}
+
+// WriteUInt64LE writes a uint64 as LE
+func (stream *StreamOut) WriteUInt64LE(u64 uint64) {
+	stream.Grow(8)
+	stream.WriteU64LENext([]uint64{u64})
+}
+
+// WriteString writes a NEX string type
+func (stream *StreamOut) WriteString(str string) {
+	str = str + "\x00"
+	strLength := len(str)
+
+	stream.Grow(int64(strLength))
+	stream.WriteUInt16LE(uint16(strLength))
 	stream.WriteBytesNext([]byte(str))
 }
 
-// WriteBufferNext writes a nex Buffer type
-func (stream *StreamOut) WriteBufferNext(data []byte) {
-	stream.WriteU32LENext([]uint32{uint32(len(data))})
+// WriteBuffer writes a NEX Buffer type
+func (stream *StreamOut) WriteBuffer(data []byte) {
+	dataLength := len(data)
+
+	stream.WriteUInt32LE(uint32(dataLength))
+	stream.Grow(int64(dataLength))
 	stream.WriteBytesNext(data)
 }
 
-// WriteBuffer writes a nex Buffer type and does not move the position
-func (stream *StreamOut) WriteBuffer(data []byte) {
-	stream.WriteU32LENext([]uint32{uint32(len(data))})
-	stream.WriteBytes(stream.ByteOffset(), data)
-}
-
-// WriteStructureNext writes a nex Structure type
-func (stream *StreamOut) WriteStructureNext(structure StructureInterface) {
+// WriteStructure writes a nex Structure type
+func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	content := structure.Bytes(NewStreamOut(stream.server))
 
 	if stream.server.GetNexMinorVersion() >= 3 {
-		stream.Grow(5)
-		stream.WriteByteNext(1) // version
-		stream.WriteU32LENext([]uint32{uint32(len(content))})
+		stream.WriteUInt8(1) // version
+		stream.WriteUInt32LE(uint32(len(content)))
 	}
 
 	stream.Grow(int64(len(content)))

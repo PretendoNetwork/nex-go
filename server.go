@@ -289,12 +289,10 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 				ackPacket.SetSequenceID(0)
 				ackPacket.SetSubstreamID(1)
 
-				payloadStream.Grow(4)
-
 				// I'm lazy so just ack one packet
-				payloadStream.WriteByteNext(0)                                 // substream ID
-				payloadStream.WriteByteNext(0)                                 // length of additional sequence ids
-				payloadStream.WriteU16LENext([]uint16{packet.GetSequenceID()}) // Sequence id
+				payloadStream.WriteUInt8(0)                         // substream ID
+				payloadStream.WriteUInt8(0)                         // length of additional sequence ids
+				payloadStream.WriteUInt16LE(packet.GetSequenceID()) // Sequence id
 			}
 
 			ackPacket.SetPayload(payloadStream.Bytes())

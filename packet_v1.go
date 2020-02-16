@@ -195,25 +195,25 @@ func (packet *PacketV1) Bytes() []byte {
 	}
 
 	stream := NewStreamOut(packet.GetSender().GetServer())
-	stream.Grow(30)
 
-	stream.WriteBytesNext([]byte{0xEA, 0xD0})
-	stream.WriteByteNext(1)
+	stream.WriteUInt16LE(0xD0EA) // v1 magic
+	stream.WriteUInt8(1)
 
 	options := packet.encodeOptions()
 	optionsLength := len(options)
 
-	stream.WriteByteNext(byte(optionsLength))
-	stream.WriteU16LENext([]uint16{uint16(len(packet.GetPayload()))})
-	stream.WriteByteNext(packet.GetSource())
-	stream.WriteByteNext(packet.GetDestination())
-	stream.WriteU16LENext([]uint16{typeFlags})
-	stream.WriteByteNext(packet.GetSessionID())
-	stream.WriteByteNext(packet.GetSubstreamID())
-	stream.WriteU16LENext([]uint16{packet.GetSequenceID()})
+	stream.WriteUInt8(optionsLength)
+	stream.WriteUInt16LE(uint16(len(packet.GetPayload())))
+	stream.WriteUInt8(packet.GetSource())
+	stream.WriteUInt8(packet.GetDestination())
+	stream.WriteUInt16LE(typeFlags)
+	stream.WriteUInt8(packet.GetSessionID())
+	stream.WriteUInt8(packet.GetSubstreamID())
+	stream.WriteUInt16LE(packet.GetSequenceID())
 
 	signature := packet.calculateSignature(stream.Bytes()[2:14], packet.GetSender().GetClientConnectionSignature(), options, packet.GetPayload())
 
+	stream.Grow(int64(len(signature)))
 	stream.WriteBytesNext(signature)
 
 	if optionsLength > 0 {
@@ -260,32 +260,28 @@ func (packet *PacketV1) encodeOptions() []byte {
 	stream := NewStreamOut(packet.GetSender().GetServer())
 
 	if packet.GetType() == SynPacket || packet.GetType() == ConnectPacket {
-		stream.Grow(6)
-		stream.WriteByteNext(OptionSupportedFunctions)
-		stream.WriteByteNext(4)
-		stream.WriteU32LENext([]uint32{packet.supportedFunctions})
+		stream.WriteUInt8(OptionSupportedFunctions)
+		stream.WriteUInt8(4)
+		stream.WriteUInt32LE(packet.supportedFunctions)
 
-		stream.Grow(18)
-		stream.WriteByteNext(OptionConnectionSignature)
-		stream.WriteByteNext(16)
+		stream.WriteUInt8(OptionConnectionSignature)
+		stream.WriteUInt8(16)
+		stream.Grow(16)
 		stream.WriteBytesNext(packet.GetConnectionSignature())
 
 		if packet.GetType() == ConnectPacket {
-			stream.Grow(4)
-			stream.WriteByteNext(OptionInitialSequenceID)
-			stream.WriteByteNext(2)
-			stream.WriteU16LENext([]uint16{packet.initialSequenceID})
+			stream.WriteUInt8(OptionInitialSequenceID)
+			stream.WriteUInt8(2)
+			stream.WriteUInt16LE(packet.initialSequenceID)
 		}
 
-		stream.Grow(3)
-		stream.WriteByteNext(OptionMaxSubstreamID)
-		stream.WriteByteNext(1)
-		stream.WriteByteNext(packet.maximumSubstreamID)
+		stream.WriteUInt8(OptionMaxSubstreamID)
+		stream.WriteUInt8(1)
+		stream.WriteUInt8(packet.maximumSubstreamID)
 	} else if packet.GetType() == DataPacket {
-		stream.Grow(3)
-		stream.WriteByteNext(OptionFragmentID)
-		stream.WriteByteNext(1)
-		stream.WriteByteNext(packet.GetFragmentID())
+		stream.WriteUInt8(OptionFragmentID)
+		stream.WriteUInt8(1)
+		stream.WriteUInt8(packet.GetFragmentID())
 	}
 
 	return stream.Bytes()

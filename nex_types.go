@@ -81,17 +81,10 @@ func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
 
 // Bytes encodes the RVConnectionData and returns a byte array
 func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
-	stream.Grow(int64(2 + len(rvConnectionData.stationURL) + 1))
-	stream.WriteStringNext(rvConnectionData.stationURL)
-
-	stream.Grow(4)
-	stream.WriteU32LENext([]uint32{0}) // Always 0
-
-	stream.Grow(int64(2 + len(rvConnectionData.stationURLSpecialProtocols) + 1))
-	stream.WriteStringNext(rvConnectionData.stationURLSpecialProtocols)
-
-	stream.Grow(8)
-	stream.WriteU64LENext([]uint64{rvConnectionData.time})
+	stream.WriteString(rvConnectionData.stationURL)
+	stream.WriteUInt32LE(0) // Always 0
+	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
+	stream.WriteUInt64LE(rvConnectionData.time)
 
 	return stream.Bytes()
 }

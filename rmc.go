@@ -86,27 +86,23 @@ func (response *RMCResponse) SetError(errorCode uint32) {
 func (response *RMCResponse) Bytes() []byte {
 	body := NewStreamOut(nil)
 
-	body.Grow(2)
-	body.WriteByteNext(byte(response.protocolID))
-	body.WriteByteNext(byte(response.success))
+	body.WriteUInt8(response.protocolID)
+	body.WriteUInt8(response.success)
 
 	if response.success == 1 {
-		body.Grow(8)
-		body.WriteU32LENext([]uint32{response.callID})
-		body.WriteU32LENext([]uint32{response.methodID | 0x8000})
+		body.WriteUInt32LE(response.callID)
+		body.WriteUInt32LE(response.methodID | 0x8000)
 
 		body.Grow(int64(len(response.data)))
 		body.WriteBytesNext(response.data)
 	} else {
-		body.Grow(8)
-		body.WriteU32LENext([]uint32{response.errorCode})
-		body.WriteU32LENext([]uint32{response.callID})
+		body.WriteUInt32LE(response.errorCode)
+		body.WriteUInt32LE(response.callID)
 	}
 
 	data := NewStreamOut(nil)
-	data.Grow(int64(4 + len(body.Bytes())))
 
-	data.WriteBufferNext(body.Bytes())
+	data.WriteBuffer(body.Bytes())
 
 	return data.Bytes()
 }
