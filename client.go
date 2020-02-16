@@ -3,7 +3,6 @@ package nex
 import (
 	"crypto/rc4"
 	"net"
-	"time"
 )
 
 // Client represents a connected or non-connected PRUDP client
@@ -12,7 +11,6 @@ type Client struct {
 	server                    *Server
 	cipher                    *rc4.Cipher
 	decipher                  *rc4.Cipher
-	lastPing                  time.Time
 	signatureKey              []byte
 	signatureBase             int
 	secureKey                 []byte
@@ -20,10 +18,25 @@ type Client struct {
 	clientConnectionSignature []byte
 	sessionID                 int
 	sessionKey                []byte
-	packets                   []Packet
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
-	rmcCallID                 uint32
+}
+
+// Reset resets the Client to default values
+func (client *Client) Reset() {
+	client.sequenceIDIn = NewCounter(0)
+	client.sequenceIDOut = NewCounter(0)
+
+	client.UpdateAccessKey(client.GetServer().GetAccessKey())
+	client.UpdateRC4Key([]byte("CD&ML"))
+
+	if client.GetServer().GetPrudpVersion() == 0 {
+		client.SetServerConnectionSignature(make([]byte, 4))
+		client.SetClientConnectionSignature(make([]byte, 4))
+	} else {
+		client.SetServerConnectionSignature([]byte{})
+		client.SetClientConnectionSignature([]byte{})
+	}
 }
 
 // GetAddress returns the clients UDP address
@@ -34,16 +47,6 @@ func (client *Client) GetAddress() *net.UDPAddr {
 // GetServer returns the server the client is currently connected to
 func (client *Client) GetServer() *Server {
 	return client.server
-}
-
-// SetLastPing returns the server the client is currently connected to
-func (client *Client) SetLastPing(lastPing time.Time) {
-	client.lastPing = lastPing
-}
-
-// GetLastPing returns the server the client is currently connected to
-func (client *Client) GetLastPing() time.Time {
-	return client.lastPing
 }
 
 // UpdateRC4Key sets the client RC4 stream key
@@ -123,23 +126,12 @@ func (client *Client) GetSessionKey() []byte {
 
 // NewClient returns a new PRUDP client
 func NewClient(address *net.UDPAddr, server *Server) *Client {
-	client := Client{
-		address:       address,
-		server:        server,
-		sequenceIDIn:  NewCounter(0),
-		sequenceIDOut: NewCounter(0),
+	client := &Client{
+		address: address,
+		server:  server,
 	}
 
-	client.UpdateAccessKey(client.GetServer().GetAccessKey())
-	client.UpdateRC4Key([]byte("CD&ML"))
+	client.Reset()
 
-	if server.GetPrudpVersion() == 0 {
-		client.SetServerConnectionSignature(make([]byte, 4))
-		client.SetClientConnectionSignature(make([]byte, 4))
-	} else {
-		client.SetServerConnectionSignature([]byte{})
-		client.SetClientConnectionSignature([]byte{})
-	}
-
-	return &client
+	return client
 }

@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"net"
 	"runtime"
-	"time"
 )
 
 // Server represents a PRUDP server
@@ -123,6 +122,7 @@ func (server *Server) handleSocketMessage() error {
 
 	switch packet.GetType() {
 	case SynPacket:
+		client.Reset()
 		server.Emit("Syn", packet)
 	case ConnectPacket:
 		packet.GetSender().SetClientConnectionSignature(packet.GetConnectionSignature())
@@ -134,10 +134,8 @@ func (server *Server) handleSocketMessage() error {
 		server.Kick(client)
 		server.Emit("Disconnect", packet)
 	case PingPacket:
-		client.SetLastPing(time.Now())
+		server.SendPing(client)
 		server.Emit("Ping", packet)
-
-		fmt.Println("ping packet")
 	}
 
 	server.Emit("Packet", packet)
@@ -206,24 +204,23 @@ func (server *Server) Kick(client *Client) {
 	}
 }
 
-// StartPing starts the client<->server ping process and loop
-func (server *Server) StartPing(client *Client) {
-	interval := time.Duration(server.pingTimeout) * time.Second
+// SendPing sends a ping packet to the given client
+func (server *Server) SendPing(client *Client) {
+	var pingPacket PacketInterface
 
-	// Basically JavaScript setInterval
-	for range time.Tick(interval) {
-		if !server.ClientConnected(client) {
-			break
-		}
-
-		lastPing := client.GetLastPing()
-		lastPingSince := time.Since(lastPing)
-
-		// Give it a 1 second buffer just in case
-		if lastPingSince.Seconds() > float64(server.pingTimeout+1) {
-			server.Kick(client)
-		}
+	if server.GetPrudpVersion() == 0 {
+		pingPacket, _ = NewPacketV0(client, nil)
+	} else {
+		pingPacket, _ = NewPacketV1(client, nil)
 	}
+
+	pingPacket.SetSource(0xA1)
+	pingPacket.SetDestination(0xAF)
+	pingPacket.SetType(PingPacket)
+	pingPacket.AddFlag(FlagNeedsAck)
+	pingPacket.AddFlag(FlagReliable)
+
+	server.Send(pingPacket)
 }
 
 // AcknowledgePacket acknowledges that the given packet was recieved
@@ -305,12 +302,6 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	}
 
 	data := ackPacket.Bytes()
-
-	// Client should now be connected! Start checking pings
-	if packet.GetType() == ConnectPacket {
-		sender.SetLastPing(time.Now())
-		go server.StartPing(sender)
-	}
 
 	server.SendRaw(sender.GetAddress(), data)
 }
