@@ -33,8 +33,8 @@ func (stream *StreamIn) ReadUInt64LE() uint64 {
 	return stream.ReadU64LENext(1)[0]
 }
 
-// ReadStringNext reads and returns a nex string type
-func (stream *StreamIn) ReadStringNext() (string, error) {
+// ReadString reads and returns a nex string type
+func (stream *StreamIn) ReadString() (string, error) {
 	length := stream.ReadUInt16LE()
 
 	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
@@ -47,8 +47,8 @@ func (stream *StreamIn) ReadStringNext() (string, error) {
 	return strings.TrimRight(str, "\x00"), nil
 }
 
-// ReadBufferNext reads a nex Buffer type
-func (stream *StreamIn) ReadBufferNext() ([]byte, error) {
+// ReadBuffer reads a nex Buffer type
+func (stream *StreamIn) ReadBuffer() ([]byte, error) {
 	length := stream.ReadUInt32LE()
 
 	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
@@ -60,8 +60,8 @@ func (stream *StreamIn) ReadBufferNext() ([]byte, error) {
 	return data, nil
 }
 
-// ReadQBufferNext reads a nex qBuffer type
-func (stream *StreamIn) ReadQBufferNext() ([]byte, error) {
+// ReadQBuffer reads a nex qBuffer type
+func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
 	length := stream.ReadUInt16LE()
 
 	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
@@ -73,15 +73,15 @@ func (stream *StreamIn) ReadQBufferNext() ([]byte, error) {
 	return data, nil
 }
 
-// ReadStructureNext reads a nex Structure type
-func (stream *StreamIn) ReadStructureNext(structure StructureInterface) (StructureInterface, error) {
+// ReadStructure reads a nex Structure type
+func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureInterface, error) {
 	hierarchy := structure.GetHierarchy()
 
 	for _, class := range hierarchy {
-		_, err := stream.ReadStructureNext(class)
+		_, err := stream.ReadStructure(class)
 
 		if err != nil {
-			return structure, errors.New("[ReadStructureNext] " + err.Error())
+			return structure, errors.New("[ReadStructure] " + err.Error())
 		}
 	}
 
@@ -94,7 +94,7 @@ func (stream *StreamIn) ReadStructureNext(structure StructureInterface) (Structu
 	err := structure.ExtractFromStream(stream)
 
 	if err != nil {
-		return structure, errors.New("[ReadStructureNext] " + err.Error())
+		return structure, errors.New("[ReadStructure] " + err.Error())
 	}
 
 	return structure, nil
