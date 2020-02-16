@@ -62,7 +62,7 @@ func NewRMCRequest(data []byte) (RMCRequest, error) {
 // RMCResponse represents a RMC response
 type RMCResponse struct {
 	protocolID uint8
-	success    int
+	success    uint8
 	callID     uint32
 	methodID   uint32
 	data       []byte

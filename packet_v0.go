@@ -209,7 +209,7 @@ func (packet *PacketV0) calculateSignature() []byte {
 			payload := packet.GetPayload()
 
 			if payload == nil || len(payload) <= 0 {
-				signature := NewStreamIn(make([]byte, 4), packet.GetSender().GetServer())
+				signature := NewStreamOut(packet.GetSender().GetServer())
 				signature.WriteUInt32LE(0x12345678)
 
 				return signature.Bytes()
@@ -254,7 +254,6 @@ func (packet *PacketV0) encodeOptions() []byte {
 	}
 
 	if packet.HasFlag(FlagHasSize) {
-		stream.Grow(2)
 		payload := packet.GetPayload()
 
 		if payload != nil {

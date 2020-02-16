@@ -202,7 +202,7 @@ func (packet *PacketV1) Bytes() []byte {
 	options := packet.encodeOptions()
 	optionsLength := len(options)
 
-	stream.WriteUInt8(optionsLength)
+	stream.WriteUInt8(uint8(optionsLength))
 	stream.WriteUInt16LE(uint16(len(packet.GetPayload())))
 	stream.WriteUInt8(packet.GetSource())
 	stream.WriteUInt8(packet.GetDestination())
