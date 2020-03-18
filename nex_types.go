@@ -117,6 +117,11 @@ func (datetime *DateTime) Now() uint64 {
 	return datetime.value
 }
 
+// Value returns the stored DateTime time
+func (datetime *DateTime) Value() uint64 {
+	return datetime.value
+}
+
 // NewDateTime returns a new DateTime instance
 func NewDateTime(value uint64) *DateTime {
 	return &DateTime{value: value}
