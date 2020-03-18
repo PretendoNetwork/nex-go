@@ -100,12 +100,62 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 	return structure, nil
 }
 
+// ReadListUInt8 reads a list of uint8 types
+func (stream *StreamIn) ReadListUInt8() []uint8 {
+	length := stream.ReadUInt32LE()
+	list := make([]uint8, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt8()
+		list = append(list, value)
+	}
+
+	return list
+}
+
+// ReadListUInt16LE reads a list of uint16 types
+func (stream *StreamIn) ReadListUInt16LE() []uint16 {
+	length := stream.ReadUInt32LE()
+	list := make([]uint16, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt16LE()
+		list = append(list, value)
+	}
+
+	return list
+}
+
+// ReadListUInt32LE reads a list of uint32 types
+func (stream *StreamIn) ReadListUInt32LE() []uint32 {
+	length := stream.ReadUInt32LE()
+	list := make([]uint32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt32LE()
+		list = append(list, value)
+	}
+
+	return list
+}
+
+// ReadListUInt64LE reads a list of uint64 types
+func (stream *StreamIn) ReadListUInt64LE() []uint64 {
+	length := stream.ReadUInt32LE()
+	list := make([]uint64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt64LE()
+		list = append(list, value)
+	}
+
+	return list
+}
+
 // NewStreamIn returns a new NEX input stream
 func NewStreamIn(data []byte, server *Server) *StreamIn {
-	buff := crunch.NewBuffer(data)
-
 	return &StreamIn{
-		Buffer: buff,
+		Buffer: crunch.NewBuffer(data),
 		server: server,
 	}
 }

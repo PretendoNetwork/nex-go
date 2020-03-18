@@ -1,6 +1,8 @@
 package nex
 
 import (
+	"reflect"
+
 	crunch "github.com/superwhiskers/crunch/v3"
 )
 
@@ -66,12 +68,73 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	stream.WriteBytesNext(content)
 }
 
+// WriteListUInt8 writes a list of uint8 types
+func (stream *StreamOut) WriteListUInt8(list []uint8) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt8(list[i])
+	}
+}
+
+// WriteListUInt16LE writes a list of uint16 types
+func (stream *StreamOut) WriteListUInt16LE(list []uint16) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt16LE(list[i])
+	}
+}
+
+// WriteListUInt32LE writes a list of uint32 types
+func (stream *StreamOut) WriteListUInt32LE(list []uint32) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt32LE(list[i])
+	}
+}
+
+// WriteListUInt64LE writes a list of uint64 types
+func (stream *StreamOut) WriteListUInt64LE(list []uint64) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt64LE(list[i])
+	}
+}
+
+// WriteListStructure writes a list of Structure types
+func (stream *StreamOut) WriteListStructure(structures interface{}) {
+	// TODO:
+	// Find a better solution that doesn't use reflect
+
+	slice := reflect.ValueOf(structures)
+	count := slice.Len()
+
+	stream.WriteUInt32LE(uint32(count))
+
+	for i := 0; i < count; i++ {
+		structure := slice.Index(i).Interface().(StructureInterface)
+		stream.WriteStructure(structure)
+	}
+
+	/*
+		structureList := reflect.ValueOf(list)
+
+		stream.WriteUInt32LE(uint32(structureList.Len()))
+
+		for i := 0; i < structureList.Len(); i++ {
+			structure := structureList.Index(i)
+			stream.WriteStructure(structure)
+		}
+	*/
+}
+
 // NewStreamOut returns a new nex output stream
 func NewStreamOut(server *Server) *StreamOut {
-	buff := crunch.NewBuffer()
-
 	return &StreamOut{
-		Buffer: buff,
+		Buffer: crunch.NewBuffer(),
 		server: server,
 	}
 }
