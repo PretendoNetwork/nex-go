@@ -118,17 +118,6 @@ func (stream *StreamOut) WriteListStructure(structures interface{}) {
 		structure := slice.Index(i).Interface().(StructureInterface)
 		stream.WriteStructure(structure)
 	}
-
-	/*
-		structureList := reflect.ValueOf(list)
-
-		stream.WriteUInt32LE(uint32(structureList.Len()))
-
-		for i := 0; i < structureList.Len(); i++ {
-			structure := structureList.Index(i)
-			stream.WriteStructure(structure)
-		}
-	*/
 }
 
 // NewStreamOut returns a new nex output stream
