@@ -1,10 +1,6 @@
 package nex
 
-import (
-	"reflect"
-
-	crunch "github.com/superwhiskers/crunch/v3"
-)
+import crunch "github.com/superwhiskers/crunch/v3"
 
 // StreamOut is an abstraction of github.com/superwhiskers/crunch with nex type support
 type StreamOut struct {
@@ -12,10 +8,18 @@ type StreamOut struct {
 	server *Server
 }
 
+// NewStreamOut returns a new nex output stream
+func NewStreamOut(server *Server) *StreamOut {
+	return &StreamOut{
+		Buffer: crunch.NewBuffer(),
+		server: server,
+	}
+}
+
 // WriteUInt8 writes a uint8
 func (stream *StreamOut) WriteUInt8(u8 uint8) {
 	stream.Grow(1)
-	stream.WriteByteNext(byte(u8))
+	stream.WriteByteNext(u8)
 }
 
 // WriteUInt16LE writes a uint16 as LE
@@ -38,20 +42,20 @@ func (stream *StreamOut) WriteUInt64LE(u64 uint64) {
 
 // WriteString writes a NEX string type
 func (stream *StreamOut) WriteString(str string) {
-	str = str + "\x00"
-	strLength := len(str)
+	strLen := len(str) + 1
 
-	stream.Grow(int64(strLength))
-	stream.WriteUInt16LE(uint16(strLength))
+	stream.Grow(int64(strLen) + 2) // account for the additional size of the string length
+	stream.WriteU16LENext([]uint16{uint16(strLen)})
 	stream.WriteBytesNext([]byte(str))
+	stream.WriteByteNext(0x00)
 }
 
 // WriteBuffer writes a NEX Buffer type
 func (stream *StreamOut) WriteBuffer(data []byte) {
 	dataLength := len(data)
 
-	stream.WriteUInt32LE(uint32(dataLength))
-	stream.Grow(int64(dataLength))
+	stream.Grow(int64(dataLength) + 4) // account for bytebuf length
+	stream.WriteU32LENext([]uint32{uint32(dataLength)})
 	stream.WriteBytesNext(data)
 }
 
@@ -60,70 +64,52 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	content := structure.Bytes(NewStreamOut(stream.server))
 
 	if stream.server.GetNexMinorVersion() >= 3 {
-		stream.WriteUInt8(1) // version
-		stream.WriteUInt32LE(uint32(len(content)))
+		stream.Grow(5)
+		stream.WriteByteNext(1) // version
+		stream.WriteU32LENext([]uint32{uint32(len(content))})
 	}
 
 	stream.Grow(int64(len(content)))
 	stream.WriteBytesNext(content)
 }
 
+// WriteListStructure writes a list of Structure types
+func (stream *StreamOut) WriteListStructure(structures []StructureInterface) {
+	stream.Grow(4)
+	stream.WriteU32LENext([]uint32{uint32(len(structures))})
+	for i := 0; i < len(structures); i++ {
+		stream.WriteStructure(structures[i])
+	}
+}
+
 // WriteListUInt8 writes a list of uint8 types
 func (stream *StreamOut) WriteListUInt8(list []uint8) {
-	stream.WriteUInt32LE(uint32(len(list)))
+	stream.Grow(int64(len(list) + 4))
 
-	for i := 0; i < len(list); i++ {
-		stream.WriteUInt8(list[i])
-	}
+	stream.WriteU32LENext([]uint32{uint32(len(list))})
+	stream.WriteBytesNext(list)
 }
 
 // WriteListUInt16LE writes a list of uint16 types
 func (stream *StreamOut) WriteListUInt16LE(list []uint16) {
-	stream.WriteUInt32LE(uint32(len(list)))
+	stream.Grow(int64((len(list) * 2) + 4))
 
-	for i := 0; i < len(list); i++ {
-		stream.WriteUInt16LE(list[i])
-	}
+	stream.WriteU32LENext([]uint32{uint32(len(list))})
+	stream.WriteU16LENext(list)
 }
 
 // WriteListUInt32LE writes a list of uint32 types
 func (stream *StreamOut) WriteListUInt32LE(list []uint32) {
-	stream.WriteUInt32LE(uint32(len(list)))
+	stream.Grow(int64((len(list) * 4) + 4))
 
-	for i := 0; i < len(list); i++ {
-		stream.WriteUInt32LE(list[i])
-	}
+	stream.WriteU32LENext([]uint32{uint32(len(list))})
+	stream.WriteU32LENext(list)
 }
 
 // WriteListUInt64LE writes a list of uint64 types
 func (stream *StreamOut) WriteListUInt64LE(list []uint64) {
-	stream.WriteUInt32LE(uint32(len(list)))
+	stream.Grow(int64((len(list) * 8) + 4))
 
-	for i := 0; i < len(list); i++ {
-		stream.WriteUInt64LE(list[i])
-	}
-}
-
-// WriteListStructure writes a list of Structure types
-func (stream *StreamOut) WriteListStructure(structures interface{}) {
-	// TODO:
-	// Find a better solution that doesn't use reflect
-
-	slice := reflect.ValueOf(structures)
-	count := slice.Len()
-
-	stream.WriteUInt32LE(uint32(count))
-
-	for i := 0; i < count; i++ {
-		structure := slice.Index(i).Interface().(StructureInterface)
-		stream.WriteStructure(structure)
-	}
-}
-
-// NewStreamOut returns a new nex output stream
-func NewStreamOut(server *Server) *StreamOut {
-	return &StreamOut{
-		Buffer: crunch.NewBuffer(),
-		server: server,
-	}
+	stream.WriteU32LENext([]uint32{uint32(len(list))})
+	stream.WriteU64LENext(list)
 }
