@@ -10,8 +10,7 @@ import (
 // Server represents a PRUDP server
 type Server struct {
 	socket                *net.UDPConn
-	compressPacket        func([]byte) []byte
-	decompressPacket      func([]byte) []byte
+	compressionScheme     CompressionScheme
 	clients               map[string]*Client
 	genericEventHandles   map[string][]func(PacketInterface)
 	prudpV0EventHandles   map[string][]func(*PacketV0)
@@ -21,7 +20,6 @@ type Server struct {
 	nexMinorVersion       int
 	fragmentSize          int16
 	resendTimeout         float32
-	usePacketCompression  bool
 	pingTimeout           int
 	signatureVersion      int
 	flagsVersion          int
@@ -384,22 +382,9 @@ func (server *Server) SetKerberosKeySize(kerberosKeySize int) {
 	server.kerberosKeySize = kerberosKeySize
 }
 
-// UsePacketCompression enables or disables packet compression
-func (server *Server) UsePacketCompression(usePacketCompression bool) {
-	if usePacketCompression {
-		compression := ZLibCompression{}
-		server.SetPacketCompression(compression.Compress)
-	} else {
-		compression := DummyCompression{}
-		server.SetPacketCompression(compression.Compress)
-	}
-
-	server.usePacketCompression = usePacketCompression
-}
-
-// SetPacketCompression sets the packet compression function
-func (server *Server) SetPacketCompression(compression func([]byte) []byte) {
-	server.compressPacket = compression
+// UsePacketCompression sets the compression scheme used
+func (server *Server) UsePacketCompression(scheme CompressionScheme) {
+	server.compressionScheme = scheme
 }
 
 // Send writes data to client
@@ -424,10 +409,14 @@ func (server *Server) Send(packet PacketInterface) {
 
 // SendFragment sends a packet fragment to the client
 func (server *Server) SendFragment(packet PacketInterface, fragmentID int) {
-	data := packet.GetPayload()
+	data, err := server.compressionScheme.Compress(packet.GetPayload())
+	if err != nil {
+		panic(err) // temporary, will replace with a proper logging and handling method later
+	}
+
 	client := packet.GetSender()
 
-	packet.SetPayload(server.compressPacket(data))
+	packet.SetPayload(data)
 	packet.SetSequenceID(uint16(client.GetSequenceIDCounterOut().Increment()))
 
 	encodedPacket := packet.Bytes()
@@ -456,9 +445,8 @@ func NewServer() *Server {
 		checksumVersion:       1,
 		kerberosKeySize:       32,
 		kerberosKeyDerivation: 0,
+		compressionScheme:     NewDummyCompression(),
 	}
-
-	server.UsePacketCompression(false)
 
 	return server
 }
