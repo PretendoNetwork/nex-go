@@ -2,6 +2,7 @@ package nex
 
 import (
 	"errors"
+	"strings"
 
 	crunch "github.com/superwhiskers/crunch/v3"
 )
@@ -12,17 +13,9 @@ type StreamIn struct {
 	server *Server
 }
 
-// NewStreamIn returns a new NEX input stream
-func NewStreamIn(data []byte, server *Server) *StreamIn {
-	return &StreamIn{
-		Buffer: crunch.NewBuffer(data),
-		server: server,
-	}
-}
-
 // ReadUInt8 reads a uint8
 func (stream *StreamIn) ReadUInt8() uint8 {
-	return stream.ReadByteNext()
+	return uint8(stream.ReadByteNext())
 }
 
 // ReadUInt16LE reads a uint16
@@ -41,89 +34,128 @@ func (stream *StreamIn) ReadUInt64LE() uint64 {
 }
 
 // ReadString reads and returns a nex string type
-func (stream *StreamIn) ReadString() (data string, err error) {
-	length := stream.ReadU16LENext(1)[0]
+func (stream *StreamIn) ReadString() (string, error) {
+	length := stream.ReadUInt16LE()
 
-	if (stream.ByteCapacity() - stream.ByteOffset()) < int64(length) {
-		err = errors.New("[StreamIn] Nex string length longer than data size")
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+		return "", errors.New("[StreamIn] Nex string length longer than data size")
 	}
 
-	data = string(stream.ReadBytesNext(int64(length))[0:length])
-	return
+	stringData := stream.ReadBytesNext(int64(length))
+	str := string(stringData)
+
+	return strings.TrimRight(str, "\x00"), nil
 }
 
 // ReadBuffer reads a nex Buffer type
-func (stream *StreamIn) ReadBuffer() (data []byte, err error) {
-	length := stream.ReadU32LENext(1)[0]
+func (stream *StreamIn) ReadBuffer() ([]byte, error) {
+	length := stream.ReadUInt32LE()
 
-	if (stream.ByteCapacity() - stream.ByteOffset()) < int64(length) {
-		err = errors.New("[StreamIn] Nex buffer length longer than data size")
-		return
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+		return []byte{}, errors.New("[StreamIn] Nex buffer length longer than data size")
 	}
 
-	data = stream.ReadBytesNext(int64(length))
-	return
+	data := stream.ReadBytesNext(int64(length))
+
+	return data, nil
 }
 
 // ReadQBuffer reads a nex qBuffer type
-func (stream *StreamIn) ReadQBuffer() (data []byte, err error) {
-	length := stream.ReadU16LENext(1)[0]
+func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
+	length := stream.ReadUInt16LE()
 
-	if (stream.ByteCapacity() - stream.ByteOffset()) < int64(length) {
-		err = errors.New("[StreamIn] Nex qBuffer length longer than data size")
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+		return []byte{}, errors.New("[StreamIn] Nex qBuffer length longer than data size")
 	}
 
-	data = stream.ReadBytesNext(int64(length))
-	return
+	data := stream.ReadBytesNext(int64(length))
+
+	return data, nil
 }
 
 // ReadStructure reads a nex Structure type
-func (stream *StreamIn) ReadStructure(structure StructureInterface) (data StructureInterface, err error) {
+func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureInterface, error) {
 	hierarchy := structure.GetHierarchy()
-	data = structure // for some reason, go won't let you pipe data like that
 
 	for _, class := range hierarchy {
-		_, err = stream.ReadStructure(class)
+		_, err := stream.ReadStructure(class)
 
 		if err != nil {
-			err = errors.New("[ReadStructure] " + err.Error())
-
+			return structure, errors.New("[ReadStructure] " + err.Error())
 		}
 	}
 
 	if stream.server.GetNexMinorVersion() >= 3 {
 		// skip the new struct header as we don't really need the data there
-		/* superwhiskers: this was here before but i replaced it with a seek
 		_ = stream.ReadUInt8()    // structure header version
 		_ = stream.ReadUInt32LE() // structure content length
-		*/
-		stream.SeekByte(5, true)
 	}
 
-	err = data.ExtractFromStream(stream)
+	err := structure.ExtractFromStream(stream)
+
 	if err != nil {
-		err = errors.New("[ReadStructure] " + err.Error())
+		return structure, errors.New("[ReadStructure] " + err.Error())
 	}
 
-	return
+	return structure, nil
 }
 
 // ReadListUInt8 reads a list of uint8 types
 func (stream *StreamIn) ReadListUInt8() []uint8 {
-	return stream.ReadBytesNext(int64(stream.ReadU32LENext(1)[0]))
+	length := stream.ReadUInt32LE()
+	list := make([]uint8, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt8()
+		list = append(list, value)
+	}
+
+	return list
 }
 
 // ReadListUInt16LE reads a list of uint16 types
 func (stream *StreamIn) ReadListUInt16LE() []uint16 {
-	return stream.ReadU16LENext(int64(stream.ReadU32LENext(1)[0]))
+	length := stream.ReadUInt32LE()
+	list := make([]uint16, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt16LE()
+		list = append(list, value)
+	}
+
+	return list
 }
 
 // ReadListUInt32LE reads a list of uint32 types
 func (stream *StreamIn) ReadListUInt32LE() []uint32 {
-	return stream.ReadU32LENext(int64(stream.ReadU32LENext(1)[0]))
+	length := stream.ReadUInt32LE()
+	list := make([]uint32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt32LE()
+		list = append(list, value)
+	}
+
+	return list
 }
 
 // ReadListUInt64LE reads a list of uint64 types
 func (stream *StreamIn) ReadListUInt64LE() []uint64 {
-	return stream.ReadU64LENext(int64(stream.ReadU32LENext(1)[0]))
+	length := stream.ReadUInt32LE()
+	list := make([]uint64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadUInt64LE()
+		list = append(list, value)
+	}
+
+	return list
+}
+
+// NewStreamIn returns a new NEX input stream
+func NewStreamIn(data []byte, server *Server) *StreamIn {
+	return &StreamIn{
+		Buffer: crunch.NewBuffer(data),
+		server: server,
+	}
 }
