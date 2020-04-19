@@ -93,8 +93,10 @@ func (response *RMCResponse) Bytes() []byte {
 		body.WriteUInt32LE(response.callID)
 		body.WriteUInt32LE(response.methodID | 0x8000)
 
-		body.Grow(int64(len(response.data)))
-		body.WriteBytesNext(response.data)
+		if response.data != nil && len(response.data) > 0 {
+			body.Grow(int64(len(response.data)))
+			body.WriteBytesNext(response.data)
+		}
 	} else {
 		body.WriteUInt32LE(response.errorCode)
 		body.WriteUInt32LE(response.callID)
