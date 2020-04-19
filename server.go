@@ -70,9 +70,9 @@ func (server *Server) listenDatagram(quit chan struct{}) {
 		err = server.handleSocketMessage()
 	}
 
-	panic(err)
-
 	quit <- struct{}{}
+
+	panic(err)
 }
 
 func (server *Server) handleSocketMessage() error {
