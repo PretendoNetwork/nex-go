@@ -100,6 +100,67 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 	return structure, nil
 }
 
+// ReadVariant reads a Variant type. This type can hold 7 different types
+func (stream *StreamIn) ReadVariant() interface{} {
+	switch stream.ReadUInt8() {
+	case 0: // null
+		return nil
+	case 1: // sint64
+		return int64(stream.ReadUInt64LE())
+	case 2: // double
+		return float64(stream.ReadUInt64LE())
+	case 3: // bool
+		return stream.ReadUInt8() == 1
+	case 4: // string
+		str, _ := stream.ReadString()
+		return str
+	case 5: // datetime
+		return NewDateTime(stream.ReadUInt64LE())
+	case 6: // uint64
+		return stream.ReadUInt64LE()
+	}
+
+	return nil
+}
+
+// ReadMap reads a Map type with the given key and value types
+func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface{}) (map[interface{}]interface{}, error) {
+	/*
+		TODO: Make this not suck
+
+		Map types can have any type as the key and any type as the value
+		Due to strict typing we cannot just pass stream functions as these values and call them
+		At the moment this just reads what type you want from the interface{} function type
+	*/
+
+	length := stream.ReadUInt32LE()
+	newMap := make(map[interface{}]interface{})
+
+	for i := 0; i < int(length); i++ {
+		var key interface{}
+		var value interface{}
+		var err error
+
+		switch keyFunction.(type) {
+		case func() (string, error):
+			key, err = stream.ReadString()
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		switch valueFunction.(type) {
+		case func() interface{}:
+			value = stream.ReadVariant()
+		}
+
+		newMap[key] = value
+	}
+
+	return newMap, nil
+}
+
 // ReadListUInt8 reads a list of uint8 types
 func (stream *StreamIn) ReadListUInt8() []uint8 {
 	length := stream.ReadUInt32LE()
