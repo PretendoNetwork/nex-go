@@ -78,7 +78,7 @@ func (server *Server) listenDatagram(quit chan struct{}) {
 func (server *Server) handleSocketMessage() error {
 	var buffer [64000]byte
 
-	socket := server.GetSocket()
+	socket := server.Socket()
 
 	length, addr, err := socket.ReadFromUDP(buffer[0:])
 
@@ -99,7 +99,7 @@ func (server *Server) handleSocketMessage() error {
 
 	var packet PacketInterface
 
-	if server.GetPrudpVersion() == 0 {
+	if server.PrudpVersion() == 0 {
 		packet, err = NewPacketV0(client, data)
 	} else {
 		packet, err = NewPacketV1(client, data)
@@ -115,17 +115,17 @@ func (server *Server) handleSocketMessage() error {
 	}
 
 	if packet.HasFlag(FlagNeedsAck) {
-		if packet.GetType() != ConnectPacket || (packet.GetType() == ConnectPacket && len(packet.GetPayload()) <= 0) {
+		if packet.Type() != ConnectPacket || (packet.Type() == ConnectPacket && len(packet.Payload()) <= 0) {
 			go server.AcknowledgePacket(packet, nil)
 		}
 	}
 
-	switch packet.GetType() {
+	switch packet.Type() {
 	case SynPacket:
 		client.Reset()
 		server.Emit("Syn", packet)
 	case ConnectPacket:
-		packet.GetSender().SetClientConnectionSignature(packet.GetConnectionSignature())
+		packet.Sender().SetClientConnectionSignature(packet.ConnectionSignature())
 
 		server.Emit("Connect", packet)
 	case DataPacket:
@@ -187,7 +187,7 @@ func (server *Server) Emit(event string, packet interface{}) {
 
 // ClientConnected checks if a given client is stored on the server
 func (server *Server) ClientConnected(client *Client) bool {
-	discriminator := client.GetAddress().String()
+	discriminator := client.Address().String()
 
 	_, connected := server.clients[discriminator]
 
@@ -196,7 +196,7 @@ func (server *Server) ClientConnected(client *Client) bool {
 
 // Kick removes a client from the server
 func (server *Server) Kick(client *Client) {
-	discriminator := client.GetAddress().String()
+	discriminator := client.Address().String()
 
 	if _, ok := server.clients[discriminator]; ok {
 		delete(server.clients, discriminator)
@@ -208,7 +208,7 @@ func (server *Server) Kick(client *Client) {
 func (server *Server) SendPing(client *Client) {
 	var pingPacket PacketInterface
 
-	if server.GetPrudpVersion() == 0 {
+	if server.PrudpVersion() == 0 {
 		pingPacket, _ = NewPacketV0(client, nil)
 	} else {
 		pingPacket, _ = NewPacketV1(client, nil)
@@ -225,28 +225,28 @@ func (server *Server) SendPing(client *Client) {
 
 // AcknowledgePacket acknowledges that the given packet was recieved
 func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) {
-	sender := packet.GetSender()
+	sender := packet.Sender()
 
 	var ackPacket PacketInterface
 
-	if server.GetPrudpVersion() == 0 {
+	if server.PrudpVersion() == 0 {
 		ackPacket, _ = NewPacketV0(sender, nil)
 	} else {
 		ackPacket, _ = NewPacketV1(sender, nil)
 	}
 
-	ackPacket.SetSource(packet.GetDestination())
-	ackPacket.SetDestination(packet.GetSource())
-	ackPacket.SetType(packet.GetType())
-	ackPacket.SetSequenceID(packet.GetSequenceID())
-	ackPacket.SetFragmentID(packet.GetFragmentID())
+	ackPacket.SetSource(packet.Destination())
+	ackPacket.SetDestination(packet.Source())
+	ackPacket.SetType(packet.Type())
+	ackPacket.SetSequenceID(packet.SequenceID())
+	ackPacket.SetFragmentID(packet.FragmentID())
 	ackPacket.AddFlag(FlagAck)
 
 	if payload != nil {
 		ackPacket.SetPayload(payload)
 	}
 
-	if server.GetPrudpVersion() == 1 {
+	if server.PrudpVersion() == 1 {
 		packet := packet.(*PacketV1)
 		ackPacket := ackPacket.(*PacketV1)
 
@@ -254,30 +254,30 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 		ackPacket.SetSubstreamID(0)
 		ackPacket.AddFlag(FlagHasSize)
 
-		if packet.GetType() == SynPacket {
+		if packet.Type() == SynPacket {
 			serverConnectionSignature := make([]byte, 16)
 			rand.Read(serverConnectionSignature)
 
-			ackPacket.GetSender().SetServerConnectionSignature(serverConnectionSignature)
+			ackPacket.Sender().SetServerConnectionSignature(serverConnectionSignature)
 
-			ackPacket.SetSupportedFunctions(packet.GetSupportedFunctions())
+			ackPacket.SetSupportedFunctions(packet.SupportedFunctions())
 			ackPacket.SetMaximumSubstreamID(0)
 
 			ackPacket.SetConnectionSignature(serverConnectionSignature)
 		}
 
-		if packet.GetType() == ConnectPacket {
+		if packet.Type() == ConnectPacket {
 
 			ackPacket.SetConnectionSignature(make([]byte, 16))
 
-			ackPacket.SetSupportedFunctions(packet.GetSupportedFunctions())
+			ackPacket.SetSupportedFunctions(packet.SupportedFunctions())
 
 			ackPacket.SetInitialSequenceID(10000)
 
 			ackPacket.SetMaximumSubstreamID(0)
 		}
 
-		if packet.GetType() == DataPacket {
+		if packet.Type() == DataPacket {
 			// Aggregate acknowledgement
 			ackPacket.ClearFlag(FlagAck)
 			ackPacket.AddFlag(FlagMultiAck)
@@ -285,14 +285,14 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 			payloadStream := NewStreamOut(server)
 
 			// New version
-			if server.GetNexVersion() >= 2 {
+			if server.NexVersion() >= 2 {
 				ackPacket.SetSequenceID(0)
 				ackPacket.SetSubstreamID(1)
 
 				// I'm lazy so just ack one packet
-				payloadStream.WriteUInt8(0)                         // substream ID
-				payloadStream.WriteUInt8(0)                         // length of additional sequence ids
-				payloadStream.WriteUInt16LE(packet.GetSequenceID()) // Sequence id
+				payloadStream.WriteUInt8(0)                      // substream ID
+				payloadStream.WriteUInt8(0)                      // length of additional sequence ids
+				payloadStream.WriteUInt16LE(packet.SequenceID()) // Sequence id
 			}
 
 			ackPacket.SetPayload(payloadStream.Bytes())
@@ -301,11 +301,11 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 
 	data := ackPacket.Bytes()
 
-	server.SendRaw(sender.GetAddress(), data)
+	server.SendRaw(sender.Address(), data)
 }
 
-// GetSocket returns the underlying server UDP socket
-func (server *Server) GetSocket() *net.UDPConn {
+// Socket returns the underlying server UDP socket
+func (server *Server) Socket() *net.UDPConn {
 	return server.socket
 }
 
@@ -314,8 +314,8 @@ func (server *Server) SetSocket(socket *net.UDPConn) {
 	server.socket = socket
 }
 
-// GetPrudpVersion returns the server PRUDP version
-func (server *Server) GetPrudpVersion() int {
+// PrudpVersion returns the server PRUDP version
+func (server *Server) PrudpVersion() int {
 	return server.prudpVersion
 }
 
@@ -324,8 +324,8 @@ func (server *Server) SetPrudpVersion(prudpVersion int) {
 	server.prudpVersion = prudpVersion
 }
 
-// GetNexVersion returns the server NEX version
-func (server *Server) GetNexVersion() int {
+// NexVersion returns the server NEX version
+func (server *Server) NexVersion() int {
 	return server.nexVersion
 }
 
@@ -334,8 +334,8 @@ func (server *Server) SetNexVersion(nexVersion int) {
 	server.nexVersion = nexVersion
 }
 
-// GetChecksumVersion returns the server packet checksum version
-func (server *Server) GetChecksumVersion() int {
+// ChecksumVersion returns the server packet checksum version
+func (server *Server) ChecksumVersion() int {
 	return server.checksumVersion
 }
 
@@ -344,8 +344,8 @@ func (server *Server) SetChecksumVersion(checksumVersion int) {
 	server.checksumVersion = checksumVersion
 }
 
-// GetFlagsVersion returns the server packet flags version
-func (server *Server) GetFlagsVersion() int {
+// FlagsVersion returns the server packet flags version
+func (server *Server) FlagsVersion() int {
 	return server.flagsVersion
 }
 
@@ -354,8 +354,8 @@ func (server *Server) SetFlagsVersion(flagsVersion int) {
 	server.flagsVersion = flagsVersion
 }
 
-// GetAccessKey returns the server access key
-func (server *Server) GetAccessKey() string {
+// AccessKey returns the server access key
+func (server *Server) AccessKey() string {
 	return server.accessKey
 }
 
@@ -364,8 +364,8 @@ func (server *Server) SetAccessKey(accessKey string) {
 	server.accessKey = accessKey
 }
 
-// GetSignatureVersion returns the server packet signature version
-func (server *Server) GetSignatureVersion() int {
+// SignatureVersion returns the server packet signature version
+func (server *Server) SignatureVersion() int {
 	return server.signatureVersion
 }
 
@@ -374,8 +374,8 @@ func (server *Server) SetSignatureVersion(signatureVersion int) {
 	server.signatureVersion = signatureVersion
 }
 
-// GetKerberosKeySize returns the server kerberos key size
-func (server *Server) GetKerberosKeySize() int {
+// KerberosKeySize returns the server kerberos key size
+func (server *Server) KerberosKeySize() int {
 	return server.kerberosKeySize
 }
 
@@ -404,7 +404,7 @@ func (server *Server) SetPacketCompression(compression func([]byte) []byte) {
 
 // Send writes data to client
 func (server *Server) Send(packet PacketInterface) {
-	data := packet.GetPayload()
+	data := packet.Payload()
 	fragments := int(int16(len(data)) / server.fragmentSize)
 
 	fragmentID := 1
@@ -424,20 +424,20 @@ func (server *Server) Send(packet PacketInterface) {
 
 // SendFragment sends a packet fragment to the client
 func (server *Server) SendFragment(packet PacketInterface, fragmentID int) {
-	data := packet.GetPayload()
-	client := packet.GetSender()
+	data := packet.Payload()
+	client := packet.Sender()
 
 	packet.SetPayload(server.compressPacket(data))
-	packet.SetSequenceID(uint16(client.GetSequenceIDCounterOut().Increment()))
+	packet.SetSequenceID(uint16(client.SequenceIDCounterOut().Increment()))
 
 	encodedPacket := packet.Bytes()
 
-	server.SendRaw(client.GetAddress(), encodedPacket)
+	server.SendRaw(client.Address(), encodedPacket)
 }
 
 // SendRaw writes raw packet data to the client socket
 func (server *Server) SendRaw(conn *net.UDPAddr, data []byte) {
-	server.GetSocket().WriteToUDP(data, conn)
+	server.Socket().WriteToUDP(data, conn)
 }
 
 // NewServer returns a new NEX server

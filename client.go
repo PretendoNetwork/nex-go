@@ -27,10 +27,10 @@ func (client *Client) Reset() {
 	client.sequenceIDIn = NewCounter(0)
 	client.sequenceIDOut = NewCounter(0)
 
-	client.UpdateAccessKey(client.GetServer().GetAccessKey())
+	client.UpdateAccessKey(client.Server().AccessKey())
 	client.UpdateRC4Key([]byte("CD&ML"))
 
-	if client.GetServer().GetPrudpVersion() == 0 {
+	if client.Server().PrudpVersion() == 0 {
 		client.SetServerConnectionSignature(make([]byte, 4))
 		client.SetClientConnectionSignature(make([]byte, 4))
 	} else {
@@ -39,13 +39,13 @@ func (client *Client) Reset() {
 	}
 }
 
-// GetAddress returns the clients UDP address
-func (client *Client) GetAddress() *net.UDPAddr {
+// Address returns the clients UDP address
+func (client *Client) Address() *net.UDPAddr {
 	return client.address
 }
 
-// GetServer returns the server the client is currently connected to
-func (client *Client) GetServer() *Server {
+// Server returns the server the client is currently connected to
+func (client *Client) Server() *Server {
 	return client.server
 }
 
@@ -58,13 +58,13 @@ func (client *Client) UpdateRC4Key(RC4Key []byte) {
 	client.decipher = decipher
 }
 
-// GetCipher returns the RC4 cipher stream for out-bound packets
-func (client *Client) GetCipher() *rc4.Cipher {
+// Cipher returns the RC4 cipher stream for out-bound packets
+func (client *Client) Cipher() *rc4.Cipher {
 	return client.cipher
 }
 
-// GetDecipher returns the RC4 cipher stream for in-bound packets
-func (client *Client) GetDecipher() *rc4.Cipher {
+// Decipher returns the RC4 cipher stream for in-bound packets
+func (client *Client) Decipher() *rc4.Cipher {
 	return client.decipher
 }
 
@@ -74,13 +74,13 @@ func (client *Client) UpdateAccessKey(accessKey string) {
 	client.signatureKey = MD5Hash([]byte(accessKey))
 }
 
-// GetSignatureBase returns the v0 checksum signature base
-func (client *Client) GetSignatureBase() int {
+// SignatureBase returns the v0 checksum signature base
+func (client *Client) SignatureBase() int {
 	return client.signatureBase
 }
 
-// GetSignatureKey returns signature key
-func (client *Client) GetSignatureKey() []byte {
+// SignatureKey returns signature key
+func (client *Client) SignatureKey() []byte {
 	return client.signatureKey
 }
 
@@ -89,8 +89,8 @@ func (client *Client) SetServerConnectionSignature(serverConnectionSignature []b
 	client.serverConnectionSignature = serverConnectionSignature
 }
 
-// GetServerConnectionSignature returns the clients server-side connection signature
-func (client *Client) GetServerConnectionSignature() []byte {
+// ServerConnectionSignature returns the clients server-side connection signature
+func (client *Client) ServerConnectionSignature() []byte {
 	return client.serverConnectionSignature
 }
 
@@ -99,18 +99,18 @@ func (client *Client) SetClientConnectionSignature(clientConnectionSignature []b
 	client.clientConnectionSignature = clientConnectionSignature
 }
 
-// GetClientConnectionSignature returns the clients client-side connection signature
-func (client *Client) GetClientConnectionSignature() []byte {
+// ClientConnectionSignature returns the clients client-side connection signature
+func (client *Client) ClientConnectionSignature() []byte {
 	return client.clientConnectionSignature
 }
 
-// GetSequenceIDCounterOut returns the clients packet SequenceID counter for out-going packets
-func (client *Client) GetSequenceIDCounterOut() *Counter {
+// SequenceIDCounterOut returns the clients packet SequenceID counter for out-going packets
+func (client *Client) SequenceIDCounterOut() *Counter {
 	return client.sequenceIDOut
 }
 
-// GetSequenceIDCounterIn returns the clients packet SequenceID counter for incoming packets
-func (client *Client) GetSequenceIDCounterIn() *Counter {
+// SequenceIDCounterIn returns the clients packet SequenceID counter for incoming packets
+func (client *Client) SequenceIDCounterIn() *Counter {
 	return client.sequenceIDIn
 }
 
@@ -119,8 +119,8 @@ func (client *Client) SetSessionKey(sessionKey []byte) {
 	client.sessionKey = sessionKey
 }
 
-// GetSessionKey returns the clients session key
-func (client *Client) GetSessionKey() []byte {
+// SessionKey returns the clients session key
+func (client *Client) SessionKey() []byte {
 	return client.sessionKey
 }
 

@@ -10,23 +10,23 @@ type RMCRequest struct {
 	parameters []byte
 }
 
-// GetProtocolID sets the RMC request protocolID
-func (request *RMCRequest) GetProtocolID() uint8 {
+// ProtocolID sets the RMC request protocolID
+func (request *RMCRequest) ProtocolID() uint8 {
 	return request.protocolID
 }
 
-// GetCallID sets the RMC request callID
-func (request *RMCRequest) GetCallID() uint32 {
+// CallID sets the RMC request callID
+func (request *RMCRequest) CallID() uint32 {
 	return request.callID
 }
 
-// GetMethodID sets the RMC request methodID
-func (request *RMCRequest) GetMethodID() uint32 {
+// MethodID sets the RMC request methodID
+func (request *RMCRequest) MethodID() uint32 {
 	return request.methodID
 }
 
-// GetParameters sets the RMC request parameters
-func (request *RMCRequest) GetParameters() []byte {
+// Parameters sets the RMC request parameters
+func (request *RMCRequest) Parameters() []byte {
 	return request.parameters
 }
 

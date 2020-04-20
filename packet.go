@@ -24,8 +24,8 @@ func (packet *Packet) Data() []byte {
 	return packet.data
 }
 
-// GetSender returns the packet sender
-func (packet *Packet) GetSender() *Client {
+// Sender returns the packet sender
+func (packet *Packet) Sender() *Client {
 	return packet.sender
 }
 
@@ -34,8 +34,8 @@ func (packet *Packet) SetVersion(version uint8) {
 	packet.version = version
 }
 
-// GetVersion gets the packet PRUDP version
-func (packet *Packet) GetVersion() uint8 {
+// Version gets the packet PRUDP version
+func (packet *Packet) Version() uint8 {
 	return packet.version
 }
 
@@ -44,8 +44,8 @@ func (packet *Packet) SetSource(source uint8) {
 	packet.source = source
 }
 
-// GetSource returns the packet source
-func (packet *Packet) GetSource() uint8 {
+// Source returns the packet source
+func (packet *Packet) Source() uint8 {
 	return packet.source
 }
 
@@ -54,8 +54,8 @@ func (packet *Packet) SetDestination(destination uint8) {
 	packet.destination = destination
 }
 
-// GetDestination returns the packet destination
-func (packet *Packet) GetDestination() uint8 {
+// Destination returns the packet destination
+func (packet *Packet) Destination() uint8 {
 	return packet.destination
 }
 
@@ -64,8 +64,8 @@ func (packet *Packet) SetType(packetType uint16) {
 	packet.packetType = packetType
 }
 
-// GetType returns the packet type
-func (packet *Packet) GetType() uint16 {
+// Type returns the packet type
+func (packet *Packet) Type() uint16 {
 	return packet.packetType
 }
 
@@ -74,8 +74,8 @@ func (packet *Packet) SetFlags(bitmask uint16) {
 	packet.flags = bitmask
 }
 
-// GetFlags returns the packet flag bitmask
-func (packet *Packet) GetFlags() uint16 {
+// Flags returns the packet flag bitmask
+func (packet *Packet) Flags() uint16 {
 	return packet.flags
 }
 
@@ -99,8 +99,8 @@ func (packet *Packet) SetSessionID(sessionID uint8) {
 	packet.sessionID = sessionID
 }
 
-// GetSessionID returns the packet sessionID
-func (packet *Packet) GetSessionID() uint8 {
+// SessionID returns the packet sessionID
+func (packet *Packet) SessionID() uint8 {
 	return packet.sessionID
 }
 
@@ -109,8 +109,8 @@ func (packet *Packet) SetSignature(signature []byte) {
 	packet.signature = signature
 }
 
-// GetSignature returns the packet signature
-func (packet *Packet) GetSignature() []byte {
+// Signature returns the packet signature
+func (packet *Packet) Signature() []byte {
 	return packet.signature
 }
 
@@ -119,8 +119,8 @@ func (packet *Packet) SetSequenceID(sequenceID uint16) {
 	packet.sequenceID = sequenceID
 }
 
-// GetSequenceID returns the packet sequenceID
-func (packet *Packet) GetSequenceID() uint16 {
+// SequenceID returns the packet sequenceID
+func (packet *Packet) SequenceID() uint16 {
 	return packet.sequenceID
 }
 
@@ -129,8 +129,8 @@ func (packet *Packet) SetConnectionSignature(connectionSignature []byte) {
 	packet.connectionSignature = connectionSignature
 }
 
-// GetConnectionSignature returns the packet connection signature
-func (packet *Packet) GetConnectionSignature() []byte {
+// ConnectionSignature returns the packet connection signature
+func (packet *Packet) ConnectionSignature() []byte {
 	return packet.connectionSignature
 }
 
@@ -139,8 +139,8 @@ func (packet *Packet) SetFragmentID(fragmentID uint8) {
 	packet.fragmentID = fragmentID
 }
 
-// GetFragmentID returns the packet fragmentID
-func (packet *Packet) GetFragmentID() uint8 {
+// FragmentID returns the packet fragmentID
+func (packet *Packet) FragmentID() uint8 {
 	return packet.fragmentID
 }
 
@@ -149,13 +149,13 @@ func (packet *Packet) SetPayload(payload []byte) {
 	packet.payload = payload
 }
 
-// GetPayload returns the packet payload
-func (packet *Packet) GetPayload() []byte {
+// Payload returns the packet payload
+func (packet *Packet) Payload() []byte {
 	return packet.payload
 }
 
-// GetRMCRequest returns the packet RMC request
-func (packet *Packet) GetRMCRequest() RMCRequest {
+// RMCRequest returns the packet RMC request
+func (packet *Packet) RMCRequest() RMCRequest {
 	return packet.rmcRequest
 }
 

@@ -7,7 +7,7 @@ import (
 
 // StructureInterface implements all Structure methods
 type StructureInterface interface {
-	GetHierarchy() []StructureInterface
+	Hierarchy() []StructureInterface
 	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
 }
@@ -17,8 +17,8 @@ type Structure struct {
 	StructureInterface
 }
 
-// GetHierarchy returns a Structure hierarchy
-func (structure *Structure) GetHierarchy() []StructureInterface {
+// Hierarchy returns a Structure hierarchy
+func (structure *Structure) Hierarchy() []StructureInterface {
 	return make([]StructureInterface, 0)
 }
 

@@ -42,8 +42,8 @@ func (packet *PacketV1) SetSubstreamID(substreamID uint8) {
 	packet.substreamID = substreamID
 }
 
-// GetSubstreamID returns the packet substream ID
-func (packet *PacketV1) GetSubstreamID() uint8 {
+// SubstreamID returns the packet substream ID
+func (packet *PacketV1) SubstreamID() uint8 {
 	return packet.substreamID
 }
 
@@ -52,8 +52,8 @@ func (packet *PacketV1) SetSupportedFunctions(supportedFunctions uint32) {
 	packet.supportedFunctions = supportedFunctions
 }
 
-// GetSupportedFunctions returns the packet supported functions flags
-func (packet *PacketV1) GetSupportedFunctions() uint32 {
+// SupportedFunctions returns the packet supported functions flags
+func (packet *PacketV1) SupportedFunctions() uint32 {
 	return packet.supportedFunctions
 }
 
@@ -62,8 +62,8 @@ func (packet *PacketV1) SetInitialSequenceID(initialSequenceID uint16) {
 	packet.initialSequenceID = initialSequenceID
 }
 
-// GetInitialSequenceID returns the packet initial sequence ID for unreliable packets
-func (packet *PacketV1) GetInitialSequenceID() uint16 {
+// InitialSequenceID returns the packet initial sequence ID for unreliable packets
+func (packet *PacketV1) InitialSequenceID() uint16 {
 	return packet.initialSequenceID
 }
 
@@ -72,8 +72,8 @@ func (packet *PacketV1) SetMaximumSubstreamID(maximumSubstreamID uint8) {
 	packet.maximumSubstreamID = maximumSubstreamID
 }
 
-// GetMaximumSubstreamID returns the packet maximum substream ID
-func (packet *PacketV1) GetMaximumSubstreamID() uint8 {
+// MaximumSubstreamID returns the packet maximum substream ID
+func (packet *PacketV1) MaximumSubstreamID() uint8 {
 	return packet.maximumSubstreamID
 }
 
@@ -83,7 +83,7 @@ func (packet *PacketV1) Decode() error {
 		return errors.New("[PRUDPv1] Packet length less than minimum")
 	}
 
-	stream := NewStreamIn(packet.Data(), packet.GetSender().GetServer())
+	stream := NewStreamIn(packet.Data(), packet.Sender().Server())
 
 	packet.magic = stream.ReadBytesNext(2)
 
@@ -93,7 +93,7 @@ func (packet *PacketV1) Decode() error {
 
 	packet.SetVersion(stream.ReadUInt8())
 
-	if packet.GetVersion() != 1 {
+	if packet.Version() != 1 {
 		return errors.New("PRUDPv1 version did not match")
 	}
 
@@ -105,7 +105,7 @@ func (packet *PacketV1) Decode() error {
 
 	typeFlags := stream.ReadUInt16LE()
 
-	if packet.GetSender().GetServer().GetFlagsVersion() == 0 {
+	if packet.Sender().Server().FlagsVersion() == 0 {
 		packet.SetType(typeFlags & 7)
 		packet.SetFlags(typeFlags >> 3)
 	} else {
@@ -113,7 +113,7 @@ func (packet *PacketV1) Decode() error {
 		packet.SetFlags(typeFlags >> 4)
 	}
 
-	if _, ok := validTypes[packet.GetType()]; !ok {
+	if _, ok := validTypes[packet.Type()]; !ok {
 		return errors.New("[PRUDPv1] Packet type not valid type")
 	}
 
@@ -140,10 +140,10 @@ func (packet *PacketV1) Decode() error {
 
 		packet.SetPayload(payloadCrypted)
 
-		if packet.GetType() == DataPacket && !packet.HasFlag(FlagMultiAck) {
+		if packet.Type() == DataPacket && !packet.HasFlag(FlagMultiAck) {
 			ciphered := make([]byte, payloadSize)
 
-			packet.GetSender().GetDecipher().XORKeyStream(ciphered, payloadCrypted)
+			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
 
 			request, err := NewRMCRequest(ciphered)
 
@@ -155,9 +155,9 @@ func (packet *PacketV1) Decode() error {
 		}
 	}
 
-	calculatedSignature := packet.calculateSignature(packet.Data()[2:14], packet.GetSender().GetServerConnectionSignature(), options, packet.GetPayload())
+	calculatedSignature := packet.calculateSignature(packet.Data()[2:14], packet.Sender().ServerConnectionSignature(), options, packet.Payload())
 
-	if !bytes.Equal(calculatedSignature, packet.GetSignature()) {
+	if !bytes.Equal(calculatedSignature, packet.Signature()) {
 		fmt.Println("[ERROR] Calculated signature did not match")
 	}
 
@@ -167,16 +167,16 @@ func (packet *PacketV1) Decode() error {
 // Bytes encodes the packet and returns a byte array
 func (packet *PacketV1) Bytes() []byte {
 
-	if packet.GetType() == DataPacket {
+	if packet.Type() == DataPacket {
 
 		if !packet.HasFlag(FlagMultiAck) {
-			payload := packet.GetPayload()
+			payload := packet.Payload()
 
 			if payload != nil || len(payload) > 0 {
 				payloadSize := len(payload)
 
 				encrypted := make([]byte, payloadSize)
-				packet.GetSender().GetCipher().XORKeyStream(encrypted, payload)
+				packet.Sender().Cipher().XORKeyStream(encrypted, payload)
 
 				packet.SetPayload(encrypted)
 			}
@@ -188,13 +188,13 @@ func (packet *PacketV1) Bytes() []byte {
 	}
 
 	var typeFlags uint16
-	if packet.GetSender().GetServer().GetFlagsVersion() == 0 {
-		typeFlags = packet.GetType() | packet.GetFlags()<<3
+	if packet.Sender().Server().FlagsVersion() == 0 {
+		typeFlags = packet.Type() | packet.Flags()<<3
 	} else {
-		typeFlags = packet.GetType() | packet.GetFlags()<<4
+		typeFlags = packet.Type() | packet.Flags()<<4
 	}
 
-	stream := NewStreamOut(packet.GetSender().GetServer())
+	stream := NewStreamOut(packet.Sender().Server())
 
 	stream.WriteUInt16LE(0xD0EA) // v1 magic
 	stream.WriteUInt8(1)
@@ -203,15 +203,15 @@ func (packet *PacketV1) Bytes() []byte {
 	optionsLength := len(options)
 
 	stream.WriteUInt8(uint8(optionsLength))
-	stream.WriteUInt16LE(uint16(len(packet.GetPayload())))
-	stream.WriteUInt8(packet.GetSource())
-	stream.WriteUInt8(packet.GetDestination())
+	stream.WriteUInt16LE(uint16(len(packet.Payload())))
+	stream.WriteUInt8(packet.Source())
+	stream.WriteUInt8(packet.Destination())
 	stream.WriteUInt16LE(typeFlags)
-	stream.WriteUInt8(packet.GetSessionID())
-	stream.WriteUInt8(packet.GetSubstreamID())
-	stream.WriteUInt16LE(packet.GetSequenceID())
+	stream.WriteUInt8(packet.SessionID())
+	stream.WriteUInt8(packet.SubstreamID())
+	stream.WriteUInt16LE(packet.SequenceID())
 
-	signature := packet.calculateSignature(stream.Bytes()[2:14], packet.GetSender().GetClientConnectionSignature(), options, packet.GetPayload())
+	signature := packet.calculateSignature(stream.Bytes()[2:14], packet.Sender().ClientConnectionSignature(), options, packet.Payload())
 
 	stream.Grow(int64(len(signature)))
 	stream.WriteBytesNext(signature)
@@ -221,7 +221,7 @@ func (packet *PacketV1) Bytes() []byte {
 		stream.WriteBytesNext(options)
 	}
 
-	payload := packet.GetPayload()
+	payload := packet.Payload()
 	payloadLength := len(payload)
 
 	if payload != nil && payloadLength > 0 {
@@ -233,7 +233,7 @@ func (packet *PacketV1) Bytes() []byte {
 }
 
 func (packet *PacketV1) decodeOptions(options []byte) {
-	optionsStream := NewStreamIn(options, packet.GetSender().GetServer())
+	optionsStream := NewStreamIn(options, packet.Sender().Server())
 
 	for optionsStream.ByteOffset() != optionsStream.ByteCapacity() {
 		optionID := optionsStream.ReadUInt8()
@@ -257,9 +257,9 @@ func (packet *PacketV1) decodeOptions(options []byte) {
 }
 
 func (packet *PacketV1) encodeOptions() []byte {
-	stream := NewStreamOut(packet.GetSender().GetServer())
+	stream := NewStreamOut(packet.Sender().Server())
 
-	if packet.GetType() == SynPacket || packet.GetType() == ConnectPacket {
+	if packet.Type() == SynPacket || packet.Type() == ConnectPacket {
 		stream.WriteUInt8(OptionSupportedFunctions)
 		stream.WriteUInt8(4)
 		stream.WriteUInt32LE(packet.supportedFunctions)
@@ -267,9 +267,9 @@ func (packet *PacketV1) encodeOptions() []byte {
 		stream.WriteUInt8(OptionConnectionSignature)
 		stream.WriteUInt8(16)
 		stream.Grow(16)
-		stream.WriteBytesNext(packet.GetConnectionSignature())
+		stream.WriteBytesNext(packet.ConnectionSignature())
 
-		if packet.GetType() == ConnectPacket {
+		if packet.Type() == ConnectPacket {
 			stream.WriteUInt8(OptionInitialSequenceID)
 			stream.WriteUInt8(2)
 			stream.WriteUInt16LE(packet.initialSequenceID)
@@ -278,25 +278,25 @@ func (packet *PacketV1) encodeOptions() []byte {
 		stream.WriteUInt8(OptionMaxSubstreamID)
 		stream.WriteUInt8(1)
 		stream.WriteUInt8(packet.maximumSubstreamID)
-	} else if packet.GetType() == DataPacket {
+	} else if packet.Type() == DataPacket {
 		stream.WriteUInt8(OptionFragmentID)
 		stream.WriteUInt8(1)
-		stream.WriteUInt8(packet.GetFragmentID())
+		stream.WriteUInt8(packet.FragmentID())
 	}
 
 	return stream.Bytes()
 }
 
 func (packet *PacketV1) calculateSignature(header []byte, connectionSignature []byte, options []byte, payload []byte) []byte {
-	key := packet.GetSender().GetSignatureKey()
+	key := packet.Sender().SignatureKey()
 
 	signatureBase := make([]byte, 4)
-	binary.LittleEndian.PutUint32(signatureBase, uint32(packet.GetSender().GetSignatureBase()))
+	binary.LittleEndian.PutUint32(signatureBase, uint32(packet.Sender().SignatureBase()))
 
 	mac := hmac.New(md5.New, key)
 
 	mac.Write(header[4:])
-	mac.Write(packet.GetSender().GetSessionKey())
+	mac.Write(packet.Sender().SessionKey())
 	mac.Write(signatureBase)
 	mac.Write(connectionSignature)
 	mac.Write(options)

@@ -19,8 +19,8 @@ func (packet *PacketV0) SetChecksum(checksum uint32) {
 	packet.checksum = checksum
 }
 
-// GetChecksum returns the packet checksum
-func (packet *PacketV0) GetChecksum() uint32 {
+// Checksum returns the packet checksum
+func (packet *PacketV0) Checksum() uint32 {
 	return packet.checksum
 }
 
@@ -35,13 +35,13 @@ func (packet *PacketV0) Decode() error {
 	var payloadSize uint16
 	var typeFlags uint16
 
-	if packet.GetSender().GetServer().GetChecksumVersion() == 0 {
+	if packet.Sender().Server().ChecksumVersion() == 0 {
 		checksumSize = 4
 	} else {
 		checksumSize = 1
 	}
 
-	stream := NewStreamIn(packet.Data(), packet.GetSender().GetServer())
+	stream := NewStreamIn(packet.Data(), packet.Sender().Server())
 
 	packet.SetSource(stream.ReadUInt8())
 	packet.SetDestination(stream.ReadUInt8())
@@ -52,7 +52,7 @@ func (packet *PacketV0) Decode() error {
 	packet.SetSignature(stream.ReadBytesNext(4))
 	packet.SetSequenceID(stream.ReadUInt16LE())
 
-	if packet.GetSender().GetServer().GetFlagsVersion() == 0 {
+	if packet.Sender().Server().FlagsVersion() == 0 {
 		packet.SetType(typeFlags & 7)
 		packet.SetFlags(typeFlags >> 3)
 	} else {
@@ -60,11 +60,11 @@ func (packet *PacketV0) Decode() error {
 		packet.SetFlags(typeFlags >> 4)
 	}
 
-	if _, ok := validTypes[packet.GetType()]; !ok {
+	if _, ok := validTypes[packet.Type()]; !ok {
 		return errors.New("[PRUDPv0] Packet type not valid type")
 	}
 
-	if packet.GetType() == SynPacket || packet.GetType() == ConnectPacket {
+	if packet.Type() == SynPacket || packet.Type() == ConnectPacket {
 		if len(packet.Data()[stream.ByteOffset():]) < 4 {
 			return errors.New("[PRUDPv0] Packet specific data not large enough for connection signature")
 		}
@@ -72,7 +72,7 @@ func (packet *PacketV0) Decode() error {
 		packet.SetConnectionSignature(stream.ReadBytesNext(4))
 	}
 
-	if packet.GetType() == DataPacket {
+	if packet.Type() == DataPacket {
 		if len(packet.Data()[stream.ByteOffset():]) < 1 {
 			return errors.New("[PRUDPv0] Packet specific data not large enough for fragment ID")
 		}
@@ -99,9 +99,9 @@ func (packet *PacketV0) Decode() error {
 
 		packet.SetPayload(payloadCrypted)
 
-		if packet.GetType() == DataPacket {
+		if packet.Type() == DataPacket {
 			ciphered := make([]byte, payloadSize)
-			packet.GetSender().GetDecipher().XORKeyStream(ciphered, payloadCrypted)
+			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
 
 			request, err := NewRMCRequest(ciphered)
 
@@ -127,7 +127,7 @@ func (packet *PacketV0) Decode() error {
 
 	calculatedChecksum := packet.calculateChecksum(packetBody[:len(packetBody)-checksumSize])
 
-	if calculatedChecksum != packet.GetChecksum() {
+	if calculatedChecksum != packet.Checksum() {
 		fmt.Println("[ERROR] Calculated checksum did not match")
 	}
 
@@ -136,18 +136,18 @@ func (packet *PacketV0) Decode() error {
 
 // Bytes encodes the packet and returns a byte array
 func (packet *PacketV0) Bytes() []byte {
-	if packet.GetType() == DataPacket {
+	if packet.Type() == DataPacket {
 
 		if packet.HasFlag(FlagAck) {
 			packet.SetPayload([]byte{})
 		} else {
-			payload := packet.GetPayload()
+			payload := packet.Payload()
 
 			if payload != nil || len(payload) > 0 {
 				payloadSize := len(payload)
 
 				encrypted := make([]byte, payloadSize)
-				packet.GetSender().GetCipher().XORKeyStream(encrypted, payload)
+				packet.Sender().Cipher().XORKeyStream(encrypted, payload)
 
 				packet.SetPayload(encrypted)
 			}
@@ -159,22 +159,22 @@ func (packet *PacketV0) Bytes() []byte {
 	}
 
 	var typeFlags uint16
-	if packet.GetSender().GetServer().GetFlagsVersion() == 0 {
-		typeFlags = packet.GetType() | packet.GetFlags()<<3
+	if packet.Sender().Server().FlagsVersion() == 0 {
+		typeFlags = packet.Type() | packet.Flags()<<3
 	} else {
-		typeFlags = packet.GetType() | packet.GetFlags()<<4
+		typeFlags = packet.Type() | packet.Flags()<<4
 	}
 
-	stream := NewStreamOut(packet.GetSender().GetServer())
+	stream := NewStreamOut(packet.Sender().Server())
 	packetSignature := packet.calculateSignature()
 
-	stream.WriteUInt8(packet.GetSource())
-	stream.WriteUInt8(packet.GetDestination())
+	stream.WriteUInt8(packet.Source())
+	stream.WriteUInt8(packet.Destination())
 	stream.WriteUInt16LE(typeFlags)
-	stream.WriteUInt8(packet.GetSessionID())
+	stream.WriteUInt8(packet.SessionID())
 	stream.Grow(int64(len(packetSignature)))
 	stream.WriteBytesNext(packetSignature)
-	stream.WriteUInt16LE(packet.GetSequenceID())
+	stream.WriteUInt16LE(packet.SequenceID())
 
 	options := packet.encodeOptions()
 	optionsLength := len(options)
@@ -184,7 +184,7 @@ func (packet *PacketV0) Bytes() []byte {
 		stream.WriteBytesNext(options)
 	}
 
-	payload := packet.GetPayload()
+	payload := packet.Payload()
 
 	if payload != nil && len(payload) > 0 {
 		stream.Grow(int64(len(payload)))
@@ -193,7 +193,7 @@ func (packet *PacketV0) Bytes() []byte {
 
 	checksum := packet.calculateChecksum(stream.Bytes())
 
-	if packet.GetSender().GetServer().GetChecksumVersion() == 0 {
+	if packet.Sender().Server().ChecksumVersion() == 0 {
 		stream.WriteUInt32LE(checksum)
 	} else {
 		stream.WriteUInt8(uint8(checksum))
@@ -204,25 +204,25 @@ func (packet *PacketV0) Bytes() []byte {
 
 func (packet *PacketV0) calculateSignature() []byte {
 	// Friends server handles signatures differently, so check for the Friends server access key
-	if packet.GetSender().GetServer().GetAccessKey() == "ridfebb9" {
-		if packet.GetType() == DataPacket {
-			payload := packet.GetPayload()
+	if packet.Sender().Server().AccessKey() == "ridfebb9" {
+		if packet.Type() == DataPacket {
+			payload := packet.Payload()
 
 			if payload == nil || len(payload) <= 0 {
-				signature := NewStreamOut(packet.GetSender().GetServer())
+				signature := NewStreamOut(packet.Sender().Server())
 				signature.WriteUInt32LE(0x12345678)
 
 				return signature.Bytes()
 			}
 
-			key := packet.GetSender().GetSignatureKey()
+			key := packet.Sender().SignatureKey()
 			cipher := hmac.New(md5.New, key)
 			cipher.Write(payload)
 
 			return cipher.Sum(nil)[:4]
 		}
 
-		clientConnectionSignature := packet.GetSender().GetClientConnectionSignature()
+		clientConnectionSignature := packet.Sender().ClientConnectionSignature()
 
 		if clientConnectionSignature != nil {
 			return clientConnectionSignature
@@ -237,24 +237,24 @@ func (packet *PacketV0) calculateSignature() []byte {
 }
 
 func (packet *PacketV0) encodeOptions() []byte {
-	stream := NewStreamOut(packet.GetSender().GetServer())
+	stream := NewStreamOut(packet.Sender().Server())
 
-	if packet.GetType() == SynPacket {
+	if packet.Type() == SynPacket {
 		stream.Grow(4)
-		stream.WriteBytesNext(packet.GetSender().GetServerConnectionSignature())
+		stream.WriteBytesNext(packet.Sender().ServerConnectionSignature())
 	}
 
-	if packet.GetType() == ConnectPacket {
+	if packet.Type() == ConnectPacket {
 		stream.Grow(4)
-		stream.WriteBytesNext(packet.GetSender().GetClientConnectionSignature())
+		stream.WriteBytesNext(packet.Sender().ClientConnectionSignature())
 	}
 
-	if packet.GetType() == DataPacket {
-		stream.WriteUInt8(packet.GetFragmentID())
+	if packet.Type() == DataPacket {
+		stream.WriteUInt8(packet.FragmentID())
 	}
 
 	if packet.HasFlag(FlagHasSize) {
-		payload := packet.GetPayload()
+		payload := packet.Payload()
 
 		if payload != nil {
 			stream.WriteUInt16LE(uint16(len(payload)))
@@ -267,7 +267,7 @@ func (packet *PacketV0) encodeOptions() []byte {
 }
 
 func (packet *PacketV0) calculateChecksum(data []byte) uint32 {
-	signatureBase := packet.GetSender().GetSignatureBase()
+	signatureBase := packet.Sender().SignatureBase()
 	steps := len(data) / 4
 	var temp uint32
 

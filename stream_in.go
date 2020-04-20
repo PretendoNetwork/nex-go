@@ -75,7 +75,7 @@ func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
 
 // ReadStructure reads a nex Structure type
 func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureInterface, error) {
-	hierarchy := structure.GetHierarchy()
+	hierarchy := structure.Hierarchy()
 
 	for _, class := range hierarchy {
 		_, err := stream.ReadStructure(class)
@@ -85,7 +85,7 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 		}
 	}
 
-	if stream.server.GetNexVersion() >= 3 {
+	if stream.server.NexVersion() >= 3 {
 		// skip the new struct header as we don't really need the data there
 		_ = stream.ReadUInt8()    // structure header version
 		_ = stream.ReadUInt32LE() // structure content length
