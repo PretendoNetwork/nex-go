@@ -10,7 +10,7 @@ import (
 // StreamIn is an input stream abstraction of github.com/superwhiskers/crunch with nex type support
 type StreamIn struct {
 	*crunch.Buffer
-	server *Server
+	Server *Server
 }
 
 // ReadUInt8 reads a uint8
@@ -85,7 +85,7 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 		}
 	}
 
-	if stream.server.NexVersion() >= 3 {
+	if stream.Server.NexVersion() >= 3 {
 		// skip the new struct header as we don't really need the data there
 		_ = stream.ReadUInt8()    // structure header version
 		_ = stream.ReadUInt32LE() // structure content length
@@ -156,6 +156,6 @@ func (stream *StreamIn) ReadListUInt64LE() []uint64 {
 func NewStreamIn(data []byte, server *Server) *StreamIn {
 	return &StreamIn{
 		Buffer: crunch.NewBuffer(data),
-		server: server,
+		Server: server,
 	}
 }
