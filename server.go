@@ -18,7 +18,7 @@ type Server struct {
 	prudpV1EventHandles   map[string][]func(*PacketV1)
 	accessKey             string
 	prudpVersion          int
-	nexMinorVersion       int
+	nexVersion            int
 	fragmentSize          int16
 	resendTimeout         float32
 	usePacketCompression  bool
@@ -285,7 +285,7 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 			payloadStream := NewStreamOut(server)
 
 			// New version
-			if server.GetNexMinorVersion() >= 2 {
+			if server.GetNexVersion() >= 2 {
 				ackPacket.SetSequenceID(0)
 				ackPacket.SetSubstreamID(1)
 
@@ -324,14 +324,14 @@ func (server *Server) SetPrudpVersion(prudpVersion int) {
 	server.prudpVersion = prudpVersion
 }
 
-// GetNexMinorVersion returns the server NEX version
-func (server *Server) GetNexMinorVersion() int {
-	return server.nexMinorVersion
+// GetNexVersion returns the server NEX version
+func (server *Server) GetNexVersion() int {
+	return server.nexVersion
 }
 
-// SetNexMinorVersion sets the server NEX version
-func (server *Server) SetNexMinorVersion(nexMinorVersion int) {
-	server.nexMinorVersion = nexMinorVersion
+// SetNexVersion sets the server NEX version
+func (server *Server) SetNexVersion(nexVersion int) {
+	server.nexVersion = nexVersion
 }
 
 // GetChecksumVersion returns the server packet checksum version

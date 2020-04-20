@@ -85,7 +85,7 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 		}
 	}
 
-	if stream.server.GetNexMinorVersion() >= 3 {
+	if stream.server.GetNexVersion() >= 3 {
 		// skip the new struct header as we don't really need the data there
 		_ = stream.ReadUInt8()    // structure header version
 		_ = stream.ReadUInt32LE() // structure content length
