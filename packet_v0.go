@@ -229,9 +229,36 @@ func (packet *PacketV0) calculateSignature() []byte {
 		}
 
 		return []byte{0x0, 0x0, 0x0, 0x0}
-	}
+	} else { // Normal signature handling
+		if packet.Type() == DataPacket || packet.Type() == DisconnectPacket {
+			payload := NewStreamOut(packet.Sender().Server())
+			sessionKey := packet.Sender().SessionKey()
+			if sessionKey != nil {
+				payload.Grow(int64(len(sessionKey)))
+				payload.WriteBytesNext(sessionKey)
+			}
+			payload.WriteUInt16LE(packet.sequenceID)
+			payload.Grow(1)
+			payload.WriteByteNext(packet.fragmentID)
+			pktpay := packet.Payload()
+			if pktpay != nil && len(pktpay) > 0 {
+				payload.Grow(int64(len(pktpay)))
+				payload.WriteBytesNext(pktpay)
+			}
 
-	// Normal signature handling
+			key := packet.Sender().SignatureKey()
+			cipher := hmac.New(md5.New, key)
+			cipher.Write(payload.Bytes())
+
+			return cipher.Sum(nil)[:4]
+		} else {
+			clientConnectionSignature := packet.Sender().ClientConnectionSignature()
+
+			if clientConnectionSignature != nil {
+				return clientConnectionSignature
+			}
+		}
+	}
 
 	return []byte{}
 }
