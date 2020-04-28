@@ -147,6 +147,11 @@ type StationURL struct {
 	prid          *string
 }
 
+// SetScheme sets the StationURL scheme
+func (station *StationURL) SetScheme(scheme *string) {
+	station.scheme = scheme
+}
+
 // SetAddress sets the StationURL address
 func (station *StationURL) SetAddress(address *string) {
 	station.address = address
@@ -157,9 +162,169 @@ func (station *StationURL) SetPort(port *string) {
 	station.port = port
 }
 
+// SetStream sets the StationURL stream
+func (station *StationURL) SetStream(stream *string) {
+	station.stream = stream
+}
+
+// SetSID sets the StationURL SID
+func (station *StationURL) SetSID(sid *string) {
+	station.sid = sid
+}
+
+// SetCID sets the StationURL CID
+func (station *StationURL) SetCID(cid *string) {
+	station.cid = cid
+}
+
+// SetPid sets the StationURL PID
+func (station *StationURL) SetPid(pid *string) {
+	station.pid = pid
+}
+
 // SetType sets the StationURL transportType
 func (station *StationURL) SetType(transportType *string) {
 	station.transportType = transportType
+}
+
+// SetRVCID sets the StationURL RVCID
+func (station *StationURL) SetRVCID(rvcid *string) {
+	station.rvcid = rvcid
+}
+
+// SetNatm sets the StationURL Natm
+func (station *StationURL) SetNatm(natm *string) {
+	station.natm = natm
+}
+
+// SetNatf sets the StationURL Natf
+func (station *StationURL) SetNatf(natf *string) {
+	station.natf = natf
+}
+
+// SetUpnp sets the StationURL Upnp
+func (station *StationURL) SetUpnp(upnp *string) {
+	station.upnp = upnp
+}
+
+// SetPmp sets the StationURL Pmp
+func (station *StationURL) SetPmp(pmp *string) {
+	station.pmp = pmp
+}
+
+// SetProbeInit sets the StationURL ProbeInit
+func (station *StationURL) SetProbeInit(probeinit *string) {
+	station.probeinit = probeinit
+}
+
+// SetPRID sets the StationURL PRID
+func (station *StationURL) SetPRID(prid *string) {
+	station.prid = prid
+}
+
+func (station *StationURL) Scheme() string {
+	if station.scheme != nil {
+		return *station.address
+	}
+	return ""
+}
+
+func (station *StationURL) Address() string {
+	if station.address != nil {
+		return *station.address
+	}
+	return ""
+}
+
+func (station *StationURL) Port() string {
+	if station.port != nil {
+		return *station.port
+	}
+	return ""
+}
+
+func (station *StationURL) Stream() string {
+	if station.stream != nil {
+		return *station.stream
+	}
+	return ""
+}
+
+func (station *StationURL) SID() string {
+	if station.sid != nil {
+		return *station.sid
+	}
+	return ""
+}
+
+func (station *StationURL) CID() string {
+	if station.cid != nil {
+		return *station.cid
+	}
+	return ""
+}
+
+func (station *StationURL) PID() string {
+	if station.pid != nil {
+		return *station.pid
+	}
+	return ""
+}
+
+func (station *StationURL) Type() string {
+	if station.transportType != nil {
+		return *station.transportType
+	}
+	return ""
+}
+
+func (station *StationURL) RVCID() string {
+	if station.rvcid != nil {
+		return *station.rvcid
+	}
+	return ""
+}
+
+func (station *StationURL) Natm() string {
+	if station.natm != nil {
+		return *station.natm
+	}
+	return ""
+}
+
+func (station *StationURL) Natf() string {
+	if station.natf != nil {
+		return *station.natf
+	}
+	return ""
+}
+
+func (station *StationURL) Upnp() string {
+	if station.upnp != nil {
+		return *station.upnp
+	}
+	return ""
+}
+
+func (station *StationURL) Pmp() string {
+	if station.pmp != nil {
+		return *station.pmp
+	}
+	return ""
+}
+
+func (station *StationURL) ProbeInit() string {
+	if station.probeinit != nil {
+		return *station.probeinit
+	}
+	return ""
+}
+
+func (station *StationURL) PRID() string {
+	if station.prid != nil {
+		return *station.prid
+	}
+	return ""
 }
 
 // FromString parses the StationURL data from a string
