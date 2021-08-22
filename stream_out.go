@@ -51,8 +51,11 @@ func (stream *StreamOut) WriteBuffer(data []byte) {
 	dataLength := len(data)
 
 	stream.WriteUInt32LE(uint32(dataLength))
-	stream.Grow(int64(dataLength))
-	stream.WriteBytesNext(data)
+
+	if dataLength > 0 {
+		stream.Grow(int64(dataLength))
+		stream.WriteBytesNext(data)
+	}
 }
 
 // WriteStructure writes a nex Structure type
@@ -104,7 +107,7 @@ func (stream *StreamOut) WriteListUInt64LE(list []uint64) {
 	}
 }
 
-// WriteListStructure writes a list of Structure types
+// WriteListStructure writes a list of NEX Structure types
 func (stream *StreamOut) WriteListStructure(structures interface{}) {
 	// TODO:
 	// Find a better solution that doesn't use reflect
@@ -117,6 +120,20 @@ func (stream *StreamOut) WriteListStructure(structures interface{}) {
 	for i := 0; i < count; i++ {
 		structure := slice.Index(i).Interface().(StructureInterface)
 		stream.WriteStructure(structure)
+	}
+}
+
+// WriteListString writes a list of NEX String types
+func (stream *StreamOut) WriteListString(strings []string) {
+	// TODO:
+	// Find a better solution that doesn't use reflect
+
+	length := len(strings)
+
+	stream.WriteUInt32LE(uint32(length))
+
+	for i := 0; i < length; i++ {
+		stream.WriteString(strings[i])
 	}
 }
 
