@@ -33,7 +33,6 @@ type Server struct {
 
 // Listen starts a NEX server on a given address
 func (server *Server) Listen(address string) {
-
 	protocol := "udp"
 
 	udpAddress, err := net.ResolveUDPAddr(protocol, address)
@@ -106,7 +105,6 @@ func (server *Server) handleSocketMessage() error {
 	}
 
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 
@@ -241,6 +239,7 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	ackPacket.SetSequenceID(packet.SequenceID())
 	ackPacket.SetFragmentID(packet.FragmentID())
 	ackPacket.AddFlag(FlagAck)
+	ackPacket.AddFlag(FlagHasSize)
 
 	if payload != nil {
 		ackPacket.SetPayload(payload)
@@ -300,6 +299,8 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	}
 
 	data := ackPacket.Bytes()
+
+	//fmt.Println(hex.EncodeToString(data))
 
 	server.SendRaw(sender.Address(), data)
 }
