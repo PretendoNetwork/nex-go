@@ -273,7 +273,7 @@ func (packet *PacketV0) encodeOptions() []byte {
 
 	if packet.Type() == ConnectPacket {
 		stream.Grow(4)
-		stream.WriteBytesNext(packet.Sender().ClientConnectionSignature())
+		stream.WriteBytesNext([]byte{0x00, 0x00, 0x00, 0x00})
 	}
 
 	if packet.Type() == DataPacket {
