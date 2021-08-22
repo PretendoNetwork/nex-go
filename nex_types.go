@@ -449,3 +449,23 @@ func NewStationURL(str string) *StationURL {
 
 	return station
 }
+
+// ResultRange is sent in methods which query large objects
+type ResultRange struct {
+	Offset uint32
+	Length uint32
+	Structure
+}
+
+// ExtractFromStream extracts a ResultRange structure from a stream
+func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
+	resultRange.Offset = stream.ReadUInt32LE()
+	resultRange.Length = stream.ReadUInt32LE()
+
+	return nil
+}
+
+// NewResultRange returns a new ResultRange
+func NewResultRange() *ResultRange {
+	return &ResultRange{}
+}
