@@ -213,6 +213,19 @@ func (stream *StreamIn) ReadListUInt64LE() []uint64 {
 	return list
 }
 
+// ReadListString reads a list of NEX String types
+func (stream *StreamIn) ReadListString() []string {
+	length := stream.ReadUInt32LE()
+	list := make([]string, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, _ := stream.ReadString()
+		list = append(list, value)
+	}
+
+	return list
+}
+
 // NewStreamIn returns a new NEX input stream
 func NewStreamIn(data []byte, server *Server) *StreamIn {
 	return &StreamIn{
