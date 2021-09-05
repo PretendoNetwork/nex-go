@@ -450,6 +450,30 @@ func NewStationURL(str string) *StationURL {
 	return station
 }
 
+// Result is sent in methods which query large objects
+type Result struct {
+	ResultCode uint32
+}
+
+// ExtractFromStream extracts a Result structure from a stream
+func (result *Result) ExtractFromStream(stream *StreamIn) error {
+	result.ResultCode = stream.ReadUInt32LE()
+
+	return nil
+}
+
+// Bytes encodes the Result and returns a byte array
+func (result *Result) Bytes(stream *StreamOut) []byte {
+	stream.WriteUInt32LE(result.ResultCode)
+
+	return stream.Bytes()
+}
+
+// NewResult returns a new Result
+func NewResult(ResultCode uint32) *Result {
+	return &Result{ResultCode}
+}
+
 // ResultRange is sent in methods which query large objects
 type ResultRange struct {
 	Offset uint32
