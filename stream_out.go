@@ -58,6 +58,18 @@ func (stream *StreamOut) WriteBuffer(data []byte) {
 	}
 }
 
+// WriteQBuffer writes a NEX qBuffer type
+func (stream *StreamOut) WriteQBuffer(data []byte) {
+	dataLength := len(data)
+
+	stream.WriteUInt16LE(uint16(dataLength))
+
+	if dataLength > 0 {
+		stream.Grow(int64(dataLength))
+		stream.WriteBytesNext(data)
+	}
+}
+
 // WriteStructure writes a nex Structure type
 func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	content := structure.Bytes(NewStreamOut(stream.Server))
