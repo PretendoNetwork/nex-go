@@ -20,6 +20,7 @@ type Client struct {
 	sessionKey                []byte
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
+	pid                       int
 }
 
 // Reset resets the Client to default values
@@ -122,6 +123,16 @@ func (client *Client) SetSessionKey(sessionKey []byte) {
 // SessionKey returns the clients session key
 func (client *Client) SessionKey() []byte {
 	return client.sessionKey
+}
+
+// SetPID sets the clients NEX PID
+func (client *Client) SetPID(pid int) {
+	client.pid = pid
+}
+
+// PID returns the clients NEX PID
+func (client *Client) PID() int {
+	return client.pid
 }
 
 // NewClient returns a new PRUDP client
