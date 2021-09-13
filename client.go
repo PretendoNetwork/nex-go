@@ -20,7 +20,7 @@ type Client struct {
 	sessionKey                []byte
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
-	pid                       int
+	pid                       uint32
 }
 
 // Reset resets the Client to default values
@@ -126,12 +126,12 @@ func (client *Client) SessionKey() []byte {
 }
 
 // SetPID sets the clients NEX PID
-func (client *Client) SetPID(pid int) {
+func (client *Client) SetPID(pid uint32) {
 	client.pid = pid
 }
 
 // PID returns the clients NEX PID
-func (client *Client) PID() int {
+func (client *Client) PID() uint32 {
 	return client.pid
 }
 
