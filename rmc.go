@@ -2,6 +2,8 @@ package nex
 
 import "errors"
 
+var errorMask = 1 << 31
+
 // RMCRequest represets a RMC request
 type RMCRequest struct {
 	protocolID uint8
@@ -78,6 +80,10 @@ func (response *RMCResponse) SetSuccess(methodID uint32, data []byte) {
 
 // SetError sets the RMCResponse payload to an instance of RMCError
 func (response *RMCResponse) SetError(errorCode uint32) {
+	if int(errorCode)&errorMask == 0 {
+		errorCode = uint32(int(errorCode) | errorMask)
+	}
+
 	response.success = 0
 	response.errorCode = errorCode
 }
