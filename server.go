@@ -408,7 +408,7 @@ func (server *Server) Send(packet PacketInterface) {
 	data := packet.Payload()
 	fragments := int(int16(len(data)) / server.fragmentSize)
 
-	fragmentID := 1
+	var fragmentID uint8 = 1
 	for i := 0; i <= fragments; i++ {
 		if int16(len(data)) < server.fragmentSize {
 			packet.SetPayload(data)
@@ -424,10 +424,11 @@ func (server *Server) Send(packet PacketInterface) {
 }
 
 // SendFragment sends a packet fragment to the client
-func (server *Server) SendFragment(packet PacketInterface, fragmentID int) {
+func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 	data := packet.Payload()
 	client := packet.Sender()
 
+	packet.SetFragmentID(fragmentID)
 	packet.SetPayload(server.compressPacket(data))
 	packet.SetSequenceID(uint16(client.SequenceIDCounterOut().Increment()))
 
