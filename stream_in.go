@@ -226,6 +226,19 @@ func (stream *StreamIn) ReadListString() []string {
 	return list
 }
 
+// ReadListQBuffer reads a list of NEX QBuffer types
+func (stream *StreamIn) ReadListQBuffer() [][]byte {
+	length := stream.ReadUInt32LE()
+	list := make([][]byte, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, _ := stream.ReadQBuffer()
+		list = append(list, value)
+	}
+
+	return list
+}
+
 // NewStreamIn returns a new NEX input stream
 func NewStreamIn(data []byte, server *Server) *StreamIn {
 	return &StreamIn{
