@@ -12,6 +12,16 @@ type StreamOut struct {
 	Server *Server
 }
 
+// WriteBool writes a bool
+func (stream *StreamOut) WriteBool(b bool) {
+	var bVar uint8
+	if b {
+		bVar = 1
+	}
+	stream.Grow(1)
+	stream.WriteByteNext(byte(bVar))
+}
+
 // WriteUInt8 writes a uint8
 func (stream *StreamOut) WriteUInt8(u8 uint8) {
 	stream.Grow(1)
