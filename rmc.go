@@ -32,6 +32,26 @@ func (request *RMCRequest) Parameters() []byte {
 	return request.parameters
 }
 
+// ProtocolID sets the RMC request protocolID
+func (request *RMCRequest) SetProtocolID(protocolID uint8) {
+	request.protocolID = protocolID
+}
+
+// CallID sets the RMC request callID
+func (request *RMCRequest) SetCallID(callID uint32) {
+	request.callID = callID
+}
+
+// MethodID sets the RMC request methodID
+func (request *RMCRequest) SetMethodID(methodID uint32) {
+	request.methodID = methodID
+}
+
+// Parameters sets the RMC request parameters
+func (request *RMCRequest) SetParameters(parameters []byte) {
+	request.parameters = parameters
+}
+
 // NewRMCRequest returns a new parsed RMCRequest
 func NewRMCRequest(data []byte) (RMCRequest, error) {
 	if len(data) < 13 {
@@ -59,6 +79,28 @@ func NewRMCRequest(data []byte) (RMCRequest, error) {
 	}
 
 	return request, nil
+}
+
+// Bytes converts a RMCRequest struct into a usable byte array
+func (request *RMCRequest) Bytes() []byte {
+	body := NewStreamOut(nil)
+
+	body.WriteUInt8(request.protocolID | 0x80)
+
+	body.WriteUInt32LE(request.callID)
+	body.WriteUInt32LE(request.methodID)
+
+	if request.parameters != nil && len(request.parameters) > 0 {
+		body.Grow(int64(len(request.parameters)))
+		body.WriteBytesNext(request.parameters)
+	}
+	
+
+	data := NewStreamOut(nil)
+
+	data.WriteBuffer(body.Bytes())
+
+	return data.Bytes()
 }
 
 // RMCResponse represents a RMC response

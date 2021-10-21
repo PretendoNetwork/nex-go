@@ -13,6 +13,11 @@ type StreamIn struct {
 	Server *Server
 }
 
+// ReadBool reads a bool
+func (stream *StreamIn) ReadBool() bool {
+	return (stream.ReadByteNext() == 1)
+}
+
 // ReadUInt8 reads a uint8
 func (stream *StreamIn) ReadUInt8() uint8 {
 	return uint8(stream.ReadByteNext())

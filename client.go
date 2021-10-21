@@ -21,6 +21,8 @@ type Client struct {
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
 	pid                       uint32
+	localStationUrl           string
+	connectionId              uint32
 }
 
 // Reset resets the Client to default values
@@ -133,6 +135,26 @@ func (client *Client) SetPID(pid uint32) {
 // PID returns the clients NEX PID
 func (client *Client) PID() uint32 {
 	return client.pid
+}
+
+// SetLocalStationUrl sets the clients Local Station URL
+func (client *Client) SetLocalStationUrl(localStationUrl string) {
+	client.localStationUrl = localStationUrl
+}
+
+// LocalStationUrl returns the clients Local Station URL
+func (client *Client) LocalStationUrl() string {
+	return client.localStationUrl
+}
+
+// SetConnectionId sets the clients Connection ID
+func (client *Client) SetConnectionId(connectionId uint32) {
+	client.connectionId = connectionId
+}
+
+// ConnectionId returns the clients Connection ID
+func (client *Client) ConnectionId() uint32 {
+	return client.connectionId
 }
 
 // NewClient returns a new PRUDP client
