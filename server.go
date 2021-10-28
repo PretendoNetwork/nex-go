@@ -403,6 +403,17 @@ func (server *Server) SetPacketCompression(compression func([]byte) []byte) {
 	server.compressPacket = compression
 }
 
+// ClientFromPID sets the packet compression function
+func (server *Server) FindClientFromPID(pid uint32) *Client {
+	for _, client := range server.clients {
+		if client.pid == pid {
+			return client
+		}
+	}
+
+	return nil
+}
+
 // Send writes data to client
 func (server *Server) Send(packet PacketInterface) {
 	data := packet.Payload()
