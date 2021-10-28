@@ -101,20 +101,28 @@ type DateTime struct {
 	value uint64
 }
 
-// Now gets current time and converts it into a format DateTime can understand
-func (datetime *DateTime) Now() uint64 {
-	timestamp := time.Now()
-
-	second := timestamp.Second()
-	minute := timestamp.Minute()
-	hour := timestamp.Hour()
-	day := timestamp.Day()
-	month := int(timestamp.Month())
-	year := timestamp.Year() + 1
-
+// Make initilizes a DateTime with the input data
+func (datetime *DateTime) Make(year, month, day, hour, minute, second int) uint64 {
 	datetime.value = uint64(second | (minute << 6) | (hour << 12) | (day << 17) | (month << 22) | (year << 26))
 
 	return datetime.value
+}
+
+// FromTimestamp converts a Time timestamp into a NEX DateTime
+func (datetime *DateTime) FromTimestamp(timestamp time.Time) uint64 {
+	year := timestamp.Year()
+	month := int(timestamp.Month())
+	day := timestamp.Day()
+	hour := timestamp.Hour()
+	minute := timestamp.Minute()
+	second := timestamp.Second()
+
+	return datetime.Make(year, month, day, hour, minute, second)
+}
+
+// Now converts the current Time timestamp to a NEX DateTime
+func (datetime *DateTime) Now() uint64 {
+	return datetime.FromTimestamp(time.Now())
 }
 
 // Value returns the stored DateTime time
