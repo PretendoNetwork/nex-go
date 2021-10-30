@@ -501,3 +501,23 @@ func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
 func NewResultRange() *ResultRange {
 	return &ResultRange{}
 }
+
+type DataHolder struct {
+	Name   string
+	Object StructureInterface
+}
+
+func (dataholder *DataHolder) Bytes(stream *StreamOut) []byte {
+	content := dataholder.Object.Bytes(NewStreamOut(stream.Server))
+
+	stream.WriteString(dataholder.Name)
+	stream.WriteUInt32LE(uint32(len(content) + 4))
+	stream.WriteBuffer(content)
+
+	return stream.Bytes()
+}
+
+// NewDataHolder returns a new DataHolder
+func NewDataHolder() *DataHolder {
+	return &DataHolder{}
+}

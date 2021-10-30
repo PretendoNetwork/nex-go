@@ -167,6 +167,13 @@ func (stream *StreamOut) WriteListQBuffer(buffers [][]byte) {
 	}
 }
 
+// WriteDataHolder writes a NEX DataHolder type
+func (stream *StreamOut) WriteDataHolder(dataholder *DataHolder) {
+	content := dataholder.Bytes(stream)
+	stream.Grow(int64(len(content)))
+	stream.WriteBytesNext(content)
+}
+
 // NewStreamOut returns a new nex output stream
 func NewStreamOut(server *Server) *StreamOut {
 	return &StreamOut{
