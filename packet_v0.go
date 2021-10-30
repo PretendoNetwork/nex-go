@@ -103,7 +103,8 @@ func (packet *PacketV0) Decode() error {
 			ciphered := make([]byte, payloadSize)
 			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
 
-			request, err := NewRMCRequest(ciphered)
+			request := NewRMCRequest()
+			err := request.FromBytes(ciphered)
 
 			if err != nil {
 				return errors.New("[PRUDPv0] Error parsing RMC request: " + err.Error())

@@ -145,7 +145,8 @@ func (packet *PacketV1) Decode() error {
 
 			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
 
-			request, err := NewRMCRequest(ciphered)
+			request := NewRMCRequest()
+			err := request.FromBytes(ciphered)
 
 			if err != nil {
 				return errors.New("[PRUDPv1] Error parsing RMC request: " + err.Error())

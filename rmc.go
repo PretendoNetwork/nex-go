@@ -52,10 +52,15 @@ func (request *RMCRequest) SetParameters(parameters []byte) {
 	request.parameters = parameters
 }
 
-// NewRMCRequest returns a new parsed RMCRequest
-func NewRMCRequest(data []byte) (RMCRequest, error) {
+// NewRMCRequest returns a new blank RMCRequest
+func NewRMCRequest() RMCRequest {
+	return RMCRequest{}
+}
+
+// FromBytes converts a byte slice into a RMCRequest
+func (request *RMCRequest) FromBytes(data []byte) error {
 	if len(data) < 13 {
-		return RMCRequest{}, errors.New("[RMC] Data size less than minimum")
+		return errors.New("[RMC] Data size less than minimum")
 	}
 
 	stream := NewStreamIn(data, nil)
@@ -63,7 +68,7 @@ func NewRMCRequest(data []byte) (RMCRequest, error) {
 	size := int(stream.ReadUInt32LE())
 
 	if size != (len(data) - 4) {
-		return RMCRequest{}, errors.New("[RMC] Data size does not match")
+		return errors.New("[RMC] Data size does not match")
 	}
 
 	protocolID := stream.ReadUInt8() ^ 0x80
@@ -71,14 +76,12 @@ func NewRMCRequest(data []byte) (RMCRequest, error) {
 	methodID := stream.ReadUInt32LE()
 	parameters := data[13:]
 
-	request := RMCRequest{
-		protocolID: protocolID,
-		callID:     callID,
-		methodID:   methodID,
-		parameters: parameters,
-	}
+	request.protocolID = protocolID
+	request.callID = callID
+	request.methodID = methodID
+	request.parameters = parameters
 
-	return request, nil
+	return nil
 }
 
 // Bytes converts a RMCRequest struct into a usable byte array
@@ -94,7 +97,6 @@ func (request *RMCRequest) Bytes() []byte {
 		body.Grow(int64(len(request.parameters)))
 		body.WriteBytesNext(request.parameters)
 	}
-	
 
 	data := NewStreamOut(nil)
 
