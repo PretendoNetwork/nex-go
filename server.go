@@ -132,7 +132,7 @@ func (server *Server) handleSocketMessage() error {
 		server.Kick(client)
 		server.Emit("Disconnect", packet)
 	case PingPacket:
-		server.SendPing(client)
+		//server.SendPing(client)
 		server.Emit("Ping", packet)
 	}
 
