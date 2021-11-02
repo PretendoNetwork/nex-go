@@ -3,6 +3,7 @@ package nex
 import (
 	"crypto/rc4"
 	"net"
+	"time"
 )
 
 // Client represents a connected or non-connected PRUDP client
@@ -23,6 +24,8 @@ type Client struct {
 	pid                       uint32
 	localStationUrl           string
 	connectionId              uint32
+	pingTimeoutTime           time.Time
+	connected                 bool
 }
 
 // Reset resets the Client to default values
@@ -40,6 +43,8 @@ func (client *Client) Reset() {
 		client.SetServerConnectionSignature([]byte{})
 		client.SetClientConnectionSignature([]byte{})
 	}
+
+	client.SetConnected(false)
 }
 
 // Address returns the clients UDP address
@@ -155,6 +160,26 @@ func (client *Client) SetConnectionId(connectionId uint32) {
 // ConnectionId returns the clients Connection ID
 func (client *Client) ConnectionId() uint32 {
 	return client.connectionId
+}
+
+// SetConnected sets the clients connection status
+func (client *Client) SetConnected(connected bool) {
+	client.connected = connected
+}
+
+// IncreasePingTimeoutTime adds a number of seconds to the timeout timer
+func (client *Client) IncreasePingTimeoutTime(seconds int) {
+	client.pingTimeoutTime = time.Now().Add(time.Second * time.Duration(seconds))
+}
+
+// StartTimeoutTimer begins the packet timeout timer
+func (client *Client) StartTimeoutTimer() {
+	for client.connected {
+		if time.Now().After(client.pingTimeoutTime) {
+			client.SetConnected(false)
+			client.server.Kick(client)
+		}
+	}
 }
 
 // NewClient returns a new PRUDP client

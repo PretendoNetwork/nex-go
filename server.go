@@ -108,6 +108,8 @@ func (server *Server) handleSocketMessage() error {
 		return nil
 	}
 
+	client.IncreasePingTimeoutTime(server.PingTimeout())
+
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
 		return nil
 	}
@@ -121,6 +123,8 @@ func (server *Server) handleSocketMessage() error {
 	switch packet.Type() {
 	case SynPacket:
 		client.Reset()
+		client.SetConnected(true)
+		client.StartTimeoutTimer()
 		server.Emit("Syn", packet)
 	case ConnectPacket:
 		packet.Sender().SetClientConnectionSignature(packet.ConnectionSignature())
@@ -129,8 +133,9 @@ func (server *Server) handleSocketMessage() error {
 	case DataPacket:
 		server.Emit("Data", packet)
 	case DisconnectPacket:
-		server.Kick(client)
 		server.Emit("Disconnect", packet)
+		server.Emit("Kick", packet)
+		server.Kick(client)
 	case PingPacket:
 		//server.SendPing(client)
 		server.Emit("Ping", packet)
@@ -194,12 +199,9 @@ func (server *Server) ClientConnected(client *Client) bool {
 
 // Kick removes a client from the server
 func (server *Server) Kick(client *Client) {
+	client.SetConnected(false)
 	discriminator := client.Address().String()
-
-	if _, ok := server.clients[discriminator]; ok {
-		delete(server.clients, discriminator)
-		fmt.Println("Kicked user", discriminator)
-	}
+	delete(server.clients, discriminator)
 }
 
 // SendPing sends a ping packet to the given client
@@ -383,6 +385,16 @@ func (server *Server) KerberosKeySize() int {
 // SetKerberosKeySize sets the server kerberos key size
 func (server *Server) SetKerberosKeySize(kerberosKeySize int) {
 	server.kerberosKeySize = kerberosKeySize
+}
+
+// PingTimeout returns the server ping timeout time in seconds
+func (server *Server) PingTimeout() int {
+	return server.pingTimeout
+}
+
+// SetPingTimeout sets the server ping timeout time in seconds
+func (server *Server) SetPingTimeout(pingTimeout int) {
+	server.pingTimeout = pingTimeout
 }
 
 // UsePacketCompression enables or disables packet compression
