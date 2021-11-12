@@ -40,10 +40,22 @@ func (stream *StreamOut) WriteUInt32LE(u32 uint32) {
 	stream.WriteU32LENext([]uint32{u32})
 }
 
+// WriteInt32LE writes a int32 as LE
+func (stream *StreamOut) WriteInt32LE(s32 int32) {
+	stream.Grow(4)
+	stream.WriteU32LENext([]uint32{uint32(s32)})
+}
+
 // WriteUInt64LE writes a uint64 as LE
 func (stream *StreamOut) WriteUInt64LE(u64 uint64) {
 	stream.Grow(8)
 	stream.WriteU64LENext([]uint64{u64})
+}
+
+// WriteInt64LE writes a int64 as LE
+func (stream *StreamOut) WriteInt64LE(s64 int64) {
+	stream.Grow(8)
+	stream.WriteU64LENext([]uint64{uint64(s64)})
 }
 
 // WriteString writes a NEX string type

@@ -33,6 +33,11 @@ func (stream *StreamIn) ReadUInt32LE() uint32 {
 	return stream.ReadU32LENext(1)[0]
 }
 
+// ReadInt32LE reads a int32
+func (stream *StreamIn) ReadInt32LE() int32 {
+	return int32(stream.ReadU32LENext(1)[0])
+}
+
 // ReadUInt64LE reads a uint64
 func (stream *StreamIn) ReadUInt64LE() uint64 {
 	return stream.ReadU64LENext(1)[0]
@@ -199,6 +204,19 @@ func (stream *StreamIn) ReadListUInt32LE() []uint32 {
 
 	for i := 0; i < int(length); i++ {
 		value := stream.ReadUInt32LE()
+		list = append(list, value)
+	}
+
+	return list
+}
+
+// ReadListInt32LE reads a list of int32 types
+func (stream *StreamIn) ReadListInt32LE() []int32 {
+	length := stream.ReadUInt32LE()
+	list := make([]int32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadInt32LE()
 		list = append(list, value)
 	}
 
