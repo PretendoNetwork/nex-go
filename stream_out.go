@@ -141,6 +141,15 @@ func (stream *StreamOut) WriteListUInt64LE(list []uint64) {
 	}
 }
 
+// WriteListInt64LE writes a list of int64 types
+func (stream *StreamOut) WriteListInt64LE(list []int64) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt64LE(list[i])
+	}
+}
+
 // WriteListStructure writes a list of NEX Structure types
 func (stream *StreamOut) WriteListStructure(structures interface{}) {
 	// TODO:
