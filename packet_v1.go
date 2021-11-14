@@ -244,6 +244,7 @@ func (packet *PacketV1) decodeOptions(options []byte) {
 		case OptionSupportedFunctions:
 			// Only need the LSB
 			lsb := optionsStream.ReadBytesNext(int64(optionSize))[0]
+			packet.sender.server.SetNexVersion(int(lsb))
 			packet.SetSupportedFunctions(uint32(lsb))
 		case OptionConnectionSignature:
 			packet.SetConnectionSignature(optionsStream.ReadBytesNext(int64(optionSize)))
