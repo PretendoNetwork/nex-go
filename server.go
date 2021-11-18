@@ -134,7 +134,6 @@ func (server *Server) handleSocketMessage() error {
 		server.Emit("Data", packet)
 	case DisconnectPacket:
 		server.Emit("Disconnect", packet)
-		server.Emit("Kick", packet)
 		server.Kick(client)
 	case PingPacket:
 		//server.SendPing(client)
@@ -199,6 +198,16 @@ func (server *Server) ClientConnected(client *Client) bool {
 
 // Kick removes a client from the server
 func (server *Server) Kick(client *Client) {
+	// Server events expect a packet to be passed, even though this isn't really a packet event
+	var packet PacketInterface
+
+	if server.PrudpVersion() == 0 {
+		packet, _ = NewPacketV0(client, nil)
+	} else {
+		packet, _ = NewPacketV1(client, nil)
+	}
+
+	server.Emit("Kick", packet)
 	client.SetConnected(false)
 	discriminator := client.Address().String()
 	delete(server.clients, discriminator)

@@ -25,6 +25,7 @@ type Client struct {
 	localStationUrl           string
 	connectionId              uint32
 	pingTimeoutTime           time.Time
+	pingTimeoutTimer          *time.Timer
 	connected                 bool
 }
 
@@ -169,17 +170,18 @@ func (client *Client) SetConnected(connected bool) {
 
 // IncreasePingTimeoutTime adds a number of seconds to the timeout timer
 func (client *Client) IncreasePingTimeoutTime(seconds int) {
-	client.pingTimeoutTime = time.Now().Add(time.Second * time.Duration(seconds))
+	if client.pingTimeoutTimer != nil {
+		client.pingTimeoutTimer.Reset(time.Second * time.Duration(seconds))
+	}
 }
 
 // StartTimeoutTimer begins the packet timeout timer
 func (client *Client) StartTimeoutTimer() {
-	for client.connected {
-		if time.Now().After(client.pingTimeoutTime) {
-			client.SetConnected(false)
-			client.server.Kick(client)
-		}
-	}
+	client.pingTimeoutTimer = time.NewTimer(time.Second * time.Duration(client.server.PingTimeout()))
+	go func() {
+		<-client.pingTimeoutTimer.C
+		client.server.Kick(client)
+	}()
 }
 
 // NewClient returns a new PRUDP client
