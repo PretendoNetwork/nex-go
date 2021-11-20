@@ -177,11 +177,9 @@ func (client *Client) IncreasePingTimeoutTime(seconds int) {
 
 // StartTimeoutTimer begins the packet timeout timer
 func (client *Client) StartTimeoutTimer() {
-	client.pingTimeoutTimer = time.NewTimer(time.Second * time.Duration(client.server.PingTimeout()))
-	go func() {
-		<-client.pingTimeoutTimer.C
+	client.pingTimeoutTimer = time.AfterFunc(time.Second*time.Duration(client.server.PingTimeout()), func() {
 		client.server.Kick(client)
-	}()
+	})
 }
 
 // NewClient returns a new PRUDP client
