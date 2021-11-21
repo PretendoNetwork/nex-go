@@ -424,6 +424,11 @@ func (server *Server) SetPacketCompression(compression func([]byte) []byte) {
 	server.compressPacket = compression
 }
 
+// SetFragmentSize sets the packet fragment size
+func (server *Server) SetFragmentSize(fragmentSize int16) {
+	server.fragmentSize = fragmentSize
+}
+
 // ClientFromPID sets the packet compression function
 func (server *Server) FindClientFromPID(pid uint32) *Client {
 	for _, client := range server.clients {
