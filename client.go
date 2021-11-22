@@ -23,7 +23,7 @@ type Client struct {
 	sequenceIDOut             *Counter
 	pid                       uint32
 	localStationUrl           string
-	connectionId              uint32
+	connectionID              uint32
 	pingTimeoutTime           time.Time
 	pingTimeoutTimer          *time.Timer
 	connected                 bool
@@ -153,14 +153,14 @@ func (client *Client) LocalStationUrl() string {
 	return client.localStationUrl
 }
 
-// SetConnectionId sets the clients Connection ID
-func (client *Client) SetConnectionId(connectionId uint32) {
-	client.connectionId = connectionId
+// SetConnectionID sets the clients Connection ID
+func (client *Client) SetConnectionID(connectionID uint32) {
+	client.connectionID = connectionID
 }
 
-// ConnectionId returns the clients Connection ID
-func (client *Client) ConnectionId() uint32 {
-	return client.connectionId
+// ConnectionID returns the clients Connection ID
+func (client *Client) ConnectionID() uint32 {
+	return client.connectionID
 }
 
 // SetConnected sets the clients connection status
