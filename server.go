@@ -29,6 +29,7 @@ type Server struct {
 	kerberosKeySize       int
 	kerberosKeyDerivation int
 	serverVersion         int
+	connectionIDCounter   *Counter
 }
 
 // Listen starts a NEX server on a given address
@@ -429,6 +430,11 @@ func (server *Server) SetFragmentSize(fragmentSize int16) {
 	server.fragmentSize = fragmentSize
 }
 
+// ConnectionIDCounter gets the server connection ID counter
+func (server *Server) ConnectionIDCounter() *Counter {
+	return server.connectionIDCounter
+}
+
 // ClientFromPID sets the packet compression function
 func (server *Server) FindClientFromPID(pid uint32) *Client {
 	for _, client := range server.clients {
@@ -495,6 +501,7 @@ func NewServer() *Server {
 		checksumVersion:       1,
 		kerberosKeySize:       32,
 		kerberosKeyDerivation: 0,
+		connectionIDCounter:   NewCounter(10),
 	}
 
 	server.UsePacketCompression(false)
