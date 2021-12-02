@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net"
 	"runtime"
+	"time"
 )
 
 // Server represents a PRUDP server
@@ -453,6 +454,7 @@ func (server *Server) Send(packet PacketInterface) {
 
 	var fragmentID uint8 = 1
 	for i := 0; i <= fragments; i++ {
+		time.Sleep(time.Second / 2)
 		if int16(len(data)) < server.fragmentSize {
 			packet.SetPayload(data)
 			server.SendFragment(packet, 0)
