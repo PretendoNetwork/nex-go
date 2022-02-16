@@ -25,7 +25,8 @@ type Client struct {
 	localStationUrl           string
 	connectionID              uint32
 	pingTimeoutTime           time.Time
-	pingTimeoutTimer          *time.Timer
+	pingCheckTimer            *time.Timer
+	pingKickTimer             *time.Timer
 	connected                 bool
 }
 
@@ -168,17 +169,27 @@ func (client *Client) SetConnected(connected bool) {
 	client.connected = connected
 }
 
-// IncreasePingTimeoutTime adds a number of seconds to the timeout timer
+// IncreasePingTimeoutTime adds a number of seconds to the check timer
 func (client *Client) IncreasePingTimeoutTime(seconds int) {
-	if client.pingTimeoutTimer != nil {
-		client.pingTimeoutTimer.Reset(time.Second * time.Duration(seconds))
+	//Stop the kick timer if we get something back
+	if client.pingKickTimer != nil {
+		client.pingKickTimer.Stop()
+	}
+	//and reset the check timer
+	if client.pingCheckTimer != nil {
+		client.pingCheckTimer.Reset(time.Second * time.Duration(seconds))
 	}
 }
 
 // StartTimeoutTimer begins the packet timeout timer
 func (client *Client) StartTimeoutTimer() {
-	client.pingTimeoutTimer = time.AfterFunc(time.Second*time.Duration(client.server.PingTimeout()), func() {
-		client.server.Kick(client)
+	//if we haven't gotten a ping *from* the client, send them one to check all is well
+	client.pingCheckTimer = time.AfterFunc(time.Second*time.Duration(client.server.PingTimeout()), func() {
+		client.server.SendPing(client)
+		//if we *still* get nothing, they're gone
+		client.pingKickTimer = time.AfterFunc(time.Second*time.Duration(client.server.PingTimeout()), func() {
+			client.server.Kick(client)
+		})
 	})
 }
 
