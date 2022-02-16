@@ -23,7 +23,7 @@ type Client struct {
 	sequenceIDOut             *Counter
 	pid                       uint32
 	localStationUrl           string
-	connectionId              uint32
+	connectionID              uint32
 	pingTimeoutTime           time.Time
 	pingCheckTimer            *time.Timer
 	pingKickTimer             *time.Timer
