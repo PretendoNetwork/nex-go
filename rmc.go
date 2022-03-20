@@ -38,7 +38,7 @@ func (request *RMCRequest) Parameters() []byte {
 	return request.parameters
 }
 
-// ProtocolID sets the RMC request protocolID
+// CustomID sets the RMC request customID
 func (request *RMCRequest) SetCustomID(customID uint16) {
 	request.customID = customID
 }
@@ -185,17 +185,6 @@ func NewRMCResponse(protocolID uint8, callID uint32) RMCResponse {
 	response := RMCResponse{
 		protocolID: protocolID,
 		callID:     callID,
-	}
-
-	return response
-}
-
-// NewRMCResponse returns a new RMCResponse
-func NewRMCResponseCustom(protocolID uint8, callID uint32, customID uint16) RMCResponse {
-	response := RMCResponse{
-		protocolID: protocolID,
-		callID:     callID,
-		customID:   customID,
 	}
 
 	return response
