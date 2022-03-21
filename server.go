@@ -436,10 +436,21 @@ func (server *Server) ConnectionIDCounter() *Counter {
 	return server.connectionIDCounter
 }
 
-// ClientFromPID sets the packet compression function
+// FindClientFromPID finds a client by their PID
 func (server *Server) FindClientFromPID(pid uint32) *Client {
 	for _, client := range server.clients {
 		if client.pid == pid {
+			return client
+		}
+	}
+
+	return nil
+}
+
+// FindClientFromConnectionID finds a client by their Connection ID
+func (server *Server) FindClientFromConnectionID(rvcid uint32) *Client {
+	for _, client := range server.clients {
+		if client.connectionId == rvcid {
 			return client
 		}
 	}
