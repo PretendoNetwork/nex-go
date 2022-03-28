@@ -7,6 +7,7 @@ var errorMask = 1 << 31
 // RMCRequest represets a RMC request
 type RMCRequest struct {
 	protocolID uint8
+	customID   uint16
 	callID     uint32
 	methodID   uint32
 	parameters []byte
@@ -15,6 +16,11 @@ type RMCRequest struct {
 // ProtocolID sets the RMC request protocolID
 func (request *RMCRequest) ProtocolID() uint8 {
 	return request.protocolID
+}
+
+// customID sets the RMC request customID
+func (request *RMCRequest) CustomID() uint16 {
+	return request.customID
 }
 
 // CallID sets the RMC request callID
@@ -30,6 +36,11 @@ func (request *RMCRequest) MethodID() uint32 {
 // Parameters sets the RMC request parameters
 func (request *RMCRequest) Parameters() []byte {
 	return request.parameters
+}
+
+// CustomID sets the RMC request customID
+func (request *RMCRequest) SetCustomID(customID uint16) {
+	request.customID = customID
 }
 
 // ProtocolID sets the RMC request protocolID
@@ -72,6 +83,9 @@ func (request *RMCRequest) FromBytes(data []byte) error {
 	}
 
 	protocolID := stream.ReadUInt8() ^ 0x80
+	if(protocolID == 0x7f) {
+		request.customID = stream.ReadUInt16LE()
+	}
 	callID := stream.ReadUInt32LE()
 	methodID := stream.ReadUInt32LE()
 	parameters := data[13:]
@@ -89,6 +103,9 @@ func (request *RMCRequest) Bytes() []byte {
 	body := NewStreamOut(nil)
 
 	body.WriteUInt8(request.protocolID | 0x80)
+	if(request.protocolID == 0x7f) {
+		body.WriteUInt16LE(request.customID)
+	}
 
 	body.WriteUInt32LE(request.callID)
 	body.WriteUInt32LE(request.methodID)
@@ -108,6 +125,7 @@ func (request *RMCRequest) Bytes() []byte {
 // RMCResponse represents a RMC response
 type RMCResponse struct {
 	protocolID uint8
+	customID   uint16
 	success    uint8
 	callID     uint32
 	methodID   uint32
@@ -137,6 +155,9 @@ func (response *RMCResponse) Bytes() []byte {
 	body := NewStreamOut(nil)
 
 	body.WriteUInt8(response.protocolID)
+	if(response.protocolID == 0x7f) {
+		body.WriteUInt16LE(response.customID)
+	}
 	body.WriteUInt8(response.success)
 
 	if response.success == 1 {
