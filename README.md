@@ -4,7 +4,7 @@
 
 ### Install
 
-`go get github.com/PretendoNetwork/nex-go/v1`
+`go get github.com/PretendoNetwork/nex-go`
 
 ### Usage note
 
