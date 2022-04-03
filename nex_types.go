@@ -138,201 +138,156 @@ func NewDateTime(value uint64) *DateTime {
 // StationURL contains the data for a NEX station URL
 type StationURL struct {
 	// Using pointers to check for nil
-	scheme        *string
-	address       *string
-	port          *string
-	stream        *string
-	sid           *string
-	cid           *string
-	pid           *string
-	transportType *string
-	rvcid         *string
-	natm          *string
-	natf          *string
-	upnp          *string
-	pmp           *string
-	probeinit     *string
-	prid          *string
+	scheme        string
+	address       string
+	port          string
+	stream        string
+	sid           string
+	cid           string
+	pid           string
+	transportType string
+	rvcid         string
+	natm          string
+	natf          string
+	upnp          string
+	pmp           string
+	probeinit     string
+	prid          string
 }
 
 // SetScheme sets the StationURL scheme
-func (station *StationURL) SetScheme(scheme *string) {
+func (station *StationURL) SetScheme(scheme string) {
 	station.scheme = scheme
 }
 
 // SetAddress sets the StationURL address
-func (station *StationURL) SetAddress(address *string) {
+func (station *StationURL) SetAddress(address string) {
 	station.address = address
 }
 
 // SetPort sets the StationURL port
-func (station *StationURL) SetPort(port *string) {
+func (station *StationURL) SetPort(port string) {
 	station.port = port
 }
 
 // SetStream sets the StationURL stream
-func (station *StationURL) SetStream(stream *string) {
+func (station *StationURL) SetStream(stream string) {
 	station.stream = stream
 }
 
 // SetSID sets the StationURL SID
-func (station *StationURL) SetSID(sid *string) {
+func (station *StationURL) SetSID(sid string) {
 	station.sid = sid
 }
 
 // SetCID sets the StationURL CID
-func (station *StationURL) SetCID(cid *string) {
+func (station *StationURL) SetCID(cid string) {
 	station.cid = cid
 }
 
 // SetPid sets the StationURL PID
-func (station *StationURL) SetPid(pid *string) {
+func (station *StationURL) SetPid(pid string) {
 	station.pid = pid
 }
 
 // SetType sets the StationURL transportType
-func (station *StationURL) SetType(transportType *string) {
+func (station *StationURL) SetType(transportType string) {
 	station.transportType = transportType
 }
 
 // SetRVCID sets the StationURL RVCID
-func (station *StationURL) SetRVCID(rvcid *string) {
+func (station *StationURL) SetRVCID(rvcid string) {
 	station.rvcid = rvcid
 }
 
 // SetNatm sets the StationURL Natm
-func (station *StationURL) SetNatm(natm *string) {
+func (station *StationURL) SetNatm(natm string) {
 	station.natm = natm
 }
 
 // SetNatf sets the StationURL Natf
-func (station *StationURL) SetNatf(natf *string) {
+func (station *StationURL) SetNatf(natf string) {
 	station.natf = natf
 }
 
 // SetUpnp sets the StationURL Upnp
-func (station *StationURL) SetUpnp(upnp *string) {
+func (station *StationURL) SetUpnp(upnp string) {
 	station.upnp = upnp
 }
 
 // SetPmp sets the StationURL Pmp
-func (station *StationURL) SetPmp(pmp *string) {
+func (station *StationURL) SetPmp(pmp string) {
 	station.pmp = pmp
 }
 
 // SetProbeInit sets the StationURL ProbeInit
-func (station *StationURL) SetProbeInit(probeinit *string) {
+func (station *StationURL) SetProbeInit(probeinit string) {
 	station.probeinit = probeinit
 }
 
 // SetPRID sets the StationURL PRID
-func (station *StationURL) SetPRID(prid *string) {
+func (station *StationURL) SetPRID(prid string) {
 	station.prid = prid
 }
 
 func (station *StationURL) Scheme() string {
-	if station.scheme != nil {
-		return *station.address
-	}
-	return ""
+	return station.address
 }
 
 func (station *StationURL) Address() string {
-	if station.address != nil {
-		return *station.address
-	}
-	return ""
+	return station.address
 }
 
 func (station *StationURL) Port() string {
-	if station.port != nil {
-		return *station.port
-	}
-	return ""
+	return station.port
 }
 
 func (station *StationURL) Stream() string {
-	if station.stream != nil {
-		return *station.stream
-	}
-	return ""
+	return station.stream
 }
 
 func (station *StationURL) SID() string {
-	if station.sid != nil {
-		return *station.sid
-	}
-	return ""
+	return station.sid
 }
 
 func (station *StationURL) CID() string {
-	if station.cid != nil {
-		return *station.cid
-	}
-	return ""
+	return station.cid
 }
 
 func (station *StationURL) PID() string {
-	if station.pid != nil {
-		return *station.pid
-	}
-	return ""
+	return station.pid
 }
 
 func (station *StationURL) Type() string {
-	if station.transportType != nil {
-		return *station.transportType
-	}
-	return ""
+	return station.transportType
 }
 
 func (station *StationURL) RVCID() string {
-	if station.rvcid != nil {
-		return *station.rvcid
-	}
-	return ""
+	return station.rvcid
 }
 
 func (station *StationURL) Natm() string {
-	if station.natm != nil {
-		return *station.natm
-	}
-	return ""
+	return station.natm
 }
 
 func (station *StationURL) Natf() string {
-	if station.natf != nil {
-		return *station.natf
-	}
-	return ""
+	return station.natf
 }
 
 func (station *StationURL) Upnp() string {
-	if station.upnp != nil {
-		return *station.upnp
-	}
-	return ""
+	return station.upnp
 }
 
 func (station *StationURL) Pmp() string {
-	if station.pmp != nil {
-		return *station.pmp
-	}
-	return ""
+	return station.pmp
 }
 
 func (station *StationURL) ProbeInit() string {
-	if station.probeinit != nil {
-		return *station.probeinit
-	}
-	return ""
+	return station.probeinit
 }
 
 func (station *StationURL) PRID() string {
-	if station.prid != nil {
-		return *station.prid
-	}
-	return ""
+	return station.prid
 }
 
 // FromString parses the StationURL data from a string
@@ -353,33 +308,33 @@ func (station *StationURL) FromString(str string) {
 
 		switch name {
 		case "address":
-			station.address = &value
+			station.address = value
 		case "port":
-			station.port = &value
+			station.port = value
 		case "stream":
-			station.stream = &value
+			station.stream = value
 		case "sid":
-			station.sid = &value
+			station.sid = value
 		case "CID":
-			station.cid = &value
+			station.cid = value
 		case "PID":
-			station.pid = &value
+			station.pid = value
 		case "type":
-			station.transportType = &value
+			station.transportType = value
 		case "RVCID":
-			station.rvcid = &value
+			station.rvcid = value
 		case "natm":
-			station.natm = &value
+			station.natm = value
 		case "natf":
-			station.natf = &value
+			station.natf = value
 		case "upnp":
-			station.upnp = &value
+			station.upnp = value
 		case "pmp":
-			station.pmp = &value
+			station.pmp = value
 		case "probeinit":
-			station.probeinit = &value
+			station.probeinit = value
 		case "PRID":
-			station.prid = &value
+			station.prid = value
 		}
 	}
 }
@@ -388,66 +343,65 @@ func (station *StationURL) FromString(str string) {
 func (station *StationURL) EncodeToString() string {
 	fields := []string{}
 
-	if station.address != nil {
-		fields = append(fields, "address="+*station.address)
+	if station.address != "" {
+		fields = append(fields, "address="+station.address)
 	}
 
-	if station.port != nil {
-		fields = append(fields, "port="+*station.port)
+	if station.port != "" {
+		fields = append(fields, "port="+station.port)
 	}
 
-	if station.stream != nil {
-		fields = append(fields, "stream="+*station.stream)
+	if station.stream != "" {
+		fields = append(fields, "stream="+station.stream)
 	}
 
-	if station.sid != nil {
-		fields = append(fields, "sid="+*station.sid)
+	if station.sid != "" {
+		fields = append(fields, "sid="+station.sid)
 	}
 
-	if station.cid != nil {
-		fields = append(fields, "CID="+*station.cid)
+	if station.cid != "" {
+		fields = append(fields, "CID="+station.cid)
 	}
 
-	if station.pid != nil {
-		fields = append(fields, "PID="+*station.pid)
+	if station.pid != "" {
+		fields = append(fields, "PID="+station.pid)
 	}
 
-	if station.transportType != nil {
-		fields = append(fields, "type="+*station.transportType)
+	if station.transportType != "" {
+		fields = append(fields, "type="+station.transportType)
 	}
 
-	if station.rvcid != nil {
-		fields = append(fields, "RVCID="+*station.rvcid)
+	if station.rvcid != "" {
+		fields = append(fields, "RVCID="+station.rvcid)
 	}
 
-	if station.natm != nil {
-		fields = append(fields, "natm="+*station.natm)
+	if station.natm != "" {
+		fields = append(fields, "natm="+station.natm)
 	}
 
-	if station.natf != nil {
-		fields = append(fields, "natf="+*station.natf)
+	if station.natf != "" {
+		fields = append(fields, "natf="+station.natf)
 	}
 
-	if station.upnp != nil {
-		fields = append(fields, "upnp="+*station.upnp)
+	if station.upnp != "" {
+		fields = append(fields, "upnp="+station.upnp)
 	}
 
-	if station.pmp != nil {
-		fields = append(fields, "pmp="+*station.pmp)
+	if station.pmp != "" {
+		fields = append(fields, "pmp="+station.pmp)
 	}
 
-	if station.probeinit != nil {
-		fields = append(fields, "probeinit="+*station.probeinit)
+	if station.probeinit != "" {
+		fields = append(fields, "probeinit="station.probeinit)
 	}
 
-	if station.prid != nil {
-		fields = append(fields, "PRID="+*station.prid)
+	if station.prid != "" {
+		fields = append(fields, "PRID="+station.prid)
 	}
 
-	return *station.scheme + ":/" + strings.Join(fields, ";")
+	return station.scheme + ":/" + strings.Join(fields, ";")
 }
 
-// NewStationURL returns a new StationURL instance
 func NewStationURL(str string) *StationURL {
 	station := &StationURL{}
 
