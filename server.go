@@ -29,6 +29,7 @@ type Server struct {
 	checksumVersion       int
 	kerberosKeySize       int
 	kerberosKeyDerivation int
+	kerberosTicketVersion int
 	serverVersion         int
 	connectionIDCounter   *Counter
 }
@@ -396,6 +397,16 @@ func (server *Server) KerberosKeySize() int {
 // SetKerberosKeySize sets the server kerberos key size
 func (server *Server) SetKerberosKeySize(kerberosKeySize int) {
 	server.kerberosKeySize = kerberosKeySize
+}
+
+// KerberosTicketVersion returns the server kerberos ticket contents version
+func (server *Server) KerberosTicketVersion() int {
+	return server.kerberosTicketVersion
+}
+
+// SetKerberosTicketVersion sets the server kerberos ticket contents version
+func (server *Server) SetKerberosTicketVersion(ticketVersion int) {
+	server.kerberosTicketVersion = ticketVersion
 }
 
 // PingTimeout returns the server ping timeout time in seconds
