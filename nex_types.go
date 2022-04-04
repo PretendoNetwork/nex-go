@@ -294,7 +294,7 @@ func (station *StationURL) PRID() string {
 func (station *StationURL) FromString(str string) {
 	split := strings.Split(str, ":/")
 
-	station.scheme = &split[0]
+	station.scheme = split[0]
 	fields := split[1]
 
 	params := strings.Split(fields, ";")
@@ -392,7 +392,7 @@ func (station *StationURL) EncodeToString() string {
 	}
 
 	if station.probeinit != "" {
-		fields = append(fields, "probeinit="station.probeinit)
+		fields = append(fields, "probeinit="+station.probeinit)
 	}
 
 	if station.prid != "" {
