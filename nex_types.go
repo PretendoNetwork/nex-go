@@ -186,7 +186,7 @@ func (station *StationURL) SetCID(cid string) {
 }
 
 // SetPid sets the StationURL PID
-func (station *StationURL) SetPid(pid string) {
+func (station *StationURL) SetPID(pid string) {
 	station.pid = pid
 }
 
