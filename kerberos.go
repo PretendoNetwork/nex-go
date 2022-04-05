@@ -6,32 +6,13 @@ import (
 	"crypto/md5"
 	"crypto/rc4"
 	"fmt"
+	"math/rand"
 )
 
 // KerberosEncryption is used to encrypt/decrypt using Kerberos
 type KerberosEncryption struct {
 	key    []byte
 	cipher *rc4.Cipher
-}
-
-// Ticket represents a Kerberos authentication ticket
-type Ticket struct {
-	sessionKey []byte
-	serverPID  uint32
-	ticketData []byte
-}
-
-// TicketData contains the encrypted ticket info and an optional key used for deriving the encryption key for TicketInfo
-type TicketData struct {
-	ticketKey  []byte
-	ticketInfo []byte
-}
-
-// TicketInfo contains the actual data of the ticket
-type TicketInfo struct {
-	datetime   uint64
-	userPID    uint32
-	sessionKey []byte
 }
 
 // Encrypt will encrypt the given data using Kerberos
@@ -86,4 +67,135 @@ func NewKerberosEncryption(key []byte) *KerberosEncryption {
 		key:    key,
 		cipher: cipher,
 	}
+}
+
+// Ticket represents a Kerberos authentication ticket
+type Ticket struct {
+	sessionKey   []byte
+	targetPID    uint32
+	internalData []byte
+}
+
+// SessionKey returns the Tickets session key
+func (ticket *Ticket) SessionKey() []byte {
+	return ticket.sessionKey
+}
+
+// SetSessionKey sets the Tickets session key
+func (ticket *Ticket) SetSessionKey(sessionKey []byte) {
+	ticket.sessionKey = sessionKey
+}
+
+// TargetPID returns the Tickets target PID
+func (ticket *Ticket) TargetPID() uint32 {
+	return ticket.targetPID
+}
+
+// SetTargetPID sets the Tickets target PID
+func (ticket *Ticket) SetTargetPID(targetPID uint32) {
+	ticket.targetPID = targetPID
+}
+
+// InternalData returns the Tickets internal data buffer
+func (ticket *Ticket) InternalData() []byte {
+	return ticket.internalData
+}
+
+// SetInternalData sets the Tickets internal data buffer
+func (ticket *Ticket) SetInternalData(internalData []byte) {
+	ticket.internalData = internalData
+}
+
+// Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
+func (ticket *Ticket) Encrypt(key []byte, stream *StreamOut) []byte {
+	encryption := NewKerberosEncryption(key)
+
+	// Session key is not a NEX buffer type
+	stream.Grow(int64(len(ticket.sessionKey)))
+	stream.WriteBytesNext(ticket.sessionKey)
+
+	stream.WriteUInt32LE(ticket.targetPID)
+	stream.WriteBuffer(ticket.internalData)
+
+	return encryption.Encrypt(stream.Bytes())
+}
+
+// NewKerberosTicket returns a new Ticket instance
+func NewKerberosTicket() *Ticket {
+	return &Ticket{}
+}
+
+// TicketInternalData contains information sent to the secure server
+type TicketInternalData struct {
+	timestamp  *DateTime
+	userPID    uint32
+	sessionKey []byte
+}
+
+// Timestamp returns the TicketInternalDatas timestamp
+func (ticketInternalData *TicketInternalData) Timestamp() *DateTime {
+	return ticketInternalData.timestamp
+}
+
+// SetSessionKey sets the TicketInternalDatas session key
+func (ticketInternalData *TicketInternalData) SetTimestamp(timestamp *DateTime) {
+	ticketInternalData.timestamp = timestamp
+}
+
+// UserPID returns the TicketInternalDatas user PID
+func (ticketInternalData *TicketInternalData) UserPID() uint32 {
+	return ticketInternalData.userPID
+}
+
+// SetUserPID sets the TicketInternalDatas user PID
+func (ticketInternalData *TicketInternalData) SetUserPID(userPID uint32) {
+	ticketInternalData.userPID = userPID
+}
+
+// SessionKey returns the TicketInternalDatas session key
+func (ticketInternalData *TicketInternalData) SessionKey() []byte {
+	return ticketInternalData.sessionKey
+}
+
+// SetSessionKey sets the TicketInternalDatas session key
+func (ticketInternalData *TicketInternalData) SetSessionKey(sessionKey []byte) {
+	ticketInternalData.sessionKey = sessionKey
+}
+
+// Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
+func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *StreamOut) []byte {
+	stream.WriteUInt64LE(ticketInternalData.timestamp.Value())
+	stream.WriteUInt32LE(ticketInternalData.userPID)
+
+	// Session key is not a NEX buffer type
+	stream.Grow(int64(len(ticketInternalData.sessionKey)))
+	stream.WriteBytesNext(ticketInternalData.sessionKey)
+
+	data := stream.Bytes()
+
+	if stream.Server.KerberosTicketVersion() == 1 {
+		ticketKey := make([]byte, 16)
+		rand.Read(ticketKey)
+
+		finalKey := append(key, ticketKey...)
+
+		encryption := NewKerberosEncryption(finalKey)
+
+		encrypted := encryption.Encrypt(data)
+
+		finalStream := NewStreamOut(stream.Server)
+
+		finalStream.WriteBuffer(ticketKey)
+		finalStream.WriteBuffer(encrypted)
+
+		return finalStream.Bytes()
+	} else {
+		encryption := NewKerberosEncryption([]byte(key))
+		return encryption.Encrypt(data)
+	}
+}
+
+// NewKerberosTicketInternalData returns a new TicketInternalData instance
+func NewKerberosTicketInternalData() *TicketInternalData {
+	return &TicketInternalData{}
 }
