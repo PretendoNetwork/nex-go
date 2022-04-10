@@ -6,6 +6,8 @@ import (
 )
 
 type ErrorsStruct struct {
+	Success uint32
+
 	Core struct {
 		Unknown               uint32
 		NotImplemented        uint32
@@ -337,6 +339,8 @@ var ErrorNames = map[uint32]string{}
 var Errors ErrorsStruct
 
 func InitErrorsData() {
+	Errors.Success = 0x00010001
+
 	Errors.Core.Unknown = 0x00010001
 	Errors.Core.NotImplemented = 0x00010002
 	Errors.Core.InvalidPointer = 0x00010003
