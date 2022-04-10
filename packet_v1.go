@@ -105,13 +105,8 @@ func (packet *PacketV1) Decode() error {
 
 	typeFlags := stream.ReadUInt16LE()
 
-	if packet.Sender().Server().FlagsVersion() == 0 {
-		packet.SetType(typeFlags & 7)
-		packet.SetFlags(typeFlags >> 3)
-	} else {
-		packet.SetType(typeFlags & 0xF)
-		packet.SetFlags(typeFlags >> 4)
-	}
+	packet.SetType(typeFlags & 0xF)
+	packet.SetFlags(typeFlags >> 4)
 
 	if _, ok := validTypes[packet.Type()]; !ok {
 		return errors.New("[PRUDPv1] Packet type not valid type")
@@ -188,12 +183,7 @@ func (packet *PacketV1) Bytes() []byte {
 		}
 	}
 
-	var typeFlags uint16
-	if packet.Sender().Server().FlagsVersion() == 0 {
-		typeFlags = packet.Type() | packet.Flags()<<3
-	} else {
-		typeFlags = packet.Type() | packet.Flags()<<4
-	}
+	var typeFlags uint16 = packet.Type() | packet.Flags()<<4
 
 	stream := NewStreamOut(packet.Sender().Server())
 

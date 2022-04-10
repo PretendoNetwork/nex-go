@@ -11,16 +11,16 @@ import (
 // PacketV0 reresents a PRUDPv0 packet
 type PacketV0 struct {
 	Packet
-	checksum uint32
+	checksum uint8
 }
 
 // SetChecksum sets the packet checksum
-func (packet *PacketV0) SetChecksum(checksum uint32) {
+func (packet *PacketV0) SetChecksum(checksum uint8) {
 	packet.checksum = checksum
 }
 
 // Checksum returns the packet checksum
-func (packet *PacketV0) Checksum() uint32 {
+func (packet *PacketV0) Checksum() uint8 {
 	return packet.checksum
 }
 
@@ -31,15 +31,9 @@ func (packet *PacketV0) Decode() error {
 		return errors.New("[PRUDPv0] Packet length less than header minimum")
 	}
 
-	var checksumSize int
+	checksumSize := 1
 	var payloadSize uint16
 	var typeFlags uint16
-
-	if packet.Sender().Server().ChecksumVersion() == 0 {
-		checksumSize = 4
-	} else {
-		checksumSize = 1
-	}
 
 	stream := NewStreamIn(packet.Data(), packet.Sender().Server())
 
@@ -52,13 +46,8 @@ func (packet *PacketV0) Decode() error {
 	packet.SetSignature(stream.ReadBytesNext(4))
 	packet.SetSequenceID(stream.ReadUInt16LE())
 
-	if packet.Sender().Server().FlagsVersion() == 0 {
-		packet.SetType(typeFlags & 7)
-		packet.SetFlags(typeFlags >> 3)
-	} else {
-		packet.SetType(typeFlags & 0xF)
-		packet.SetFlags(typeFlags >> 4)
-	}
+	packet.SetType(typeFlags & 0xF)
+	packet.SetFlags(typeFlags >> 4)
 
 	if _, ok := validTypes[packet.Type()]; !ok {
 		return errors.New("[PRUDPv0] Packet type not valid type")
@@ -118,11 +107,7 @@ func (packet *PacketV0) Decode() error {
 		return errors.New("[PRUDPv0] Packet data length less than checksum length")
 	}
 
-	if checksumSize == 1 {
-		packet.SetChecksum(uint32(stream.ReadUInt8()))
-	} else {
-		packet.SetChecksum(stream.ReadUInt32LE())
-	}
+	packet.SetChecksum(stream.ReadUInt8())
 
 	packetBody := stream.Bytes()
 
@@ -159,12 +144,7 @@ func (packet *PacketV0) Bytes() []byte {
 		}
 	}
 
-	var typeFlags uint16
-	if packet.Sender().Server().FlagsVersion() == 0 {
-		typeFlags = packet.Type() | packet.Flags()<<3
-	} else {
-		typeFlags = packet.Type() | packet.Flags()<<4
-	}
+	var typeFlags uint16 = packet.Type() | packet.Flags()<<4
 
 	stream := NewStreamOut(packet.Sender().Server())
 	packetSignature := packet.calculateSignature()
@@ -194,11 +174,7 @@ func (packet *PacketV0) Bytes() []byte {
 
 	checksum := packet.calculateChecksum(stream.Bytes())
 
-	if packet.Sender().Server().ChecksumVersion() == 0 {
-		stream.WriteUInt32LE(checksum)
-	} else {
-		stream.WriteUInt8(uint8(checksum))
-	}
+	stream.WriteUInt8(checksum)
 
 	return stream.Bytes()
 }
@@ -294,7 +270,7 @@ func (packet *PacketV0) encodeOptions() []byte {
 	return stream.Bytes()
 }
 
-func (packet *PacketV0) calculateChecksum(data []byte) uint32 {
+func (packet *PacketV0) calculateChecksum(data []byte) uint8 {
 	signatureBase := packet.Sender().SignatureBase()
 	steps := len(data) / 4
 	var temp uint32
@@ -313,7 +289,7 @@ func (packet *PacketV0) calculateChecksum(data []byte) uint32 {
 	checksum += sum(data[len(data) & ^3:])
 	checksum += sum(buff)
 
-	return uint32(checksum & 0xFF)
+	return uint8(checksum & 0xFF)
 }
 
 // NewPacketV0 returns a new PRUDPv0 packet

@@ -11,8 +11,6 @@ import (
 // Server represents a PRUDP server
 type Server struct {
 	socket                *net.UDPConn
-	compressPacket        func([]byte) []byte
-	decompressPacket      func([]byte) []byte
 	clients               map[string]*Client
 	genericEventHandles   map[string][]func(PacketInterface)
 	prudpV0EventHandles   map[string][]func(*PacketV0)
@@ -22,15 +20,10 @@ type Server struct {
 	nexVersion            int
 	fragmentSize          int16
 	resendTimeout         float32
-	usePacketCompression  bool
 	pingTimeout           int
-	signatureVersion      int
-	flagsVersion          int
-	checksumVersion       int
 	kerberosKeySize       int
 	kerberosKeyDerivation int
 	kerberosTicketVersion int
-	serverVersion         int
 	connectionIDCounter   *Counter
 }
 
@@ -349,26 +342,6 @@ func (server *Server) SetNexVersion(nexVersion int) {
 	server.nexVersion = nexVersion
 }
 
-// ChecksumVersion returns the server packet checksum version
-func (server *Server) ChecksumVersion() int {
-	return server.checksumVersion
-}
-
-// SetChecksumVersion sets the server packet checksum version
-func (server *Server) SetChecksumVersion(checksumVersion int) {
-	server.checksumVersion = checksumVersion
-}
-
-// FlagsVersion returns the server packet flags version
-func (server *Server) FlagsVersion() int {
-	return server.flagsVersion
-}
-
-// SetFlagsVersion sets the server packet flags version
-func (server *Server) SetFlagsVersion(flagsVersion int) {
-	server.flagsVersion = flagsVersion
-}
-
 // AccessKey returns the server access key
 func (server *Server) AccessKey() string {
 	return server.accessKey
@@ -377,16 +350,6 @@ func (server *Server) AccessKey() string {
 // SetAccessKey sets the server access key
 func (server *Server) SetAccessKey(accessKey string) {
 	server.accessKey = accessKey
-}
-
-// SignatureVersion returns the server packet signature version
-func (server *Server) SignatureVersion() int {
-	return server.signatureVersion
-}
-
-// SetSignatureVersion sets the server packet signature version
-func (server *Server) SetSignatureVersion(signatureVersion int) {
-	server.signatureVersion = signatureVersion
 }
 
 // KerberosKeySize returns the server kerberos key size
@@ -417,24 +380,6 @@ func (server *Server) PingTimeout() int {
 // SetPingTimeout sets the server ping timeout time in seconds
 func (server *Server) SetPingTimeout(pingTimeout int) {
 	server.pingTimeout = pingTimeout
-}
-
-// UsePacketCompression enables or disables packet compression
-func (server *Server) UsePacketCompression(usePacketCompression bool) {
-	if usePacketCompression {
-		compression := ZLibCompression{}
-		server.SetPacketCompression(compression.Compress)
-	} else {
-		compression := DummyCompression{}
-		server.SetPacketCompression(compression.Compress)
-	}
-
-	server.usePacketCompression = usePacketCompression
-}
-
-// SetPacketCompression sets the packet compression function
-func (server *Server) SetPacketCompression(compression func([]byte) []byte) {
-	server.compressPacket = compression
 }
 
 // SetFragmentSize sets the packet fragment size
@@ -496,7 +441,7 @@ func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 	client := packet.Sender()
 
 	packet.SetFragmentID(fragmentID)
-	packet.SetPayload(server.compressPacket(data))
+	packet.SetPayload(data)
 	packet.SetSequenceID(uint16(client.SequenceIDCounterOut().Increment()))
 
 	encodedPacket := packet.Bytes()
@@ -520,15 +465,10 @@ func NewServer() *Server {
 		fragmentSize:          1300,
 		resendTimeout:         1.5,
 		pingTimeout:           5,
-		signatureVersion:      0,
-		flagsVersion:          1,
-		checksumVersion:       1,
 		kerberosKeySize:       32,
 		kerberosKeyDerivation: 0,
 		connectionIDCounter:   NewCounter(10),
 	}
-
-	server.UsePacketCompression(false)
 
 	return server
 }
