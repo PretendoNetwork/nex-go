@@ -92,6 +92,11 @@ func (stream *StreamOut) WriteQBuffer(data []byte) {
 	}
 }
 
+// WriteResult writes a NEX Result type
+func (stream *StreamOut) WriteResult(result *Result) {
+	stream.WriteUInt32LE(result.code)
+}
+
 // WriteStructure writes a nex Structure type
 func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	content := structure.Bytes(NewStreamOut(stream.Server))
@@ -185,6 +190,17 @@ func (stream *StreamOut) WriteListQBuffer(buffers [][]byte) {
 
 	for i := 0; i < length; i++ {
 		stream.WriteQBuffer(buffers[i])
+	}
+}
+
+// WriteListResult writes a list of NEX Result types
+func (stream *StreamOut) WriteListResult(results []*Result) {
+	length := len(results)
+
+	stream.WriteUInt32LE(uint32(length))
+
+	for i := 0; i < length; i++ {
+		stream.WriteResult(results[i])
 	}
 }
 
