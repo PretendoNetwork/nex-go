@@ -414,26 +414,46 @@ func NewStationURL(str string) *StationURL {
 
 // Result is sent in methods which query large objects
 type Result struct {
-	ResultCode uint32
+	code uint32
+}
+
+// IsSuccess returns true if the Result is a success
+func (result *Result) IsSuccess() bool {
+	return int(result.code)&errorMask == 0
+}
+
+// IsError returns true if the Result is a error
+func (result *Result) IsError() bool {
+	return int(result.code)&errorMask != 0
 }
 
 // ExtractFromStream extracts a Result structure from a stream
 func (result *Result) ExtractFromStream(stream *StreamIn) error {
-	result.ResultCode = stream.ReadUInt32LE()
+	result.code = stream.ReadUInt32LE()
 
 	return nil
 }
 
 // Bytes encodes the Result and returns a byte array
 func (result *Result) Bytes(stream *StreamOut) []byte {
-	stream.WriteUInt32LE(result.ResultCode)
+	stream.WriteUInt32LE(result.code)
 
 	return stream.Bytes()
 }
 
 // NewResult returns a new Result
-func NewResult(ResultCode uint32) *Result {
-	return &Result{ResultCode}
+func NewResult(code uint32) *Result {
+	return &Result{code}
+}
+
+// NewResultSuccess returns a new Result set as a success
+func NewResultSuccess(code uint32) *Result {
+	return NewResult(uint32(int(code) & ^errorMask))
+}
+
+// NewResultError returns a new Result set as an error
+func NewResultError(code uint32) *Result {
+	return NewResult(uint32(int(code) | errorMask))
 }
 
 // ResultRange is sent in methods which query large objects
