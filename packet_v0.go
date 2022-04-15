@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 // PacketV0 reresents a PRUDPv0 packet
@@ -114,7 +113,7 @@ func (packet *PacketV0) Decode() error {
 	calculatedChecksum := packet.calculateChecksum(packetBody[:len(packetBody)-checksumSize])
 
 	if calculatedChecksum != packet.Checksum() {
-		fmt.Println("[ERROR] Calculated checksum did not match")
+		logger.Error("PRUDPv0 packet calculated checksum did not match")
 	}
 
 	return nil

@@ -6,7 +6,6 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"errors"
-	"fmt"
 )
 
 // OptionAllFunctions is used with OptionSupportedFunctions to support all methods
@@ -154,7 +153,7 @@ func (packet *PacketV1) Decode() error {
 	calculatedSignature := packet.calculateSignature(packet.Data()[2:14], packet.Sender().ServerConnectionSignature(), options, packet.Payload())
 
 	if !bytes.Equal(calculatedSignature, packet.Signature()) {
-		fmt.Println("[ERROR] Calculated signature did not match")
+		logger.Error("PRUDPv1 calculated signature did not match")
 	}
 
 	return nil

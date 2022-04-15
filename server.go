@@ -51,7 +51,7 @@ func (server *Server) Listen(address string) {
 		go server.listenDatagram(quit)
 	}
 
-	fmt.Println("NEX server listening on address", udpAddress)
+	logger.Success(fmt.Sprintf("PRUDP server listening on address - %s", udpAddress.String()))
 
 	server.Emit("Listening", nil)
 
@@ -306,8 +306,6 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	}
 
 	data := ackPacket.Bytes()
-
-	//fmt.Println(hex.EncodeToString(data))
 
 	server.SendRaw(sender.Address(), data)
 }
