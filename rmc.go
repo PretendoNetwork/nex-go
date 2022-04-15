@@ -2,8 +2,6 @@ package nex
 
 import "errors"
 
-var errorMask = 1 << 31
-
 // RMCRequest represets a RMC request
 type RMCRequest struct {
 	protocolID uint8
@@ -83,7 +81,7 @@ func (request *RMCRequest) FromBytes(data []byte) error {
 	}
 
 	protocolID := stream.ReadUInt8() ^ 0x80
-	if(protocolID == 0x7f) {
+	if protocolID == 0x7f {
 		request.customID = stream.ReadUInt16LE()
 	}
 	callID := stream.ReadUInt32LE()
@@ -103,7 +101,7 @@ func (request *RMCRequest) Bytes() []byte {
 	body := NewStreamOut(nil)
 
 	body.WriteUInt8(request.protocolID | 0x80)
-	if(request.protocolID == 0x7f) {
+	if request.protocolID == 0x7f {
 		body.WriteUInt16LE(request.customID)
 	}
 
@@ -155,7 +153,7 @@ func (response *RMCResponse) Bytes() []byte {
 	body := NewStreamOut(nil)
 
 	body.WriteUInt8(response.protocolID)
-	if(response.protocolID == 0x7f) {
+	if response.protocolID == 0x7f {
 		body.WriteUInt16LE(response.customID)
 	}
 	body.WriteUInt8(response.success)

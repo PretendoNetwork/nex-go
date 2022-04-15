@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+var errorMask = 1 << 31
+
 type ErrorsStruct struct {
 	Success uint32
 
