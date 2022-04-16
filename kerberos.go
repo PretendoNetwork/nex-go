@@ -194,6 +194,14 @@ func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *Stream
 	}
 }
 
+func DeriveKerberosKey(pid uint32, password []byte) []byte {
+	for i := 0; i < 65000+int(pid)%1024; i++ {
+		password = MD5Hash(password)
+	}
+
+	return password
+}
+
 // NewKerberosTicketInternalData returns a new TicketInternalData instance
 func NewKerberosTicketInternalData() *TicketInternalData {
 	return &TicketInternalData{}
