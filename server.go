@@ -21,6 +21,7 @@ type Server struct {
 	fragmentSize          int16
 	resendTimeout         float32
 	pingTimeout           int
+	kerberosPassword      string
 	kerberosKeySize       int
 	kerberosKeyDerivation int
 	kerberosTicketVersion int
@@ -348,6 +349,16 @@ func (server *Server) AccessKey() string {
 // SetAccessKey sets the server access key
 func (server *Server) SetAccessKey(accessKey string) {
 	server.accessKey = accessKey
+}
+
+// KerberosPassword returns the server kerberos password
+func (server *Server) KerberosPassword() string {
+	return server.kerberosPassword
+}
+
+// SetKerberosPassword sets the server kerberos password
+func (server *Server) SetKerberosPassword(kerberosPassword string) {
+	server.kerberosPassword = kerberosPassword
 }
 
 // KerberosKeySize returns the server kerberos key size
