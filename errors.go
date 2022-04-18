@@ -364,7 +364,6 @@ func InitErrorsData() {
 
 	Errors.RendezVous.ConnectionFailure = 0x00030001
 	Errors.RendezVous.NotAuthenticated = 0x00030002
-
 	Errors.RendezVous.InvalidUsername = 0x00030064
 	Errors.RendezVous.InvalidPassword = 0x00030065
 	Errors.RendezVous.UsernameAlreadyExists = 0x00030066
@@ -383,7 +382,6 @@ func InitErrorsData() {
 	Errors.RendezVous.SessionVoid = 0x00030073
 	Errors.RendezVous.DDLMismatch = 0x00030075
 	Errors.RendezVous.InvalidConfiguration = 0x00030076
-
 	Errors.RendezVous.SessionFull = 0x000300C8
 	Errors.RendezVous.InvalidGatheringPassword = 0x000300C9
 	Errors.RendezVous.WithoutParticipationPeriod = 0x000300CA
