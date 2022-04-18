@@ -215,15 +215,15 @@ func (ticketInternalData *TicketInternalData) Decrypt(stream *StreamIn, key []by
 	ticketInternalData.SetSessionKey(stream.ReadBytesNext(int64(stream.Server.KerberosKeySize())))
 }
 
+// NewKerberosTicketInternalData returns a new TicketInternalData instance
+func NewKerberosTicketInternalData() *TicketInternalData {
+	return &TicketInternalData{}
+}
+
 func DeriveKerberosKey(pid uint32, password []byte) []byte {
 	for i := 0; i < 65000+int(pid)%1024; i++ {
 		password = MD5Hash(password)
 	}
 
 	return password
-}
-
-// NewKerberosTicketInternalData returns a new TicketInternalData instance
-func NewKerberosTicketInternalData() *TicketInternalData {
-	return &TicketInternalData{}
 }
