@@ -171,6 +171,11 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 	return newMap, nil
 }
 
+// ReadDateTime reads a DateTime type
+func (stream *StreamIn) ReadDateTime() *DateTime {
+	return NewDateTime(stream.ReadUInt64LE())
+}
+
 // ReadListUInt8 reads a list of uint8 types
 func (stream *StreamIn) ReadListUInt8() []uint8 {
 	length := stream.ReadUInt32LE()
