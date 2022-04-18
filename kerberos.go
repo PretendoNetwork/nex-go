@@ -176,7 +176,7 @@ func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *Stream
 		ticketKey := make([]byte, 16)
 		rand.Read(ticketKey)
 
-		finalKey := append(key, ticketKey...)
+		finalKey := MD5Hash(append(key, ticketKey...))
 
 		encryption := NewKerberosEncryption(finalKey)
 
@@ -192,6 +192,27 @@ func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *Stream
 		encryption := NewKerberosEncryption([]byte(key))
 		return encryption.Encrypt(data)
 	}
+}
+
+// Decrypt decrypts the given data and populates the struct
+func (ticketInternalData *TicketInternalData) Decrypt(stream *StreamIn, key []byte) {
+	if stream.Server.KerberosTicketVersion() == 1 {
+		ticketKey, _ := stream.ReadBuffer()
+		data, _ := stream.ReadBuffer()
+
+		key = MD5Hash(append(key, ticketKey...))
+
+		stream = NewStreamIn(data, stream.Server)
+	}
+
+	encryption := NewKerberosEncryption(key)
+	decrypted := encryption.Decrypt(stream.Bytes())
+
+	stream = NewStreamIn(decrypted, stream.Server)
+
+	ticketInternalData.SetTimestamp(stream.ReadDateTime())
+	ticketInternalData.SetUserPID(stream.ReadUInt32LE())
+	ticketInternalData.SetSessionKey(stream.ReadBytesNext(int64(stream.Server.KerberosKeySize())))
 }
 
 func DeriveKerberosKey(pid uint32, password []byte) []byte {
