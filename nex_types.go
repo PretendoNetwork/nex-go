@@ -22,29 +22,29 @@ func (structure *Structure) Hierarchy() []StructureInterface {
 	return make([]StructureInterface, 0)
 }
 
-// NullData represents a structure with no data
-type NullData struct {
+// Data represents a structure with no data
+type Data struct {
 	*Structure
 }
 
-// NewNullData returns a new NullData Structure
-func NewNullData() *NullData {
+// NewData returns a new Data Structure
+func NewData() *Data {
 	structure := &Structure{}
-	nullData := &NullData{structure}
+	data := &Data{structure}
 
-	return nullData
+	return data
 }
 
-// ExtractFromStream does nothing for NullData
-func (nullData *NullData) ExtractFromStream(stream *StreamIn) error {
+// ExtractFromStream does nothing for Data
+func (data *Data) ExtractFromStream(stream *StreamIn) error {
 	// Basically do nothing. Does a relative seek with 0
 	stream.SeekByte(0, true)
 
 	return nil
 }
 
-// Bytes does nothing for NullData
-func (nullData *NullData) Bytes(stream *StreamOut) []byte {
+// Bytes does nothing for Data
+func (data *Data) Bytes(stream *StreamOut) []byte {
 	return stream.Bytes()
 }
 
