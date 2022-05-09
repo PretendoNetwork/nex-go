@@ -2,10 +2,12 @@ module github.com/PretendoNetwork/nex-go
 
 go 1.18
 
-require github.com/superwhiskers/crunch/v3 v3.5.6
+require (
+	github.com/PretendoNetwork/plogger v1.0.0
+	github.com/superwhiskers/crunch/v3 v3.5.6
+)
 
 require (
-	github.com/PretendoNetwork/plogger v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/jwalton/go-supportscolor v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.9 // indirect
