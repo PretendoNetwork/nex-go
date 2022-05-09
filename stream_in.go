@@ -176,6 +176,14 @@ func (stream *StreamIn) ReadDateTime() *DateTime {
 	return NewDateTime(stream.ReadUInt64LE())
 }
 
+// ReadDataHolder reads a DataHolder type
+func (stream *StreamIn) ReadDataHolder() *DataHolder {
+	dataHolder := NewDataHolder()
+	dataHolder.ExtractFromStream(stream)
+
+	return dataHolder
+}
+
 // ReadListUInt8 reads a list of uint8 types
 func (stream *StreamIn) ReadListUInt8() []uint8 {
 	length := stream.ReadUInt32LE()

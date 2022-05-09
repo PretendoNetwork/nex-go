@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"reflect"
 	"strings"
 	"time"
 )
@@ -27,14 +28,6 @@ type Data struct {
 	*Structure
 }
 
-// NewData returns a new Data Structure
-func NewData() *Data {
-	structure := &Structure{}
-	data := &Data{structure}
-
-	return data
-}
-
 // ExtractFromStream does nothing for Data
 func (data *Data) ExtractFromStream(stream *StreamIn) error {
 	// Basically do nothing. Does a relative seek with 0
@@ -46,6 +39,92 @@ func (data *Data) ExtractFromStream(stream *StreamIn) error {
 // Bytes does nothing for Data
 func (data *Data) Bytes(stream *StreamOut) []byte {
 	return stream.Bytes()
+}
+
+// NewData returns a new Data Structure
+func NewData() *Data {
+	structure := &Structure{}
+	data := &Data{structure}
+
+	return data
+}
+
+var dataHolderKnownObjects = make(map[string]StructureInterface)
+
+func RegisterDataHolderType(structure StructureInterface) {
+	name := reflect.TypeOf(structure).Elem().Name()
+	dataHolderKnownObjects[name] = structure
+}
+
+// DataHolder represents a structure which can hold any other structure
+type DataHolder struct {
+	typeName   string
+	length1    uint32 // length of data including length2
+	length2    uint32 // length of the actual structure
+	objectData StructureInterface
+}
+
+func (dataHolder *DataHolder) TypeName() string {
+	return dataHolder.typeName
+}
+
+func (dataHolder *DataHolder) SetTypeName(typeName string) {
+	dataHolder.typeName = typeName
+}
+
+func (dataHolder *DataHolder) ObjectData() StructureInterface {
+	return dataHolder.objectData
+}
+
+func (dataHolder *DataHolder) SetObjectData(objectData StructureInterface) {
+	dataHolder.objectData = objectData
+}
+
+// ExtractFromStream extracts a DataHolder structure from a stream
+func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
+	// TODO: Error checks
+	dataHolder.typeName, _ = stream.ReadString()
+	dataHolder.length1 = stream.ReadUInt32LE()
+	dataHolder.length2 = stream.ReadUInt32LE()
+
+	newObjectInstance := reflect.New(reflect.TypeOf(dataHolderKnownObjects[dataHolder.typeName]).Elem()).Interface().(StructureInterface)
+
+	dataHolder.objectData, _ = stream.ReadStructure(newObjectInstance)
+
+	return nil
+}
+
+func (dataHolder *DataHolder) Bytes(stream *StreamOut) []byte {
+	content := dataHolder.objectData.Bytes(NewStreamOut(stream.Server))
+
+	/*
+		Technically this way of encoding a DataHolder is "wrong".
+		It implies the structure of DataHolder is:
+
+			- Name     (string)
+			- Length+4 (uint32)
+			- Content  (Buffer)
+
+		However the structure as defined by the official NEX library is:
+
+			- Name     (string)
+			- Length+4 (uint32)
+			- Length   (uint32)
+			- Content  (bytes)
+
+		It is convenient to treat the last 2 fields as a Buffer type, but
+		it should be noted that this is not actually the case.
+	*/
+	stream.WriteString(dataHolder.typeName)
+	stream.WriteUInt32LE(uint32(len(content) + 4))
+	stream.WriteBuffer(content)
+
+	return stream.Bytes()
+}
+
+// NewDataHolder returns a new DataHolder
+func NewDataHolder() *DataHolder {
+	return &DataHolder{}
 }
 
 // RVConnectionData represents a nex RVConnectionData type
@@ -474,24 +553,4 @@ func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
 // NewResultRange returns a new ResultRange
 func NewResultRange() *ResultRange {
 	return &ResultRange{}
-}
-
-type DataHolder struct {
-	Name   string
-	Object StructureInterface
-}
-
-func (dataholder *DataHolder) Bytes(stream *StreamOut) []byte {
-	content := dataholder.Object.Bytes(NewStreamOut(stream.Server))
-
-	stream.WriteString(dataholder.Name)
-	stream.WriteUInt32LE(uint32(len(content) + 4))
-	stream.WriteBuffer(content)
-
-	return stream.Bytes()
-}
-
-// NewDataHolder returns a new DataHolder
-func NewDataHolder() *DataHolder {
-	return &DataHolder{}
 }
