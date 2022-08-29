@@ -19,6 +19,12 @@
 
 # Go workspace file
 go.work
+go.work.sum
 
 # custom
 .vscode
+.env
+build
+log
+*.pem
+*.key
