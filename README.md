@@ -1,6 +1,12 @@
-# Barebones PRUDP/NEX server library written in Go
+# NEX Go
+## Barebones PRUDP/NEX server library written in Go
 
 [![GoDoc](https://godoc.org/github.com/PretendoNetwork/nex-go?status.svg)](https://godoc.org/github.com/PretendoNetwork/nex-go)
+
+### Other NEX libraries
+[nex-protocols-go](https://github.com/PretendoNetwork/nex-protocols-go) - NEX protocol definitions
+
+[nex-protocols-common-go](https://github.com/PretendoNetwork/nex-protocols-common-go) - NEX protocols used by many games with premade handlers and a high level API
 
 ### Install
 
@@ -12,7 +18,7 @@ This module provides a barebones PRUDP server for use with titles using the Nint
 
 ### Usage
 
-```Golang
+```go
 package main
 
 import (
