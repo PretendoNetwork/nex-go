@@ -263,7 +263,7 @@ func (packet *PacketV1) encodeOptions() []byte {
 	if packet.Type() == SynPacket || packet.Type() == ConnectPacket {
 		stream.WriteUInt8(OptionSupportedFunctions)
 		stream.WriteUInt8(4)
-		stream.WriteUInt32LE(packet.supportedFunctions)
+		stream.WriteUInt32LE(uint32(packet.prudpProtocolMinorVersion) | uint32(packet.supportedFunctions<<8))
 
 		stream.WriteUInt8(OptionConnectionSignature)
 		stream.WriteUInt8(16)
