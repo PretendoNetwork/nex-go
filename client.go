@@ -12,6 +12,8 @@ type Client struct {
 	server                    *Server
 	cipher                    *rc4.Cipher
 	decipher                  *rc4.Cipher
+	prudpProtocolMinorVersion int
+	supportedFunctions        int
 	signatureKey              []byte
 	signatureBase             int
 	secureKey                 []byte
@@ -57,6 +59,26 @@ func (client *Client) Address() *net.UDPAddr {
 // Server returns the server the client is currently connected to
 func (client *Client) Server() *Server {
 	return client.server
+}
+
+// PRUDPProtocolMinorVersion returns the client PRUDP minor version
+func (client *Client) PRUDPProtocolMinorVersion() int {
+	return client.prudpProtocolMinorVersion
+}
+
+// SetPRUDPProtocolMinorVersion sets the client PRUDP minor
+func (client *Client) SetPRUDPProtocolMinorVersion(prudpProtocolMinorVersion int) {
+	client.prudpProtocolMinorVersion = prudpProtocolMinorVersion
+}
+
+// SupportedFunctions returns the supported PRUDP functions by the client
+func (client *Client) SupportedFunctions() int {
+	return client.supportedFunctions
+}
+
+// SetSupportedFunctions sets the supported PRUDP functions by the client
+func (client *Client) SetSupportedFunctions(supportedFunctions int) {
+	client.supportedFunctions = supportedFunctions
 }
 
 // UpdateRC4Key sets the client RC4 stream key
@@ -194,7 +216,7 @@ func (client *Client) StartTimeoutTimer() {
 }
 
 // NewClient returns a new PRUDP client
-func NewClient(address *net.UDPAddr, server *Server) *Client {
+func NewClient(address *net.UDPAddr, client *Client) *Client {
 	client := &Client{
 		address: address,
 		server:  server,
