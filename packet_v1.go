@@ -243,8 +243,8 @@ func (packet *PacketV1) decodeOptions(options []byte) {
 		switch optionID {
 		case OptionSupportedFunctions:
 			supportedFunctions := optionsStream.ReadUInt32LE()
-			packet.sender.server.SetPRUDPProtocolMinorVersion(int(supportedFunctions & 0xFF))
-			packet.SetSupportedFunctions(uint32(supportedFunctions >> 8))
+			packet.sender.SetPRUDPProtocolMinorVersion(int(supportedFunctions & 0xFF))
+			packet.sender.SetSupportedFunctions(int(supportedFunctions >> 8))
 		case OptionConnectionSignature:
 			packet.SetConnectionSignature(optionsStream.ReadBytesNext(int64(optionSize)))
 		case OptionFragmentID:

@@ -268,14 +268,16 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 			rand.Read(serverConnectionSignature)
 
 			ackPacket.Sender().SetServerConnectionSignature(serverConnectionSignature)
-			ackPacket.SetSupportedFunctions(packet.SupportedFunctions())
+			ackPacket.SetPRUDPProtocolMinorVersion(packet.sender.PRUDPProtocolMinorVersion())
+			ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
 			ackPacket.SetMaximumSubstreamID(0)
 			ackPacket.SetConnectionSignature(serverConnectionSignature)
 		}
 
 		if packet.Type() == ConnectPacket {
 			ackPacket.SetConnectionSignature(make([]byte, 16))
-			ackPacket.SetSupportedFunctions(packet.SupportedFunctions())
+			ackPacket.SetPRUDPProtocolMinorVersion(packet.sender.PRUDPProtocolMinorVersion())
+			ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
 			ackPacket.SetInitialSequenceID(10000)
 			ackPacket.SetMaximumSubstreamID(0)
 		}
