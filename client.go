@@ -216,7 +216,7 @@ func (client *Client) StartTimeoutTimer() {
 }
 
 // NewClient returns a new PRUDP client
-func NewClient(address *net.UDPAddr, client *Client) *Client {
+func NewClient(address *net.UDPAddr, server *Server) *Client {
 	client := &Client{
 		address: address,
 		server:  server,
