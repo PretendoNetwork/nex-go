@@ -19,6 +19,7 @@ type Server struct {
 	prudpVersion              int
 	nexVersion                int
 	prudpProtocolMinorVersion int
+	supportedFunctions        int
 	fragmentSize              int16
 	resendTimeout             float32
 	pingTimeout               int
@@ -350,6 +351,16 @@ func (server *Server) PRUDPProtocolMinorVersion() int {
 // SetPRUDPProtocolMinorVersion sets the server PRUDP minor
 func (server *Server) SetPRUDPProtocolMinorVersion(prudpProtocolMinorVersion int) {
 	server.prudpProtocolMinorVersion = prudpProtocolMinorVersion
+}
+
+// SupportedFunctions returns the supported PRUDP functions by the server
+func (server *Server) SupportedFunctions() int {
+	return server.supportedFunctions
+}
+
+// SetSupportedFunctions sets the supported PRUDP functions by the server
+func (server *Server) SetSupportedFunctions(supportedFunctions int) {
+	server.supportedFunctions = supportedFunctions
 }
 
 // AccessKey returns the server access key
