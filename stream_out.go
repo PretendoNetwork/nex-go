@@ -101,7 +101,7 @@ func (stream *StreamOut) WriteResult(result *Result) {
 func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	content := structure.Bytes(NewStreamOut(stream.Server))
 
-	if stream.Server.NexVersion() >= 3 {
+	if stream.Server.NexVersion() >= 30500 {
 		stream.WriteUInt8(1) // version
 		stream.WriteUInt32LE(uint32(len(content)))
 	}
