@@ -148,13 +148,13 @@ func (server *Server) handleSocketMessage() error {
 func (server *Server) On(event string, handler interface{}) {
 	// Check if the handler type matches one of the allowed types, and store the handler in it's allowed property
 	// Need to cast the handler to the correct function type before storing
-	switch handler.(type) {
+	switch handler := handler.(type) {
 	case func(PacketInterface):
-		server.genericEventHandles[event] = append(server.genericEventHandles[event], handler.(func(PacketInterface)))
+		server.genericEventHandles[event] = append(server.genericEventHandles[event], handler)
 	case func(*PacketV0):
-		server.prudpV0EventHandles[event] = append(server.prudpV0EventHandles[event], handler.(func(*PacketV0)))
+		server.prudpV0EventHandles[event] = append(server.prudpV0EventHandles[event], handler)
 	case func(*PacketV1):
-		server.prudpV1EventHandles[event] = append(server.prudpV1EventHandles[event], handler.(func(*PacketV1)))
+		server.prudpV1EventHandles[event] = append(server.prudpV1EventHandles[event], handler)
 	}
 }
 
