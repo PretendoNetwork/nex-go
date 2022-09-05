@@ -263,23 +263,23 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 		ackPacket.SetSubstreamID(0)
 		ackPacket.AddFlag(FlagHasSize)
 
+		if packet.Type() == SynPacket || packet.Type() == ConnectPacket {
+			ackPacket.SetPRUDPProtocolMinorVersion(packet.sender.PRUDPProtocolMinorVersion())
+			ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
+			ackPacket.SetMaximumSubstreamID(0)
+		}
+
 		if packet.Type() == SynPacket {
 			serverConnectionSignature := make([]byte, 16)
 			rand.Read(serverConnectionSignature)
 
 			ackPacket.Sender().SetServerConnectionSignature(serverConnectionSignature)
-			ackPacket.SetPRUDPProtocolMinorVersion(packet.sender.PRUDPProtocolMinorVersion())
-			ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
-			ackPacket.SetMaximumSubstreamID(0)
 			ackPacket.SetConnectionSignature(serverConnectionSignature)
 		}
 
 		if packet.Type() == ConnectPacket {
 			ackPacket.SetConnectionSignature(make([]byte, 16))
-			ackPacket.SetPRUDPProtocolMinorVersion(packet.sender.PRUDPProtocolMinorVersion())
-			ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
 			ackPacket.SetInitialSequenceID(10000)
-			ackPacket.SetMaximumSubstreamID(0)
 		}
 
 		if packet.Type() == DataPacket {
