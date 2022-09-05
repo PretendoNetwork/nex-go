@@ -10,22 +10,23 @@ import (
 
 // Server represents a PRUDP server
 type Server struct {
-	socket                *net.UDPConn
-	clients               map[string]*Client
-	genericEventHandles   map[string][]func(PacketInterface)
-	prudpV0EventHandles   map[string][]func(*PacketV0)
-	prudpV1EventHandles   map[string][]func(*PacketV1)
-	accessKey             string
-	prudpVersion          int
-	nexVersion            int
-	fragmentSize          int16
-	resendTimeout         float32
-	pingTimeout           int
-	kerberosPassword      string
-	kerberosKeySize       int
-	kerberosKeyDerivation int
-	kerberosTicketVersion int
-	connectionIDCounter   *Counter
+	socket                    *net.UDPConn
+	clients                   map[string]*Client
+	genericEventHandles       map[string][]func(PacketInterface)
+	prudpV0EventHandles       map[string][]func(*PacketV0)
+	prudpV1EventHandles       map[string][]func(*PacketV1)
+	accessKey                 string
+	prudpVersion              int
+	nexVersion                int
+	prudpProtocolMinorVersion int
+	fragmentSize              int16
+	resendTimeout             float32
+	pingTimeout               int
+	kerberosPassword          string
+	kerberosKeySize           int
+	kerberosKeyDerivation     int
+	kerberosTicketVersion     int
+	connectionIDCounter       *Counter
 }
 
 // Listen starts a NEX server on a given address
@@ -292,7 +293,7 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 			payloadStream := NewStreamOut(server)
 
 			// New version
-			if server.NexVersion() >= 2 {
+			if server.PRUDPProtocolMinorVersion() >= 2 {
 				ackPacket.SetSequenceID(0)
 				ackPacket.SetSubstreamID(1)
 
@@ -339,6 +340,16 @@ func (server *Server) NexVersion() int {
 // SetNexVersion sets the server NEX version
 func (server *Server) SetNexVersion(nexVersion int) {
 	server.nexVersion = nexVersion
+}
+
+// PRUDPProtocolMinorVersion returns the server PRUDP minor version
+func (server *Server) PRUDPProtocolMinorVersion() int {
+	return server.prudpProtocolMinorVersion
+}
+
+// SetPRUDPProtocolMinorVersion sets the server PRUDP minor
+func (server *Server) SetPRUDPProtocolMinorVersion(prudpProtocolMinorVersion int) {
+	server.prudpProtocolMinorVersion = prudpProtocolMinorVersion
 }
 
 // AccessKey returns the server access key
