@@ -29,11 +29,12 @@ var OptionMaxSubstreamID uint8 = 4
 // PacketV1 reresents a PRUDPv1 packet
 type PacketV1 struct {
 	Packet
-	magic              []byte
-	substreamID        uint8
-	supportedFunctions uint32
-	initialSequenceID  uint16
-	maximumSubstreamID uint8
+	magic                     []byte
+	substreamID               uint8
+	prudpProtocolMinorVersion int
+	supportedFunctions        int
+	initialSequenceID         uint16
+	maximumSubstreamID        uint8
 }
 
 // SetSubstreamID sets the packet substream ID
@@ -46,13 +47,23 @@ func (packet *PacketV1) SubstreamID() uint8 {
 	return packet.substreamID
 }
 
+// PRUDPProtocolMinorVersion returns the packet PRUDP minor version
+func (packet *PacketV1) PRUDPProtocolMinorVersion() int {
+	return packet.prudpProtocolMinorVersion
+}
+
+// SetPRUDPProtocolMinorVersion sets the packet PRUDP minor version
+func (packet *PacketV1) SetPRUDPProtocolMinorVersion(prudpProtocolMinorVersion int) {
+	packet.prudpProtocolMinorVersion = prudpProtocolMinorVersion
+}
+
 // SetSupportedFunctions sets the packet supported functions flags
-func (packet *PacketV1) SetSupportedFunctions(supportedFunctions uint32) {
+func (packet *PacketV1) SetSupportedFunctions(supportedFunctions int) {
 	packet.supportedFunctions = supportedFunctions
 }
 
 // SupportedFunctions returns the packet supported functions flags
-func (packet *PacketV1) SupportedFunctions() uint32 {
+func (packet *PacketV1) SupportedFunctions() int {
 	return packet.supportedFunctions
 }
 
