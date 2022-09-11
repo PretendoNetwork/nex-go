@@ -121,6 +121,12 @@ func (server *Server) handleSocketMessage() error {
 
 	switch packet.Type() {
 	case SynPacket:
+		// * PID should always be 0 when a fresh connection is made
+		if client.PID() != 0 {
+			// * Was connected before on the same device, using a different account
+			server.Emit("Disconnect", packet) // * Disconnect the old connection
+		}
+
 		client.Reset()
 		client.SetConnected(true)
 		client.StartTimeoutTimer()
