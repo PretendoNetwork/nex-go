@@ -126,7 +126,6 @@ func (server *Server) handleSocketMessage() error {
 			// * Was connected before on the same device, using a different account
 			server.Emit("Disconnect", packet) // * Disconnect the old connection
 		}
-
 		client.Reset()
 		client.SetConnected(true)
 		client.StartTimeoutTimer()
@@ -271,7 +270,8 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 
 		if packet.Type() == SynPacket || packet.Type() == ConnectPacket {
 			ackPacket.SetPRUDPProtocolMinorVersion(packet.sender.PRUDPProtocolMinorVersion())
-			ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
+			//Going to leave this note here in case this causes issues later on, but for now, the below line breaks Splatoon and Minecraft Wii U (and probs other later games).
+			//ackPacket.SetSupportedFunctions(packet.sender.SupportedFunctions())
 			ackPacket.SetMaximumSubstreamID(0)
 		}
 
