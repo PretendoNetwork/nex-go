@@ -56,6 +56,14 @@ func (client *Client) Address() *net.UDPAddr {
 	return client.address
 }
 
+// SetPort sets the clients UDP port
+func (client *Client) SetPort(port int) {
+    client.address = &net.UDPAddr{
+        Port: port,
+        IP: client.address.IP,
+    }
+}
+
 // Server returns the server the client is currently connected to
 func (client *Client) Server() *Server {
 	return client.server
