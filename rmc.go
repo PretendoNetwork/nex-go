@@ -136,7 +136,7 @@ func (response *RMCResponse) CustomID() uint16 {
 	return response.customID
 }
 
-// CustomID sets the RMC response customID
+// SetCustomID sets the RMC response customID
 func (response *RMCResponse) SetCustomID(customID uint16) {
 	response.customID = customID
 }
