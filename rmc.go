@@ -131,6 +131,16 @@ type RMCResponse struct {
 	errorCode  uint32
 }
 
+// customID sets the RMC response customID
+func (response *RMCResponse) CustomID() uint16 {
+	return response.customID
+}
+
+// CustomID sets the RMC response customID
+func (response *RMCResponse) SetCustomID(customID uint16) {
+	response.customID = customID
+}
+
 // SetSuccess sets the RMCResponse payload to an instance of RMCSuccess
 func (response *RMCResponse) SetSuccess(methodID uint32, data []byte) {
 	response.success = 1
