@@ -131,7 +131,7 @@ type RMCResponse struct {
 	errorCode  uint32
 }
 
-// customID sets the RMC response customID
+// CustomID returns the RMC response customID
 func (response *RMCResponse) CustomID() uint16 {
 	return response.customID
 }
