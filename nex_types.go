@@ -204,6 +204,11 @@ func (datetime *DateTime) Now() uint64 {
 	return datetime.FromTimestamp(time.Now())
 }
 
+// UTC returns a NEX DateTime value of the current UTC time
+func (datetime *DateTime) UTC() uint64 {
+	return datetime.FromTimestamp(time.Now().UTC())
+}
+
 // Value returns the stored DateTime time
 func (datetime *DateTime) Value() uint64 {
 	return datetime.value
