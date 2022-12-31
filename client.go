@@ -82,11 +82,11 @@ func (client *Client) SetSupportedFunctions(supportedFunctions int) {
 }
 
 // UpdateRC4Key sets the client RC4 stream key
-func (client *Client) UpdateRC4Key(RC4Key []byte) {
-	cipher, _ := rc4.NewCipher(RC4Key)
+func (client *Client) UpdateRC4Key(key []byte) {
+	cipher, _ := rc4.NewCipher(key)
 	client.cipher = cipher
 
-	decipher, _ := rc4.NewCipher(RC4Key)
+	decipher, _ := rc4.NewCipher(key)
 	client.decipher = decipher
 }
 
