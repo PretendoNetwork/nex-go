@@ -24,7 +24,7 @@ type Client struct {
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
 	pid                       uint32
-	localStationUrl           string
+	localStationURL           string
 	connectionID              uint32
 	pingTimeoutTime           time.Time
 	pingCheckTimer            *time.Timer
@@ -166,14 +166,14 @@ func (client *Client) PID() uint32 {
 	return client.pid
 }
 
-// SetLocalStationUrl sets the clients Local Station URL
-func (client *Client) SetLocalStationUrl(localStationUrl string) {
-	client.localStationUrl = localStationUrl
+// SetLocalStationURL sets the clients Local Station URL
+func (client *Client) SetLocalStationURL(localStationURL string) {
+	client.localStationURL = localStationURL
 }
 
-// LocalStationUrl returns the clients Local Station URL
-func (client *Client) LocalStationUrl() string {
-	return client.localStationUrl
+// LocalStationURL returns the clients Local Station URL
+func (client *Client) LocalStationURL() string {
+	return client.localStationURL
 }
 
 // SetConnectionID sets the clients Connection ID
