@@ -16,17 +16,14 @@ type Client struct {
 	supportedFunctions        int
 	signatureKey              []byte
 	signatureBase             int
-	secureKey                 []byte
 	serverConnectionSignature []byte
 	clientConnectionSignature []byte
-	sessionID                 int
 	sessionKey                []byte
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
 	pid                       uint32
 	localStationURL           string
 	connectionID              uint32
-	pingTimeoutTime           time.Time
 	pingCheckTimer            *time.Timer
 	pingKickTimer             *time.Timer
 	connected                 bool
