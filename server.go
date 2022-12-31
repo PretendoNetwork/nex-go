@@ -1,3 +1,11 @@
+// Package nex implements an API for creating bare-bones
+// NEX servers and clients and provides the underlying
+// PRUDP implementation
+//
+// No NEX protocols are implemented in this package. For
+// NEX protocols see https://github.com/PretendoNetwork/nex-protocols-go
+//
+// No PIA code is implemented in this package
 package nex
 
 import (
