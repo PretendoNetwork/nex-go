@@ -492,7 +492,10 @@ func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 
 // SendRaw writes raw packet data to the client socket
 func (server *Server) SendRaw(conn *net.UDPAddr, data []byte) {
-	server.Socket().WriteToUDP(data, conn)
+	_, err := server.Socket().WriteToUDP(data, conn)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 }
 
 // NewServer returns a new NEX server
