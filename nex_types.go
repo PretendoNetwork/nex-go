@@ -139,8 +139,6 @@ type RVConnectionData struct {
 	specialProtocols           []byte
 	stationURLSpecialProtocols string
 	time                       uint64
-
-	hierarchy []StructureInterface
 	Structure
 }
 
