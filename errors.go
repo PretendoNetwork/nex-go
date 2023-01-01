@@ -77,7 +77,7 @@ type ErrorsStruct struct {
 		NotFriend                                uint32
 		SessionClosed                            uint32
 		DatabaseTemporarilyUnavailable           uint32
-		InvalidUniqueId                          uint32
+		InvalidUniqueID                          uint32
 		MatchmakingWithdrawn                     uint32
 		LimitExceeded                            uint32
 		AccountTemporarilyDisabled               uint32
@@ -101,7 +101,7 @@ type ErrorsStruct struct {
 	Transport struct {
 		Unknown                       uint32
 		ConnectionFailure             uint32
-		InvalidUrl                    uint32
+		InvalidURL                    uint32
 		InvalidKey                    uint32
 		InvalidURLType                uint32
 		DuplicateEndpoint             uint32
@@ -117,7 +117,7 @@ type ErrorsStruct struct {
 		NatPMPCannotInit              uint32
 		NatPMPCannotAddMapping        uint32
 		UnsupportedNAT                uint32
-		DnsError                      uint32
+		DNSError                      uint32
 		ProxyError                    uint32
 		DataRemaining                 uint32
 		NoBuffer                      uint32
@@ -219,13 +219,13 @@ type ErrorsStruct struct {
 	Authentication struct {
 		NASAuthenticateError             uint32
 		TokenParseError                  uint32
-		HttpConnectionError              uint32
-		HttpDNSError                     uint32
-		HttpGetProxySetting              uint32
+		HTTPConnectionError              uint32
+		HTTPDNSError                     uint32
+		HTTPGetProxySetting              uint32
 		TokenExpired                     uint32
 		ValidationFailed                 uint32
 		InvalidParam                     uint32
-		PrincipalIdUnmatched             uint32
+		PrincipalIDUnmatched             uint32
 		MoveCountUnmatch                 uint32
 		UnderMaintenance                 uint32
 		UnsupportedVersion               uint32
@@ -262,7 +262,7 @@ type ErrorsStruct struct {
 	ServiceItem struct {
 		Unknown                  uint32
 		InvalidArgument          uint32
-		EShopUnknownHttpError    uint32
+		EShopUnknownHTTPError    uint32
 		EShopResponseParseError  uint32
 		NotOwned                 uint32
 		InvalidLimitationType    uint32
@@ -403,7 +403,7 @@ func InitErrorsData() {
 	Errors.RendezVous.NotFriend = 0x000300DA
 	Errors.RendezVous.SessionClosed = 0x000300DB
 	Errors.RendezVous.DatabaseTemporarilyUnavailable = 0x000300DC
-	Errors.RendezVous.InvalidUniqueId = 0x000300DD
+	Errors.RendezVous.InvalidUniqueID = 0x000300DD
 	Errors.RendezVous.MatchmakingWithdrawn = 0x000300DE
 	Errors.RendezVous.LimitExceeded = 0x000300DF
 	Errors.RendezVous.AccountTemporarilyDisabled = 0x000300E0
@@ -423,7 +423,7 @@ func InitErrorsData() {
 
 	Errors.Transport.Unknown = 0x00050001
 	Errors.Transport.ConnectionFailure = 0x00050002
-	Errors.Transport.InvalidUrl = 0x00050003
+	Errors.Transport.InvalidURL = 0x00050003
 	Errors.Transport.InvalidKey = 0x00050004
 	Errors.Transport.InvalidURLType = 0x00050005
 	Errors.Transport.DuplicateEndpoint = 0x00050006
@@ -439,7 +439,7 @@ func InitErrorsData() {
 	Errors.Transport.NatPMPCannotInit = 0x00050010
 	Errors.Transport.NatPMPCannotAddMapping = 0x00050011
 	Errors.Transport.UnsupportedNAT = 0x00050013
-	Errors.Transport.DnsError = 0x00050014
+	Errors.Transport.DNSError = 0x00050014
 	Errors.Transport.ProxyError = 0x00050015
 	Errors.Transport.DataRemaining = 0x00050016
 	Errors.Transport.NoBuffer = 0x00050017
@@ -533,13 +533,13 @@ func InitErrorsData() {
 
 	Errors.Authentication.NASAuthenticateError = 0x00680001
 	Errors.Authentication.TokenParseError = 0x00680002
-	Errors.Authentication.HttpConnectionError = 0x00680003
-	Errors.Authentication.HttpDNSError = 0x00680004
-	Errors.Authentication.HttpGetProxySetting = 0x00680005
+	Errors.Authentication.HTTPConnectionError = 0x00680003
+	Errors.Authentication.HTTPDNSError = 0x00680004
+	Errors.Authentication.HTTPGetProxySetting = 0x00680005
 	Errors.Authentication.TokenExpired = 0x00680006
 	Errors.Authentication.ValidationFailed = 0x00680007
 	Errors.Authentication.InvalidParam = 0x00680008
-	Errors.Authentication.PrincipalIdUnmatched = 0x00680009
+	Errors.Authentication.PrincipalIDUnmatched = 0x00680009
 	Errors.Authentication.MoveCountUnmatch = 0x0068000A
 	Errors.Authentication.UnderMaintenance = 0x0068000B
 	Errors.Authentication.UnsupportedVersion = 0x0068000C
@@ -572,7 +572,7 @@ func InitErrorsData() {
 
 	Errors.ServiceItem.Unknown = 0x006C0001
 	Errors.ServiceItem.InvalidArgument = 0x006C0002
-	Errors.ServiceItem.EShopUnknownHttpError = 0x006C0003
+	Errors.ServiceItem.EShopUnknownHTTPError = 0x006C0003
 	Errors.ServiceItem.EShopResponseParseError = 0x006C0004
 	Errors.ServiceItem.NotOwned = 0x006C0005
 	Errors.ServiceItem.InvalidLimitationType = 0x006C0006
