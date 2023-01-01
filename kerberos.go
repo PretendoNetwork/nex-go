@@ -220,6 +220,7 @@ func NewKerberosTicketInternalData() *TicketInternalData {
 	return &TicketInternalData{}
 }
 
+// DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
 func DeriveKerberosKey(pid uint32, password []byte) []byte {
 	for i := 0; i < 65000+int(pid)%1024; i++ {
 		password = MD5Hash(password)

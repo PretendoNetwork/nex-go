@@ -334,8 +334,10 @@ type ErrorsStruct struct {
 	}
 }
 
+// ErrorNames contains a map of all the error string names, indexed by the error ID
 var ErrorNames = map[uint32]string{}
 
+// Errors provides a struct containing error codes using dot-notation
 var Errors ErrorsStruct
 
 func InitErrorsData() {
@@ -646,6 +648,7 @@ func InitErrorsData() {
 	}
 }
 
+// ErrorNameFromCode returns an error code string for the provided error code
 func ErrorNameFromCode(errorCode uint32) string {
 	name := ErrorNames[errorCode]
 
