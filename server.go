@@ -183,18 +183,18 @@ func (server *Server) Emit(event string, packet interface{}) {
 
 	// Check if the packet type matches one of the allowed types and run the given handler
 
-	switch packet.(type) {
+	switch packet := packet.(type) {
 	case *PacketV0:
 		eventName := server.prudpV0EventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
-			go handler(packet.(*PacketV0))
+			go handler(packet)
 		}
 	case *PacketV1:
 		eventName := server.prudpV1EventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
-			go handler(packet.(*PacketV1))
+			go handler(packet)
 		}
 	}
 }
