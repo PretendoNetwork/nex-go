@@ -136,7 +136,7 @@ func (ticketInternalData *TicketInternalData) Timestamp() *DateTime {
 	return ticketInternalData.timestamp
 }
 
-// SetSessionKey sets the TicketInternalDatas session key
+// SetTimestamp sets the TicketInternalDatas timestamp
 func (ticketInternalData *TicketInternalData) SetTimestamp(timestamp *DateTime) {
 	ticketInternalData.timestamp = timestamp
 }

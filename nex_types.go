@@ -87,7 +87,7 @@ func (dataHolder *DataHolder) SetObjectData(objectData StructureInterface) {
 
 // ExtractFromStream extracts a DataHolder structure from a stream
 func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
-	// TODO: Error checks
+	// TODO - Error checks
 	dataHolder.typeName, _ = stream.ReadString()
 	dataHolder.length1 = stream.ReadUInt32LE()
 	dataHolder.length2 = stream.ReadUInt32LE()
@@ -275,7 +275,7 @@ func (station *StationURL) SetCID(cid string) {
 	station.cid = cid
 }
 
-// SetPid sets the StationURL PID
+// SetPID sets the StationURL PID
 func (station *StationURL) SetPID(pid string) {
 	station.pid = pid
 }
