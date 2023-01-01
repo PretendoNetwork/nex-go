@@ -7,7 +7,7 @@ import (
 
 var errorMask = 1 << 31
 
-type ErrorsStruct struct {
+type nexerrors struct {
 	Core struct {
 		Unknown               uint32
 		NotImplemented        uint32
@@ -338,7 +338,7 @@ type ErrorsStruct struct {
 var ErrorNames = map[uint32]string{}
 
 // Errors provides a struct containing error codes using dot-notation
-var Errors ErrorsStruct
+var Errors nexerrors
 
 func InitErrorsData() {
 	Errors.Core.Unknown = 0x00010001
