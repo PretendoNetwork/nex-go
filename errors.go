@@ -340,7 +340,7 @@ var ErrorNames = map[uint32]string{}
 // Errors provides a struct containing error codes using dot-notation
 var Errors nexerrors
 
-func InitErrorsData() {
+func initErrorsData() {
 	Errors.Core.Unknown = 0x00010001
 	Errors.Core.NotImplemented = 0x00010002
 	Errors.Core.InvalidPointer = 0x00010003
