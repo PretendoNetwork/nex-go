@@ -16,17 +16,14 @@ type Client struct {
 	supportedFunctions        int
 	signatureKey              []byte
 	signatureBase             int
-	secureKey                 []byte
 	serverConnectionSignature []byte
 	clientConnectionSignature []byte
-	sessionID                 int
 	sessionKey                []byte
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
 	pid                       uint32
-	localStationUrl           string
+	localStationURL           string
 	connectionID              uint32
-	pingTimeoutTime           time.Time
 	pingCheckTimer            *time.Timer
 	pingKickTimer             *time.Timer
 	connected                 bool
@@ -82,11 +79,11 @@ func (client *Client) SetSupportedFunctions(supportedFunctions int) {
 }
 
 // UpdateRC4Key sets the client RC4 stream key
-func (client *Client) UpdateRC4Key(RC4Key []byte) {
-	cipher, _ := rc4.NewCipher(RC4Key)
+func (client *Client) UpdateRC4Key(key []byte) {
+	cipher, _ := rc4.NewCipher(key)
 	client.cipher = cipher
 
-	decipher, _ := rc4.NewCipher(RC4Key)
+	decipher, _ := rc4.NewCipher(key)
 	client.decipher = decipher
 }
 
@@ -166,14 +163,14 @@ func (client *Client) PID() uint32 {
 	return client.pid
 }
 
-// SetLocalStationUrl sets the clients Local Station URL
-func (client *Client) SetLocalStationUrl(localStationUrl string) {
-	client.localStationUrl = localStationUrl
+// SetLocalStationURL sets the clients Local Station URL
+func (client *Client) SetLocalStationURL(localStationURL string) {
+	client.localStationURL = localStationURL
 }
 
-// LocalStationUrl returns the clients Local Station URL
-func (client *Client) LocalStationUrl() string {
-	return client.localStationUrl
+// LocalStationURL returns the clients Local Station URL
+func (client *Client) LocalStationURL() string {
+	return client.localStationURL
 }
 
 // SetConnectionID sets the clients Connection ID

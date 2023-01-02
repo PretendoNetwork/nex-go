@@ -51,6 +51,7 @@ func NewData() *Data {
 
 var dataHolderKnownObjects = make(map[string]StructureInterface)
 
+// RegisterDataHolderType registers a structure to be a valid type in the DataHolder structure
 func RegisterDataHolderType(structure StructureInterface) {
 	name := reflect.TypeOf(structure).Elem().Name()
 	dataHolderKnownObjects[name] = structure
@@ -64,25 +65,29 @@ type DataHolder struct {
 	objectData StructureInterface
 }
 
+// TypeName returns the DataHolder type name
 func (dataHolder *DataHolder) TypeName() string {
 	return dataHolder.typeName
 }
 
+// SetTypeName sets the DataHolder type name
 func (dataHolder *DataHolder) SetTypeName(typeName string) {
 	dataHolder.typeName = typeName
 }
 
+// ObjectData returns the DataHolder internal object data
 func (dataHolder *DataHolder) ObjectData() StructureInterface {
 	return dataHolder.objectData
 }
 
+// SetObjectData sets the DataHolder internal object data
 func (dataHolder *DataHolder) SetObjectData(objectData StructureInterface) {
 	dataHolder.objectData = objectData
 }
 
 // ExtractFromStream extracts a DataHolder structure from a stream
 func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
-	// TODO: Error checks
+	// TODO - Error checks
 	dataHolder.typeName, _ = stream.ReadString()
 	dataHolder.length1 = stream.ReadUInt32LE()
 	dataHolder.length2 = stream.ReadUInt32LE()
@@ -94,6 +99,7 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 	return nil
 }
 
+// Bytes encodes the DataHolder and returns a byte array
 func (dataHolder *DataHolder) Bytes(stream *StreamOut) []byte {
 	content := dataHolder.objectData.Bytes(NewStreamOut(stream.Server))
 
@@ -133,8 +139,6 @@ type RVConnectionData struct {
 	specialProtocols           []byte
 	stationURLSpecialProtocols string
 	time                       uint64
-
-	hierarchy []StructureInterface
 	Structure
 }
 
@@ -269,7 +273,7 @@ func (station *StationURL) SetCID(cid string) {
 	station.cid = cid
 }
 
-// SetPid sets the StationURL PID
+// SetPID sets the StationURL PID
 func (station *StationURL) SetPID(pid string) {
 	station.pid = pid
 }
@@ -314,62 +318,77 @@ func (station *StationURL) SetPRID(prid string) {
 	station.prid = prid
 }
 
+// Scheme returns the StationURL scheme type
 func (station *StationURL) Scheme() string {
 	return station.address
 }
 
+// Address returns the StationURL address
 func (station *StationURL) Address() string {
 	return station.address
 }
 
+// Port returns the StationURL port
 func (station *StationURL) Port() string {
 	return station.port
 }
 
+// Stream returns the StationURL stream value
 func (station *StationURL) Stream() string {
 	return station.stream
 }
 
+// SID returns the StationURL SID value
 func (station *StationURL) SID() string {
 	return station.sid
 }
 
+// CID returns the StationURL CID value
 func (station *StationURL) CID() string {
 	return station.cid
 }
 
+// PID returns the StationURL PID value
 func (station *StationURL) PID() string {
 	return station.pid
 }
 
+// Type returns the StationURL type
 func (station *StationURL) Type() string {
 	return station.transportType
 }
 
+// RVCID returns the StationURL RVCID
 func (station *StationURL) RVCID() string {
 	return station.rvcid
 }
 
+// Natm returns the StationURL Natm value
 func (station *StationURL) Natm() string {
 	return station.natm
 }
 
+// Natf returns the StationURL Natf value
 func (station *StationURL) Natf() string {
 	return station.natf
 }
 
+// Upnp returns the StationURL Upnp value
 func (station *StationURL) Upnp() string {
 	return station.upnp
 }
 
+// Pmp returns the StationURL Pmp value
 func (station *StationURL) Pmp() string {
 	return station.pmp
 }
 
+// ProbeInit returns the StationURL ProbeInit value
 func (station *StationURL) ProbeInit() string {
 	return station.probeinit
 }
 
+// PRID returns the StationURL PRID value
 func (station *StationURL) PRID() string {
 	return station.prid
 }
@@ -486,6 +505,7 @@ func (station *StationURL) EncodeToString() string {
 	return station.scheme + ":/" + strings.Join(fields, ";")
 }
 
+// NewStationURL returns a new StationURL
 func NewStationURL(str string) *StationURL {
 	station := &StationURL{}
 

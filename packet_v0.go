@@ -166,7 +166,7 @@ func (packet *PacketV0) Bytes() []byte {
 
 	payload := packet.Payload()
 
-	if payload != nil && len(payload) > 0 {
+	if len(payload) > 0 {
 		stream.Grow(int64(len(payload)))
 		stream.WriteBytesNext(payload)
 	}
@@ -217,7 +217,7 @@ func (packet *PacketV0) calculateSignature() []byte {
 			payload.Grow(1)
 			payload.WriteByteNext(packet.fragmentID)
 			pktpay := packet.Payload()
-			if pktpay != nil && len(pktpay) > 0 {
+			if len(pktpay) > 0 {
 				payload.Grow(int64(len(pktpay)))
 				payload.WriteBytesNext(pktpay)
 			}

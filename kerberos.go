@@ -136,7 +136,7 @@ func (ticketInternalData *TicketInternalData) Timestamp() *DateTime {
 	return ticketInternalData.timestamp
 }
 
-// SetSessionKey sets the TicketInternalDatas session key
+// SetTimestamp sets the TicketInternalDatas timestamp
 func (ticketInternalData *TicketInternalData) SetTimestamp(timestamp *DateTime) {
 	ticketInternalData.timestamp = timestamp
 }
@@ -220,6 +220,7 @@ func NewKerberosTicketInternalData() *TicketInternalData {
 	return &TicketInternalData{}
 }
 
+// DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
 func DeriveKerberosKey(pid uint32, password []byte) []byte {
 	for i := 0; i < 65000+int(pid)%1024; i++ {
 		password = MD5Hash(password)

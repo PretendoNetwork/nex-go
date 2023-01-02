@@ -179,7 +179,11 @@ func (stream *StreamIn) ReadDateTime() *DateTime {
 // ReadDataHolder reads a DataHolder type
 func (stream *StreamIn) ReadDataHolder() *DataHolder {
 	dataHolder := NewDataHolder()
-	dataHolder.ExtractFromStream(stream)
+	err := dataHolder.ExtractFromStream(stream)
+	if err != nil {
+		// TODO - Make this maybe return an error?
+		logger.Error(err.Error())
+	}
 
 	return dataHolder
 }

@@ -1,3 +1,11 @@
+// Package nex implements an API for creating bare-bones
+// NEX servers and clients and provides the underlying
+// PRUDP implementation
+//
+// No NEX protocols are implemented in this package. For
+// NEX protocols see https://github.com/PretendoNetwork/nex-protocols-go
+//
+// No PIA code is implemented in this package
 package nex
 
 import (
@@ -175,18 +183,18 @@ func (server *Server) Emit(event string, packet interface{}) {
 
 	// Check if the packet type matches one of the allowed types and run the given handler
 
-	switch packet.(type) {
+	switch packet := packet.(type) {
 	case *PacketV0:
 		eventName := server.prudpV0EventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
-			go handler(packet.(*PacketV0))
+			go handler(packet)
 		}
 	case *PacketV1:
 		eventName := server.prudpV1EventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
-			go handler(packet.(*PacketV1))
+			go handler(packet)
 		}
 	}
 }
@@ -484,7 +492,10 @@ func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 
 // SendRaw writes raw packet data to the client socket
 func (server *Server) SendRaw(conn *net.UDPAddr, data []byte) {
-	server.Socket().WriteToUDP(data, conn)
+	_, err := server.Socket().WriteToUDP(data, conn)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 }
 
 // NewServer returns a new NEX server
