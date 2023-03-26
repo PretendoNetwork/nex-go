@@ -125,6 +125,11 @@ func (server *Server) handleSocketMessage() error {
 		if packet.Type() != ConnectPacket || (packet.Type() == ConnectPacket && len(packet.Payload()) <= 0) {
 			go server.AcknowledgePacket(packet, nil)
 		}
+
+		if packet.Type() == DisconnectPacket {
+			go server.AcknowledgePacket(packet, nil)
+			go server.AcknowledgePacket(packet, nil)
+		}
 	}
 
 	switch packet.Type() {
