@@ -86,7 +86,7 @@ func (request *RMCRequest) FromBytes(data []byte) error {
 	}
 	callID := stream.ReadUInt32LE()
 	methodID := stream.ReadUInt32LE()
-	parameters := data[13:]
+	parameters := data[stream.Buffer.ByteOffset():]
 
 	request.protocolID = protocolID
 	request.callID = callID
