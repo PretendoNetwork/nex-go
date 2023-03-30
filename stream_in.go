@@ -33,6 +33,11 @@ func (stream *StreamIn) ReadUInt32LE() uint32 {
 	return stream.ReadU32LENext(1)[0]
 }
 
+// ReadUInt32BE reads a uint32
+func (stream *StreamIn) ReadUInt32BE() uint32 {
+	return stream.ReadU32BENext(1)[0]
+}
+
 // ReadInt32LE reads a int32
 func (stream *StreamIn) ReadInt32LE() int32 {
 	return int32(stream.ReadU32LENext(1)[0])
@@ -41,6 +46,11 @@ func (stream *StreamIn) ReadInt32LE() int32 {
 // ReadUInt64LE reads a uint64
 func (stream *StreamIn) ReadUInt64LE() uint64 {
 	return stream.ReadU64LENext(1)[0]
+}
+
+// ReadUInt64BE reads a uint64
+func (stream *StreamIn) ReadUInt64BE() uint64 {
+	return stream.ReadU64BENext(1)[0]
 }
 
 // ReadString reads and returns a nex string type
