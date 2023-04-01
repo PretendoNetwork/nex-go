@@ -163,7 +163,7 @@ func (ticketInternalData *TicketInternalData) SetSessionKey(sessionKey []byte) {
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
 func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *StreamOut) []byte {
-	stream.WriteUInt64LE(ticketInternalData.timestamp.Value())
+	stream.WriteDateTime(ticketInternalData.timestamp)
 	stream.WriteUInt32LE(ticketInternalData.userPID)
 
 	// Session key is not a NEX buffer type

@@ -211,6 +211,11 @@ func (stream *StreamOut) WriteDataHolder(dataholder *DataHolder) {
 	stream.WriteBytesNext(content)
 }
 
+// WriteDateTime writes a NEX DateTime type
+func (stream *StreamOut) WriteDateTime(datetime *DateTime) {
+	stream.WriteUInt64LE(datetime.value)
+}
+
 // NewStreamOut returns a new nex output stream
 func NewStreamOut(server *Server) *StreamOut {
 	return &StreamOut{
