@@ -37,7 +37,7 @@ func (client *Client) Reset() {
 	client.UpdateAccessKey(client.Server().AccessKey())
 	client.UpdateRC4Key([]byte("CD&ML"))
 
-	if client.Server().PrudpVersion() == 0 {
+	if client.Server().PRUDPVersion() == 0 {
 		client.SetServerConnectionSignature(make([]byte, 4))
 		client.SetClientConnectionSignature(make([]byte, 4))
 	} else {

@@ -111,7 +111,7 @@ func (server *Server) handleSocketMessage() error {
 
 	var packet PacketInterface
 
-	if server.PrudpVersion() == 0 {
+	if server.PRUDPVersion() == 0 {
 		packet, err = NewPacketV0(client, data)
 	} else {
 		packet, err = NewPacketV1(client, data)
@@ -224,7 +224,7 @@ func (server *Server) Kick(client *Client) {
 	// Server events expect a packet to be passed, even though this isn't really a packet event
 	var packet PacketInterface
 
-	if server.PrudpVersion() == 0 {
+	if server.PRUDPVersion() == 0 {
 		packet, _ = NewPacketV0(client, nil)
 	} else {
 		packet, _ = NewPacketV1(client, nil)
@@ -240,7 +240,7 @@ func (server *Server) Kick(client *Client) {
 func (server *Server) SendPing(client *Client) {
 	var pingPacket PacketInterface
 
-	if server.PrudpVersion() == 0 {
+	if server.PRUDPVersion() == 0 {
 		pingPacket, _ = NewPacketV0(client, nil)
 	} else {
 		pingPacket, _ = NewPacketV1(client, nil)
@@ -261,7 +261,7 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 
 	var ackPacket PacketInterface
 
-	if server.PrudpVersion() == 0 {
+	if server.PRUDPVersion() == 0 {
 		ackPacket, _ = NewPacketV0(sender, nil)
 	} else {
 		ackPacket, _ = NewPacketV1(sender, nil)
@@ -279,7 +279,7 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 		ackPacket.SetPayload(payload)
 	}
 
-	if server.PrudpVersion() == 1 {
+	if server.PRUDPVersion() == 1 {
 		packet := packet.(*PacketV1)
 		ackPacket := ackPacket.(*PacketV1)
 
@@ -344,13 +344,13 @@ func (server *Server) SetSocket(socket *net.UDPConn) {
 	server.socket = socket
 }
 
-// PrudpVersion returns the server PRUDP version
-func (server *Server) PrudpVersion() int {
+// PRUDPVersion returns the server PRUDP version
+func (server *Server) PRUDPVersion() int {
 	return server.prudpVersion
 }
 
-// SetPrudpVersion sets the server PRUDP version
-func (server *Server) SetPrudpVersion(prudpVersion int) {
+// SetPRUDPVersion sets the server PRUDP version
+func (server *Server) SetPRUDPVersion(prudpVersion int) {
 	server.prudpVersion = prudpVersion
 }
 
@@ -369,7 +369,7 @@ func (server *Server) NEXVersion() *NEXVersion {
 	return server.nexVersion
 }
 
-// SetNEXVersion sets the default NEX protocol versions
+// SetDefaultNEXVersion sets the default NEX protocol versions
 func (server *Server) SetDefaultNEXVersion(nexVersion *NEXVersion) {
 	server.nexVersion = nexVersion
 	server.datastoreProtocolVersion = nexVersion
