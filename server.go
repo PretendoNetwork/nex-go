@@ -18,24 +18,30 @@ import (
 
 // Server represents a PRUDP server
 type Server struct {
-	socket                    *net.UDPConn
-	clients                   map[string]*Client
-	genericEventHandles       map[string][]func(PacketInterface)
-	prudpV0EventHandles       map[string][]func(*PacketV0)
-	prudpV1EventHandles       map[string][]func(*PacketV1)
-	accessKey                 string
-	prudpVersion              int
-	nexVersion                int
-	prudpProtocolMinorVersion int
-	supportedFunctions        int
-	fragmentSize              int16
-	resendTimeout             float32
-	pingTimeout               int
-	kerberosPassword          string
-	kerberosKeySize           int
-	kerberosKeyDerivation     int
-	kerberosTicketVersion     int
-	connectionIDCounter       *Counter
+	socket                     *net.UDPConn
+	clients                    map[string]*Client
+	genericEventHandles        map[string][]func(PacketInterface)
+	prudpV0EventHandles        map[string][]func(*PacketV0)
+	prudpV1EventHandles        map[string][]func(*PacketV1)
+	accessKey                  string
+	prudpVersion               int
+	prudpProtocolMinorVersion  int
+	supportedFunctions         int
+	fragmentSize               int16
+	resendTimeout              float32
+	pingTimeout                int
+	kerberosPassword           string
+	kerberosKeySize            int
+	kerberosKeyDerivation      int
+	kerberosTicketVersion      int
+	connectionIDCounter        *Counter
+	nexVersion                 *NEXVersion
+	datastoreProtocolVersion   *NEXVersion
+	matchMakingProtocolVersion *NEXVersion
+	rankingProtocolVersion     *NEXVersion
+	ranking2ProtocolVersion    *NEXVersion
+	messagingProtocolVersion   *NEXVersion
+	utilityProtocolVersion     *NEXVersion
 }
 
 // Listen starts a NEX server on a given address
@@ -348,16 +354,6 @@ func (server *Server) SetPrudpVersion(prudpVersion int) {
 	server.prudpVersion = prudpVersion
 }
 
-// NexVersion returns the server NEX version
-func (server *Server) NexVersion() int {
-	return server.nexVersion
-}
-
-// SetNexVersion sets the server NEX version
-func (server *Server) SetNexVersion(nexVersion int) {
-	server.nexVersion = nexVersion
-}
-
 // PRUDPProtocolMinorVersion returns the server PRUDP minor version
 func (server *Server) PRUDPProtocolMinorVersion() int {
 	return server.prudpProtocolMinorVersion
@@ -366,6 +362,82 @@ func (server *Server) PRUDPProtocolMinorVersion() int {
 // SetPRUDPProtocolMinorVersion sets the server PRUDP minor
 func (server *Server) SetPRUDPProtocolMinorVersion(prudpProtocolMinorVersion int) {
 	server.prudpProtocolMinorVersion = prudpProtocolMinorVersion
+}
+
+// NEXVersion returns the server NEX version
+func (server *Server) NEXVersion() *NEXVersion {
+	return server.nexVersion
+}
+
+// SetNEXVersion sets the default NEX protocol versions
+func (server *Server) SetDefaultNEXVersion(nexVersion *NEXVersion) {
+	server.nexVersion = nexVersion
+	server.datastoreProtocolVersion = nexVersion
+	server.matchMakingProtocolVersion = nexVersion
+	server.rankingProtocolVersion = nexVersion
+	server.ranking2ProtocolVersion = nexVersion
+	server.messagingProtocolVersion = nexVersion
+	server.utilityProtocolVersion = nexVersion
+}
+
+// DataStoreProtocolVersion returns the servers DataStore protocol version
+func (server *Server) DataStoreProtocolVersion() *NEXVersion {
+	return server.datastoreProtocolVersion
+}
+
+// SetDataStoreProtocolVersion sets the servers DataStore protocol version
+func (server *Server) SetDataStoreProtocolVersion(nexVersion *NEXVersion) {
+	server.datastoreProtocolVersion = nexVersion
+}
+
+// MatchMakingProtocolVersion returns the servers MatchMaking protocol version
+func (server *Server) MatchMakingProtocolVersion() *NEXVersion {
+	return server.matchMakingProtocolVersion
+}
+
+// SetMatchMakingProtocolVersion sets the servers MatchMaking protocol version
+func (server *Server) SetMatchMakingProtocolVersion(nexVersion *NEXVersion) {
+	server.matchMakingProtocolVersion = nexVersion
+}
+
+// RankingProtocolVersion returns the servers Ranking protocol version
+func (server *Server) RankingProtocolVersion() *NEXVersion {
+	return server.rankingProtocolVersion
+}
+
+// SetRankingProtocolVersion sets the servers Ranking protocol version
+func (server *Server) SetRankingProtocolVersion(nexVersion *NEXVersion) {
+	server.rankingProtocolVersion = nexVersion
+}
+
+// Ranking2ProtocolVersion returns the servers Ranking2 protocol version
+func (server *Server) Ranking2ProtocolVersion() *NEXVersion {
+	return server.ranking2ProtocolVersion
+}
+
+// SetRanking2ProtocolVersion sets the servers Ranking2 protocol version
+func (server *Server) SetRanking2ProtocolVersion(nexVersion *NEXVersion) {
+	server.ranking2ProtocolVersion = nexVersion
+}
+
+// MessagingProtocolVersion returns the servers Messaging protocol version
+func (server *Server) MessagingProtocolVersion() *NEXVersion {
+	return server.messagingProtocolVersion
+}
+
+// SetMessagingProtocolVersion sets the servers Messaging protocol version
+func (server *Server) SetMessagingProtocolVersion(nexVersion *NEXVersion) {
+	server.messagingProtocolVersion = nexVersion
+}
+
+// UtilityProtocolVersion returns the servers Utility protocol version
+func (server *Server) UtilityProtocolVersion() *NEXVersion {
+	return server.utilityProtocolVersion
+}
+
+// SetUtilityProtocolVersion sets the servers Utility protocol version
+func (server *Server) SetUtilityProtocolVersion(nexVersion *NEXVersion) {
+	server.utilityProtocolVersion = nexVersion
 }
 
 // SupportedFunctions returns the supported PRUDP functions by the server

@@ -290,6 +290,7 @@ func (packet *PacketV1) encodeOptions() []byte {
 
 func (packet *PacketV1) calculateSignature(header []byte, connectionSignature []byte, options []byte, payload []byte) []byte {
 	key := packet.Sender().SignatureKey()
+	sessionKey := packet.Sender().SessionKey()
 
 	signatureBase := make([]byte, 4)
 	binary.LittleEndian.PutUint32(signatureBase, uint32(packet.Sender().SignatureBase()))
@@ -297,7 +298,7 @@ func (packet *PacketV1) calculateSignature(header []byte, connectionSignature []
 	mac := hmac.New(md5.New, key)
 
 	mac.Write(header[4:])
-	mac.Write(packet.Sender().SessionKey())
+	mac.Write(sessionKey)
 	mac.Write(signatureBase)
 	mac.Write(connectionSignature)
 	mac.Write(options)
