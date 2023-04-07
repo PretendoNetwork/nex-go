@@ -2,6 +2,7 @@ package nex
 
 import (
 	"errors"
+	"reflect"
 	"strings"
 
 	crunch "github.com/superwhiskers/crunch/v3"
@@ -289,6 +290,27 @@ func (stream *StreamIn) ReadListQBuffer() [][]byte {
 	}
 
 	return list
+}
+
+// ReadListStructure reads and returns a list structure types
+func (stream *StreamIn) ReadListStructure(structure StructureInterface) (interface{}, error) {
+	length := stream.ReadUInt32LE()
+
+	structureType := reflect.TypeOf(structure)
+	structureSlice := reflect.MakeSlice(reflect.SliceOf(structureType), 0, int(length))
+
+	for i := 0; i < int(length); i++ {
+		newStructure := reflect.New(reflect.TypeOf(structure).Elem()).Interface().(StructureInterface)
+
+		extractedStructure, err := stream.ReadStructure(newStructure)
+		if err != nil {
+			return nil, err
+		}
+
+		structureSlice = reflect.Append(structureSlice, reflect.ValueOf(extractedStructure))
+	}
+
+	return structureSlice.Interface(), nil
 }
 
 // NewStreamIn returns a new NEX input stream
