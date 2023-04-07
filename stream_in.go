@@ -201,6 +201,17 @@ func (stream *StreamIn) ReadDataHolder() *DataHolder {
 	return dataHolder
 }
 
+// ReadStationURL reads a StationURL type
+func (stream *StreamIn) ReadStationURL() *StationURL {
+	stationString, err := stream.ReadString()
+	if err != nil {
+		// TODO - Make this maybe return an error?
+		logger.Error(err.Error())
+	}
+
+	return NewStationURL(stationString)
+}
+
 // ReadListUInt8 reads a list of uint8 types
 func (stream *StreamIn) ReadListUInt8() []uint8 {
 	length := stream.ReadUInt32LE()
@@ -286,6 +297,19 @@ func (stream *StreamIn) ReadListQBuffer() [][]byte {
 
 	for i := 0; i < int(length); i++ {
 		value, _ := stream.ReadQBuffer()
+		list = append(list, value)
+	}
+
+	return list
+}
+
+// ReadListStationURL reads a list of NEX Station URL types
+func (stream *StreamIn) ReadListStationURL() []*StationURL {
+	length := stream.ReadUInt32LE()
+	list := make([]*StationURL, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value := stream.ReadStationURL()
 		list = append(list, value)
 	}
 
