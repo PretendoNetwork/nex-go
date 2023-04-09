@@ -221,7 +221,6 @@ func (server *Server) ClientConnected(client *Client) bool {
 
 // Kick removes a client from the server
 func (server *Server) Kick(client *Client) {
-	// Server events expect a packet to be passed, even though this isn't really a packet event
 	var packet PacketInterface
 
 	if server.PRUDPVersion() == 0 {
@@ -229,11 +228,45 @@ func (server *Server) Kick(client *Client) {
 	} else {
 		packet, _ = NewPacketV1(client, nil)
 	}
+	packet.SetVersion(1)
+	packet.SetSource(0xA1)
+	packet.SetDestination(0xAF)
+	packet.SetType(DisconnectPacket)
+
+	packet.AddFlag(FlagReliable)
+
+	server.Send(packet)
 
 	server.Emit("Kick", packet)
 	client.SetConnected(false)
 	discriminator := client.Address().String()
 	delete(server.clients, discriminator)
+}
+
+// Kick removes a client from the server
+func (server *Server) KickAll() {
+	for _, client := range server.clients {
+		var packet PacketInterface
+
+		if server.PRUDPVersion() == 0 {
+			packet, _ = NewPacketV0(client, nil)
+		} else {
+			packet, _ = NewPacketV1(client, nil)
+		}
+		packet.SetVersion(1)
+		packet.SetSource(0xA1)
+		packet.SetDestination(0xAF)
+		packet.SetType(DisconnectPacket)
+	
+		packet.AddFlag(FlagReliable)
+	
+		server.Send(packet)
+
+		server.Emit("Kick", packet)
+		client.SetConnected(false)
+		discriminator := client.Address().String()
+		delete(server.clients, discriminator)
+	}
 }
 
 // SendPing sends a ping packet to the given client
