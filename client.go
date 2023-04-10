@@ -207,7 +207,7 @@ func (client *Client) StartTimeoutTimer() {
 		client.server.SendPing(client)
 		//if we *still* get nothing, they're gone
 		client.pingKickTimer = time.AfterFunc(time.Second*time.Duration(client.server.PingTimeout()), func() {
-			client.server.Kick(client)
+			client.server.TimeoutKick(client)
 		})
 	})
 }
