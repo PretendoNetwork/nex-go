@@ -225,8 +225,10 @@ func (server *Server) TimeoutKick(client *Client) {
 
 	if server.PRUDPVersion() == 0 {
 		packet, _ = NewPacketV0(client, nil)
+		packet.SetVersion(0)
 	} else {
 		packet, _ = NewPacketV1(client, nil)
+		packet.SetVersion(1)
 	}
 	packet.SetVersion(1)
 	packet.SetSource(0xA1)
@@ -247,8 +249,10 @@ func (server *Server) GracefulKick(client *Client) {
 
 	if server.PRUDPVersion() == 0 {
 		packet, _ = NewPacketV0(client, nil)
+		packet.SetVersion(0)
 	} else {
 		packet, _ = NewPacketV1(client, nil)
+		packet.SetVersion(1)
 	}
 	packet.SetVersion(1)
 	packet.SetSource(0xA1)
@@ -272,10 +276,11 @@ func (server *Server) GracefulKickAll() {
 
 		if server.PRUDPVersion() == 0 {
 			packet, _ = NewPacketV0(client, nil)
+			packet.SetVersion(0)
 		} else {
 			packet, _ = NewPacketV1(client, nil)
+			packet.SetVersion(1)
 		}
-		packet.SetVersion(1)
 		packet.SetSource(0xA1)
 		packet.SetDestination(0xAF)
 		packet.SetType(DisconnectPacket)
