@@ -591,5 +591,11 @@ func NewServer() *Server {
 		connectionIDCounter:   NewCounter(10),
 	}
 
+	server.SetDefaultNEXVersion(&NEXVersion{
+		Major: 0,
+		Minor: 0,
+		Patch: 0,
+	})
+
 	return server
 }
