@@ -1,6 +1,8 @@
 package nex
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 	"time"
@@ -92,7 +94,14 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 	dataHolder.length1 = stream.ReadUInt32LE()
 	dataHolder.length2 = stream.ReadUInt32LE()
 
-	newObjectInstance := reflect.New(reflect.TypeOf(dataHolderKnownObjects[dataHolder.typeName]).Elem()).Interface().(StructureInterface)
+	dataType := dataHolderKnownObjects[dataHolder.typeName]
+	if dataType == nil {
+		message := fmt.Sprintf("UNKNOWN DATAHOLDER TYPE: %s", dataHolder.typeName)
+		logger.Critical(message)
+		return errors.New(message)
+	}
+
+	newObjectInstance := reflect.New(reflect.TypeOf(dataType).Elem()).Interface().(StructureInterface)
 
 	dataHolder.objectData, _ = stream.ReadStructure(newObjectInstance)
 
