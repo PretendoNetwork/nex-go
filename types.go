@@ -227,6 +227,50 @@ func (datetime *DateTime) Value() uint64 {
 	return datetime.value
 }
 
+// Second returns the seconds value stored in the DateTime
+func (datetime *DateTime) Second() int {
+	return int(datetime.value & 63)
+}
+
+// Minute returns the minutes value stored in the DateTime
+func (datetime *DateTime) Minute() int {
+	return int((datetime.value >> 6) & 63)
+}
+
+// Hour returns the hours value stored in the DateTime
+func (datetime *DateTime) Hour() int {
+	return int((datetime.value >> 12) & 31)
+}
+
+// Day returns the day value stored in the DateTime
+func (datetime *DateTime) Day() int {
+	return int((datetime.value >> 17) & 31)
+}
+
+// Month returns the month value stored in the DateTime
+func (datetime *DateTime) Month() time.Month {
+	return time.Month((datetime.value >> 22) & 15)
+}
+
+// Year returns the year value stored in the DateTime
+func (datetime *DateTime) Year() int {
+	return int(datetime.value >> 26)
+}
+
+// Standard returns the DateTime as a standard time.Time
+func (datetime *DateTime) Standard() time.Time {
+	return time.Date(
+		datetime.Year(),
+		datetime.Month(),
+		datetime.Day(),
+		datetime.Hour(),
+		datetime.Minute(),
+		datetime.Second(),
+		0,
+		time.UTC,
+	)
+}
+
 // NewDateTime returns a new DateTime instance
 func NewDateTime(value uint64) *DateTime {
 	return &DateTime{value: value}
