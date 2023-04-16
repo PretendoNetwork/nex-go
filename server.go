@@ -157,7 +157,7 @@ func (server *Server) handleSocketMessage() error {
 		server.Emit("Data", packet)
 	case DisconnectPacket:
 		server.Emit("Disconnect", packet)
-		server.Kick(client)
+		server.GracefulKick(client)
 	case PingPacket:
 		//server.SendPing(client)
 		server.Emit("Ping", packet)
@@ -219,21 +219,79 @@ func (server *Server) ClientConnected(client *Client) bool {
 	return connected
 }
 
-// Kick removes a client from the server
-func (server *Server) Kick(client *Client) {
-	// Server events expect a packet to be passed, even though this isn't really a packet event
+// TimeoutKick removes a client from the server for inactivity
+func (server *Server) TimeoutKick(client *Client) {
 	var packet PacketInterface
 
 	if server.PRUDPVersion() == 0 {
 		packet, _ = NewPacketV0(client, nil)
+		packet.SetVersion(0)
 	} else {
 		packet, _ = NewPacketV1(client, nil)
+		packet.SetVersion(1)
 	}
+	packet.SetSource(0xA1)
+	packet.SetDestination(0xAF)
+	packet.SetType(DisconnectPacket)
+
+	server.Send(packet)
 
 	server.Emit("Kick", packet)
 	client.SetConnected(false)
 	discriminator := client.Address().String()
 	delete(server.clients, discriminator)
+}
+
+// GracefulKick removes an active client from the server
+func (server *Server) GracefulKick(client *Client) {
+	var packet PacketInterface
+
+	if server.PRUDPVersion() == 0 {
+		packet, _ = NewPacketV0(client, nil)
+		packet.SetVersion(0)
+	} else {
+		packet, _ = NewPacketV1(client, nil)
+		packet.SetVersion(1)
+	}
+	packet.SetSource(0xA1)
+	packet.SetDestination(0xAF)
+	packet.SetType(DisconnectPacket)
+
+	packet.AddFlag(FlagReliable)
+
+	server.Send(packet)
+
+	server.Emit("Kick", packet)
+	client.SetConnected(false)
+	discriminator := client.Address().String()
+	delete(server.clients, discriminator)
+}
+
+// GracefulKickAll removes all clients from the server
+func (server *Server) GracefulKickAll() {
+	for _, client := range server.clients {
+		var packet PacketInterface
+
+		if server.PRUDPVersion() == 0 {
+			packet, _ = NewPacketV0(client, nil)
+			packet.SetVersion(0)
+		} else {
+			packet, _ = NewPacketV1(client, nil)
+			packet.SetVersion(1)
+		}
+		packet.SetSource(0xA1)
+		packet.SetDestination(0xAF)
+		packet.SetType(DisconnectPacket)
+	
+		packet.AddFlag(FlagReliable)
+	
+		server.Send(packet)
+
+		server.Emit("Kick", packet)
+		client.SetConnected(false)
+		discriminator := client.Address().String()
+		delete(server.clients, discriminator)
+	}
 }
 
 // SendPing sends a ping packet to the given client
