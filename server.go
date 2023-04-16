@@ -230,7 +230,6 @@ func (server *Server) TimeoutKick(client *Client) {
 		packet, _ = NewPacketV1(client, nil)
 		packet.SetVersion(1)
 	}
-	packet.SetVersion(1)
 	packet.SetSource(0xA1)
 	packet.SetDestination(0xAF)
 	packet.SetType(DisconnectPacket)
@@ -254,7 +253,6 @@ func (server *Server) GracefulKick(client *Client) {
 		packet, _ = NewPacketV1(client, nil)
 		packet.SetVersion(1)
 	}
-	packet.SetVersion(1)
 	packet.SetSource(0xA1)
 	packet.SetDestination(0xAF)
 	packet.SetType(DisconnectPacket)
