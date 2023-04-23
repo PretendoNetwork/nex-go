@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"net/http"
 	"runtime"
+	"strconv"
 	"time"
 )
 
@@ -23,6 +25,9 @@ type Server struct {
 	genericEventHandles        map[string][]func(PacketInterface)
 	prudpV0EventHandles        map[string][]func(*PacketV0)
 	prudpV1EventHandles        map[string][]func(*PacketV1)
+	hppEventHandles            map[string][]func(*HPPPacket)
+	hppClientResponses         map[*Client](chan []byte)
+	passwordFromPIDHandler     func(pid uint32) (string, uint32)
 	accessKey                  string
 	prudpVersion               int
 	prudpProtocolMinorVersion  int
@@ -168,6 +173,121 @@ func (server *Server) handleSocketMessage() error {
 	return nil
 }
 
+// HPPListen starts a NEX HPP server on a given address
+func (server *Server) HPPListen(address string) {
+	hppHandler := func(w http.ResponseWriter, req *http.Request) {
+		if req.Method != "POST" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		pidValue := req.Header.Get("pid")
+		if pidValue == "" {
+			logger.Error("[HPP] PID is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		token := req.Header.Get("token")
+		if token == "" {
+			logger.Error("[HPP] Token is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		accessKeySignature := req.Header.Get("signature1")
+		if accessKeySignature == "" {
+			logger.Error("[HPP] Access key signature is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		passwordSignature := req.Header.Get("signature2")
+		if passwordSignature == "" {
+			logger.Error("[HPP] Password signature is empty")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		pid, err := strconv.Atoi(pidValue)
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		rmcRequestString := req.FormValue("file")
+
+		rmcRequestBytes := []byte(rmcRequestString)
+
+		client := NewClient(nil, server)
+		client.SetPID(uint32(pid))
+
+		hppPacket, _ := NewHPPPacket(client, rmcRequestBytes)
+
+		hppPacket.SetAccessKeySignature(accessKeySignature)
+		hppPacket.SetPasswordSignature(passwordSignature)
+
+		err = hppPacket.ValidateAccessKey()
+		if err != nil {
+			logger.Error(err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		err = hppPacket.ValidatePassword()
+		if err != nil {
+			logger.Error(err.Error())
+			rmcRequest := hppPacket.RMCRequest()
+			callID := rmcRequest.CallID()
+
+			errorResponse := NewRMCResponse(0, callID)
+			// HPP returns PythonCore::ValidationError if password is missing or invalid
+			errorResponse.SetError(Errors.PythonCore.ValidationError)
+
+			_, err = w.Write(errorResponse.Bytes())
+			if err != nil {
+				logger.Error(err.Error())
+			}
+
+			return
+		}
+
+		server.hppClientResponses[client] = make(chan []byte)
+
+		server.Emit("Data", hppPacket)
+
+		rmcResponseBytes := <- server.hppClientResponses[client]
+
+		if len(rmcResponseBytes) > 0 {
+			_, err = w.Write(rmcResponseBytes)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+		}
+
+		delete(server.hppClientResponses, client)
+	}
+
+	http.HandleFunc("/hpp/", hppHandler)
+
+	quit := make(chan struct{})
+
+	go server.handleHTTP(address, quit)
+
+	logger.Success(fmt.Sprintf("HPP server listening on address - %s", address))
+
+	<-quit
+}
+
+func (server *Server) handleHTTP(address string, quit chan struct{}) {
+	err := http.ListenAndServe(address, nil)
+
+	quit <- struct{}{}
+
+	panic(err)
+}
+
 // On sets the data event handler
 func (server *Server) On(event string, handler interface{}) {
 	// Check if the handler type matches one of the allowed types, and store the handler in it's allowed property
@@ -179,6 +299,8 @@ func (server *Server) On(event string, handler interface{}) {
 		server.prudpV0EventHandles[event] = append(server.prudpV0EventHandles[event], handler)
 	case func(*PacketV1):
 		server.prudpV1EventHandles[event] = append(server.prudpV1EventHandles[event], handler)
+	case func(*HPPPacket):
+		server.hppEventHandles[event] = append(server.hppEventHandles[event], handler)
 	}
 }
 
@@ -203,6 +325,12 @@ func (server *Server) Emit(event string, packet interface{}) {
 		}
 	case *PacketV1:
 		eventName := server.prudpV1EventHandles[event]
+		for i := 0; i < len(eventName); i++ {
+			handler := eventName[i]
+			go handler(packet)
+		}
+	case *HPPPacket:
+		eventName := server.hppEventHandles[event]
 		for i := 0; i < len(eventName); i++ {
 			handler := eventName[i]
 			go handler(packet)
@@ -590,25 +718,43 @@ func (server *Server) FindClientFromConnectionID(rvcid uint32) *Client {
 	return nil
 }
 
+// SetPasswordFromPIDFunction sets the function for HPP or the auth server to get a NEX password using the PID
+func (server *Server) SetPasswordFromPIDFunction(handler func(pid uint32) (string, uint32)) {
+	server.passwordFromPIDHandler = handler
+}
+
+// PasswordFromPIDFunction returns the function for HPP or the auth server to get a NEX password using the PID
+func (server *Server) PasswordFromPIDFunction() func(pid uint32) (string, uint32) {
+	return server.passwordFromPIDHandler
+}
+
 // Send writes data to client
 func (server *Server) Send(packet PacketInterface) {
-	data := packet.Payload()
-	fragments := int(int16(len(data)) / server.fragmentSize)
+	switch packet := packet.(type) {
+	case *HPPPacket:
+		client := packet.Sender()
+		payload := packet.Payload()
+		server.hppClientResponses[client] <- payload
+	default:
+		data := packet.Payload()
+		fragments := int(int16(len(data)) / server.fragmentSize)
 
-	var fragmentID uint8 = 1
-	for i := 0; i <= fragments; i++ {
-		time.Sleep(time.Second / 2)
-		if int16(len(data)) < server.fragmentSize {
-			packet.SetPayload(data)
-			server.SendFragment(packet, 0)
-		} else {
-			packet.SetPayload(data[:server.fragmentSize])
-			server.SendFragment(packet, fragmentID)
+		var fragmentID uint8 = 1
+		for i := 0; i <= fragments; i++ {
+			time.Sleep(time.Second / 2)
+			if int16(len(data)) < server.fragmentSize {
+				packet.SetPayload(data)
+				server.SendFragment(packet, 0)
+			} else {
+				packet.SetPayload(data[:server.fragmentSize])
+				server.SendFragment(packet, fragmentID)
 
-			data = data[server.fragmentSize:]
-			fragmentID++
+				data = data[server.fragmentSize:]
+				fragmentID++
+			}
 		}
 	}
+
 }
 
 // SendFragment sends a packet fragment to the client
@@ -639,6 +785,8 @@ func NewServer() *Server {
 		genericEventHandles:   make(map[string][]func(PacketInterface)),
 		prudpV0EventHandles:   make(map[string][]func(*PacketV0)),
 		prudpV1EventHandles:   make(map[string][]func(*PacketV1)),
+		hppEventHandles:       make(map[string][]func(*HPPPacket)),
+		hppClientResponses:    make(map[*Client](chan []byte)),
 		clients:               make(map[string]*Client),
 		prudpVersion:          1,
 		fragmentSize:          1300,
