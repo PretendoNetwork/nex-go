@@ -162,9 +162,11 @@ func (response *RMCResponse) SetError(errorCode uint32) {
 func (response *RMCResponse) Bytes() []byte {
 	body := NewStreamOut(nil)
 
-	body.WriteUInt8(response.protocolID)
-	if response.protocolID == 0x7f {
-		body.WriteUInt16LE(response.customID)
+	if response.protocolID > 0 {
+		body.WriteUInt8(response.protocolID)
+		if response.protocolID == 0x7f {
+			body.WriteUInt16LE(response.customID)
+		}
 	}
 	body.WriteUInt8(response.success)
 
