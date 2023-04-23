@@ -65,10 +65,14 @@ func (packet *HPPPacket) ValidateAccessKey() error {
 
 // ValidatePassword checks if the password signature is valid
 func (packet *HPPPacket) ValidatePassword() error {
+	if packet.sender.server.passwordFromPIDHandler == nil {
+		return errors.New("[HPP] Missing passwordFromPIDHandler!")
+	}
+
 	pid := packet.Sender().PID()
 	buffer := packet.rmcRequest.Bytes()
 
-	password := packet.sender.server.passwordFromPIDHandler(pid)
+	password, _ := packet.sender.server.passwordFromPIDHandler(pid)
 	if password == "" {
 		return errors.New("[HPP] PID does not exist")
 	}

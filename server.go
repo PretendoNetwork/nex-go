@@ -27,7 +27,7 @@ type Server struct {
 	prudpV1EventHandles        map[string][]func(*PacketV1)
 	hppEventHandles            map[string][]func(*HPPPacket)
 	hppClientResponses         map[*Client](chan []byte)
-	passwordFromPIDHandler     func(pid uint32) string
+	passwordFromPIDHandler     func(pid uint32) (string, uint32)
 	accessKey                  string
 	prudpVersion               int
 	prudpProtocolMinorVersion  int
@@ -718,9 +718,14 @@ func (server *Server) FindClientFromConnectionID(rvcid uint32) *Client {
 	return nil
 }
 
-// SetPasswordFromPIDFunction sets the function for HPP to get a NEX password using the PID
-func (server *Server) SetPasswordFromPIDFunction(handler func(pid uint32) string) {
+// SetPasswordFromPIDFunction sets the function for HPP or the auth server to get a NEX password using the PID
+func (server *Server) SetPasswordFromPIDFunction(handler func(pid uint32) (string, uint32)) {
 	server.passwordFromPIDHandler = handler
+}
+
+// PasswordFromPIDFunction returns the function for HPP or the auth server to get a NEX password using the PID
+func (server *Server) PasswordFromPIDFunction() func(pid uint32) (string, uint32) {
+	return server.passwordFromPIDHandler
 }
 
 // Send writes data to client
