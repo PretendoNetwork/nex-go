@@ -18,11 +18,12 @@ type StructureInterface interface {
 // Structure represents a nex Structure type
 type Structure struct {
 	StructureInterface
+	hierarchy []StructureInterface
 }
 
 // Hierarchy returns a Structure hierarchy
 func (structure *Structure) Hierarchy() []StructureInterface {
-	return make([]StructureInterface, 0)
+	return structure.hierarchy
 }
 
 // Data represents a structure with no data
