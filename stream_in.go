@@ -98,8 +98,8 @@ func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
 func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureInterface, error) {
 	hierarchy := structure.Hierarchy()
 
-	for _, class := range hierarchy {
-		_, err := stream.ReadStructure(class)
+	for _, parent := range hierarchy {
+		_, err := stream.ReadStructure(parent)
 
 		if err != nil {
 			return structure, errors.New("[ReadStructure] " + err.Error())

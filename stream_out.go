@@ -99,6 +99,12 @@ func (stream *StreamOut) WriteResult(result *Result) {
 
 // WriteStructure writes a nex Structure type
 func (stream *StreamOut) WriteStructure(structure StructureInterface) {
+	parents := structure.Hierarchy()
+
+	for _, parent := range parents {
+		stream.WriteStructure(parent)
+	}
+
 	content := structure.Bytes(NewStreamOut(stream.Server))
 
 	nexVersion := stream.Server.NEXVersion()
