@@ -101,22 +101,16 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 		return errors.New(message)
 	}
 
-	newObjectInstance := reflect.New(reflect.TypeOf(dataType).Elem()).Interface().(StructureInterface)
-
-	dataHolder.objectData, _ = stream.ReadStructure(newObjectInstance)
+	dataHolder.objectData, _ = stream.ReadStructure(dataType)
 
 	return nil
 }
 
 // Bytes encodes the DataHolder and returns a byte array
 func (dataHolder *DataHolder) Bytes(stream *StreamOut) []byte {
-	parents := dataHolder.objectData.Hierarchy()
-
-	content := []byte{}
-	for _, parent := range parents {
-		content = append(content, parent.Bytes(NewStreamOut(stream.Server))...)
-	}
-	content = append(content, dataHolder.objectData.Bytes(NewStreamOut(stream.Server))...)
+	contentStream := NewStreamOut(stream.Server)
+	contentStream.WriteStructure(dataHolder.objectData)
+	content := contentStream.Bytes()
 
 	/*
 		Technically this way of encoding a DataHolder is "wrong".
