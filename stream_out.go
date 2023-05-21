@@ -214,7 +214,7 @@ func (stream *StreamOut) WriteListResult(results []*Result) {
 
 // WriteDataHolder writes a NEX DataHolder type
 func (stream *StreamOut) WriteDataHolder(dataholder *DataHolder) {
-	content := dataholder.Bytes(stream)
+	content := dataholder.Bytes(NewStreamOut(stream.Server))
 	stream.Grow(int64(len(content)))
 	stream.WriteBytesNext(content)
 }
