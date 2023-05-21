@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -15,6 +16,7 @@ type StructureInterface interface {
 	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
 	Copy() StructureInterface
+	Equals(StructureInterface) bool
 }
 
 // Structure represents a nex Structure type
@@ -53,7 +55,12 @@ func (data *Data) Bytes(stream *StreamOut) []byte {
 
 // Copy returns a new copied instance of Data
 func (data *Data) Copy() StructureInterface {
-	return NewData()
+	return NewData() // * Has no fields, nothing to copy
+}
+
+// Equals checks if the passed Structure contains the same data as the current instance
+func (data *Data) Equals(structure StructureInterface) bool {
+	return true // * Has no fields, always equal
 }
 
 // NewData returns a new Data Structure
@@ -202,6 +209,29 @@ func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 	copied.time = rvConnectionData.time
 
 	return copied
+}
+
+// Equals checks if the passed Structure contains the same data as the current instance
+func (rvConnectionData *RVConnectionData) Equals(structure StructureInterface) bool {
+	other := structure.(*RVConnectionData)
+
+	if rvConnectionData.stationURL != other.stationURL {
+		return false
+	}
+
+	if !bytes.Equal(rvConnectionData.specialProtocols, other.specialProtocols) {
+		return false
+	}
+
+	if rvConnectionData.stationURLSpecialProtocols != other.stationURLSpecialProtocols {
+		return false
+	}
+
+	if rvConnectionData.time != other.time {
+		return false
+	}
+
+	return true
 }
 
 // NewRVConnectionData returns a new RVConnectionData
@@ -659,6 +689,21 @@ func (resultRange *ResultRange) Copy() StructureInterface {
 	copied.Length = resultRange.Length
 
 	return copied
+}
+
+// Equals checks if the passed Structure contains the same data as the current instance
+func (resultRange *ResultRange) Equals(structure StructureInterface) bool {
+	other := structure.(*ResultRange)
+
+	if resultRange.Offset != other.Offset {
+		return false
+	}
+
+	if resultRange.Length != other.Length {
+		return false
+	}
+
+	return true
 }
 
 // NewResultRange returns a new ResultRange
