@@ -237,7 +237,10 @@ func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 
 	copied.parentType = rvConnectionData.parentType
 	copied.stationURL = rvConnectionData.stationURL
-	copied.specialProtocols = rvConnectionData.specialProtocols
+	copied.specialProtocols = make([]byte, len(rvConnectionData.specialProtocols))
+
+	copy(copied.specialProtocols, rvConnectionData.specialProtocols)
+
 	copied.stationURLSpecialProtocols = rvConnectionData.stationURLSpecialProtocols
 	copied.time = rvConnectionData.time
 
