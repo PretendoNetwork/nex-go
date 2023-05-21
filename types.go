@@ -14,6 +14,7 @@ type StructureInterface interface {
 	ParentType() StructureInterface
 	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
+	Copy() StructureInterface
 }
 
 // Structure represents a nex Structure type
@@ -48,6 +49,11 @@ func (data *Data) ExtractFromStream(stream *StreamIn) error {
 // Bytes does nothing for Data
 func (data *Data) Bytes(stream *StreamOut) []byte {
 	return stream.Bytes()
+}
+
+// Copy returns a new copied instance of Data
+func (data *Data) Copy() StructureInterface {
+	return NewData()
 }
 
 // NewData returns a new Data Structure
@@ -148,11 +154,11 @@ func NewDataHolder() *DataHolder {
 
 // RVConnectionData represents a nex RVConnectionData type
 type RVConnectionData struct {
+	Structure
 	stationURL                 string
 	specialProtocols           []byte
 	stationURLSpecialProtocols string
 	time                       uint64
-	Structure
 }
 
 // SetStationURL sets the RVConnectionData station URL
@@ -183,6 +189,19 @@ func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 	stream.WriteUInt64LE(rvConnectionData.time)
 
 	return stream.Bytes()
+}
+
+// Copy returns a new copied instance of RVConnectionData
+func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
+	copied := NewRVConnectionData()
+
+	copied.parentType = rvConnectionData.parentType
+	copied.stationURL = rvConnectionData.stationURL
+	copied.specialProtocols = rvConnectionData.specialProtocols
+	copied.stationURLSpecialProtocols = rvConnectionData.stationURLSpecialProtocols
+	copied.time = rvConnectionData.time
+
+	return copied
 }
 
 // NewRVConnectionData returns a new RVConnectionData
@@ -619,9 +638,9 @@ func NewResultError(code uint32) *Result {
 
 // ResultRange is sent in methods which query large objects
 type ResultRange struct {
+	Structure
 	Offset uint32
 	Length uint32
-	Structure
 }
 
 // ExtractFromStream extracts a ResultRange structure from a stream
@@ -630,6 +649,16 @@ func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
 	resultRange.Length = stream.ReadUInt32LE()
 
 	return nil
+}
+
+// Copy returns a new copied instance of RVConnectionData
+func (resultRange *ResultRange) Copy() StructureInterface {
+	copied := NewResultRange()
+
+	copied.Offset = resultRange.Offset
+	copied.Length = resultRange.Length
+
+	return copied
 }
 
 // NewResultRange returns a new ResultRange
