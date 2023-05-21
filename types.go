@@ -110,7 +110,13 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 
 // Bytes encodes the DataHolder and returns a byte array
 func (dataHolder *DataHolder) Bytes(stream *StreamOut) []byte {
-	content := dataHolder.objectData.Bytes(NewStreamOut(stream.Server))
+	parents := dataHolder.objectData.Hierarchy()
+
+	content := []byte{}
+	for _, parent := range parents {
+		content = append(content, parent.Bytes(NewStreamOut(stream.Server))...)
+	}
+	content = append(content, dataHolder.objectData.Bytes(NewStreamOut(stream.Server))...)
 
 	/*
 		Technically this way of encoding a DataHolder is "wrong".
