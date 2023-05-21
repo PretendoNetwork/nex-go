@@ -96,10 +96,8 @@ func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
 
 // ReadStructure reads a nex Structure type
 func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureInterface, error) {
-	hierarchy := structure.Hierarchy()
-
-	for _, parent := range hierarchy {
-		_, err := stream.ReadStructure(parent)
+	if structure.ParentType() != nil {
+		_, err := stream.ReadStructure(structure.ParentType())
 
 		if err != nil {
 			return structure, errors.New("[ReadStructure] " + err.Error())

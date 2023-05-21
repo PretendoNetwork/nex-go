@@ -10,24 +10,31 @@ import (
 
 // StructureInterface implements all Structure methods
 type StructureInterface interface {
-	Hierarchy() []StructureInterface
+	SetParentType(parentType StructureInterface)
+	ParentType() StructureInterface
 	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
 }
 
 // Structure represents a nex Structure type
 type Structure struct {
+	parentType StructureInterface
 	StructureInterface
 }
 
-// Hierarchy returns a Structure hierarchy
-func (structure *Structure) Hierarchy() []StructureInterface {
-	return make([]StructureInterface, 0)
+// SetParentType returns the Structures parent type. nil if the type does not inherit another Structure
+func (structure *Structure) SetParentType(parentType StructureInterface) {
+	structure.parentType = parentType
+}
+
+// ParentType returns the Structures parent type. nil if the type does not inherit another Structure
+func (structure *Structure) ParentType() StructureInterface {
+	return structure.parentType
 }
 
 // Data represents a structure with no data
 type Data struct {
-	*Structure
+	Structure
 }
 
 // ExtractFromStream does nothing for Data
@@ -45,10 +52,7 @@ func (data *Data) Bytes(stream *StreamOut) []byte {
 
 // NewData returns a new Data Structure
 func NewData() *Data {
-	structure := &Structure{}
-	data := &Data{structure}
-
-	return data
+	return &Data{}
 }
 
 var dataHolderKnownObjects = make(map[string]StructureInterface)
