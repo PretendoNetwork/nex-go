@@ -775,3 +775,91 @@ func (resultRange *ResultRange) Equals(structure StructureInterface) bool {
 func NewResultRange() *ResultRange {
 	return &ResultRange{}
 }
+
+// Variant can hold one of 7 types; nil, int64, float64, bool, string, DateTime, or uint64
+type Variant struct {
+	TypeID uint8
+	// * In reality this type does not have this many fields
+	// * It only stores the type ID and then the value
+	// * However to get better typing, we opt to store each possible
+	// * type as it's own field and just check typeID to know which it has
+	Int64    int64
+	Float64  float64
+	Bool     bool
+	String   string
+	DateTime *DateTime
+	UInt64   uint64
+}
+
+// ExtractFromStream extracts a Variant structure from a stream
+func (variant *Variant) ExtractFromStream(stream *StreamIn) error {
+	variant.TypeID = stream.ReadUInt8()
+
+	// * A type ID of 0 means no value
+	switch variant.TypeID {
+	case 1: // * sint64
+		variant.Int64 = int64(stream.ReadUInt64LE())
+	case 2: // * double
+		variant.Float64 = float64(stream.ReadUInt64LE())
+	case 3: // * bool
+		variant.Bool = stream.ReadUInt8() == 1
+	case 4: // * string
+		str, _ := stream.ReadString()
+		variant.String = str
+	case 5: // * datetime
+		variant.DateTime = NewDateTime(stream.ReadUInt64LE())
+	case 6: // * uint64
+		variant.UInt64 = stream.ReadUInt64LE()
+	}
+
+	return nil
+}
+
+// Copy returns a new copied instance of RVConnectionData
+func (variant *Variant) Copy() *Variant {
+	copied := NewVariant()
+
+	copied.TypeID = variant.TypeID
+	copied.Int64 = variant.Int64
+	copied.Float64 = variant.Float64
+	copied.Bool = variant.Bool
+	copied.String = variant.String
+
+	if variant.DateTime != nil {
+		copied.DateTime = variant.DateTime.Copy()
+	}
+
+	copied.UInt64 = variant.UInt64
+
+	return copied
+}
+
+// Equals checks if the passed Structure contains the same data as the current instance
+func (variant *Variant) Equals(other *Variant) bool {
+	if variant.TypeID != other.TypeID {
+		return false
+	}
+
+	// * A type ID of 0 means no value
+	switch variant.TypeID {
+	case 1: // * sint64
+		return variant.Int64 == other.Int64
+	case 2: // * double
+		return variant.Float64 == other.Float64
+	case 3: // * bool
+		return variant.Bool == other.Bool
+	case 4: // * string
+		return variant.String == other.String
+	case 5: // * datetime
+		return variant.DateTime.Equals(other.DateTime)
+	case 6: // * uint64
+		return variant.UInt64 == other.UInt64
+	default: // * Something went horribly wrong
+		return false
+	}
+}
+
+// NewVariant returns a new Variant
+func NewVariant() *Variant {
+	return &Variant{}
+}

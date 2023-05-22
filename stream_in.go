@@ -122,26 +122,12 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 }
 
 // ReadVariant reads a Variant type. This type can hold 7 different types
-func (stream *StreamIn) ReadVariant() interface{} {
-	switch stream.ReadUInt8() {
-	case 0: // null
-		return nil
-	case 1: // sint64
-		return int64(stream.ReadUInt64LE())
-	case 2: // double
-		return float64(stream.ReadUInt64LE())
-	case 3: // bool
-		return stream.ReadUInt8() == 1
-	case 4: // string
-		str, _ := stream.ReadString()
-		return str
-	case 5: // datetime
-		return NewDateTime(stream.ReadUInt64LE())
-	case 6: // uint64
-		return stream.ReadUInt64LE()
-	}
+func (stream *StreamIn) ReadVariant() *Variant {
+	variant := NewVariant()
 
-	return nil
+	_ = variant.ExtractFromStream(stream)
+
+	return variant
 }
 
 // ReadMap reads a Map type with the given key and value types
