@@ -308,7 +308,7 @@ func (stream *StreamIn) ReadListStructure(structure StructureInterface) (interfa
 	structureSlice := reflect.MakeSlice(reflect.SliceOf(structureType), 0, int(length))
 
 	for i := 0; i < int(length); i++ {
-		newStructure := reflect.New(reflect.TypeOf(structure).Elem()).Interface().(StructureInterface)
+		newStructure := structure.Copy()
 
 		extractedStructure, err := stream.ReadStructure(newStructure)
 		if err != nil {
