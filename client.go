@@ -163,12 +163,12 @@ func (client *Client) PID() uint32 {
 	return client.pid
 }
 
-// SetLocalStationURL sets the clients Local Station URL
+// SetStationURLs sets the clients Station URLs
 func (client *Client) SetStationURLs(stationURLs []string) {
 	client.stationURLs = stationURLs
 }
 
-// LocalStationURL returns the clients Local Station URL
+// StationURLs returns the clients Station URLs
 func (client *Client) StationURLs() []string {
 	return client.stationURLs
 }

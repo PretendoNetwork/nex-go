@@ -118,7 +118,9 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 		return errors.New(message)
 	}
 
-	dataHolder.objectData, _ = stream.ReadStructure(dataType)
+	newObjectInstance := dataType.Copy()
+
+	dataHolder.objectData, _ = stream.ReadStructure(newObjectInstance)
 
 	return nil
 }
