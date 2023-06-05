@@ -800,21 +800,48 @@ func (variant *Variant) ExtractFromStream(stream *StreamIn) error {
 	// * A type ID of 0 means no value
 	switch variant.TypeID {
 	case 1: // * sint64
-		variant.Int64 = int64(stream.ReadUInt64LE())
+		variant.Int64 = stream.ReadInt64LE()
 	case 2: // * double
-		variant.Float64 = float64(stream.ReadUInt64LE())
+		variant.Float64 = stream.ReadFloat64LE()
 	case 3: // * bool
-		variant.Bool = stream.ReadUInt8() == 1
+		variant.Bool = stream.ReadBool()
 	case 4: // * string
-		str, _ := stream.ReadString()
+		str, err := stream.ReadString()
+		if err != nil {
+			return err
+		}
+
 		variant.String = str
 	case 5: // * datetime
-		variant.DateTime = NewDateTime(stream.ReadUInt64LE())
+		variant.DateTime = stream.ReadDateTime()
 	case 6: // * uint64
 		variant.UInt64 = stream.ReadUInt64LE()
 	}
 
 	return nil
+}
+
+// Bytes encodes the Variant and returns a byte array
+func (variant *Variant) Bytes(stream *StreamOut) []byte {
+	stream.WriteUInt8(variant.TypeID)
+
+	// * A type ID of 0 means no value
+	switch variant.TypeID {
+	case 1: // * sint64
+		stream.WriteInt64LE(variant.Int64)
+	case 2: // * double
+		stream.WriteFloat64LE(variant.Float64)
+	case 3: // * bool
+		stream.WriteBool(variant.Bool)
+	case 4: // * string
+		stream.WriteString(variant.String)
+	case 5: // * datetime
+		stream.WriteDateTime(variant.DateTime)
+	case 6: // * uint64
+		stream.WriteUInt64LE(variant.UInt64)
+	}
+
+	return stream.Bytes()
 }
 
 // Copy returns a new copied instance of RVConnectionData
@@ -844,6 +871,8 @@ func (variant *Variant) Equals(other *Variant) bool {
 
 	// * A type ID of 0 means no value
 	switch variant.TypeID {
+	case 0: // * no value, always equal
+		return true
 	case 1: // * sint64
 		return variant.Int64 == other.Int64
 	case 2: // * double

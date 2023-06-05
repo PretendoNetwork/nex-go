@@ -58,6 +58,12 @@ func (stream *StreamOut) WriteInt64LE(s64 int64) {
 	stream.WriteU64LENext([]uint64{uint64(s64)})
 }
 
+// WriteFloat64LE writes a float64 as LE
+func (stream *StreamOut) WriteFloat64LE(f64 float64) {
+	stream.Grow(8)
+	stream.WriteF64LENext([]float64{f64})
+}
+
 // WriteString writes a NEX string type
 func (stream *StreamOut) WriteString(str string) {
 	str = str + "\x00"
