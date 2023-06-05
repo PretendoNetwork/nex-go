@@ -228,6 +228,43 @@ func (stream *StreamOut) WriteDateTime(datetime *DateTime) {
 	stream.WriteUInt64LE(datetime.value)
 }
 
+// WriteVariant writes a Variant type
+func (stream *StreamOut) WriteVariant(variant *Variant) {
+	content := variant.Bytes(NewStreamOut(stream.Server))
+	stream.Grow(int64(len(content)))
+	stream.WriteBytesNext(content)
+}
+
+// WriteMap writes a Map type with the given key and value types
+func (stream *StreamOut) WriteMap(mapType interface{}, keyFunction interface{}, valueFunction interface{}) {
+	/*
+		TODO: Make this not suck
+
+		Map types can have any type as the key and any type as the value
+		To handle writing the keys and values in a generic way, we use reflect
+		to call the key and value functions, as the StreamOut write functions are
+		structured the same way (one input and no output).
+	*/
+
+	mapValue := reflect.ValueOf(mapType)
+	count := mapValue.Len()
+
+	stream.WriteUInt32LE(uint32(count))
+
+	mapIter := mapValue.MapRange()
+
+	for mapIter.Next() {
+		key := mapIter.Key()
+		value := mapIter.Value()
+
+		keyFunctionValue := reflect.ValueOf(keyFunction)
+		_ = keyFunctionValue.Call([]reflect.Value{key})
+
+		valueFunctionValue := reflect.ValueOf(valueFunction)
+		_ = valueFunctionValue.Call([]reflect.Value{value})
+	}
+}
+
 // NewStreamOut returns a new nex output stream
 func NewStreamOut(server *Server) *StreamOut {
 	return &StreamOut{
