@@ -49,9 +49,19 @@ func (stream *StreamIn) ReadUInt64LE() uint64 {
 	return stream.ReadU64LENext(1)[0]
 }
 
+// ReadInt64LE reads a int64
+func (stream *StreamIn) ReadInt64LE() int64 {
+	return int64(stream.ReadU64LENext(1)[0])
+}
+
 // ReadUInt64BE reads a uint64
 func (stream *StreamIn) ReadUInt64BE() uint64 {
 	return stream.ReadU64BENext(1)[0]
+}
+
+// ReadFloat64LE reads a int64
+func (stream *StreamIn) ReadFloat64LE() float64 {
+	return stream.ReadF64LENext(1)[0]
 }
 
 // ReadString reads and returns a nex string type
@@ -158,7 +168,7 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 		}
 
 		switch valueFunction.(type) {
-		case func() interface{}:
+		case func() *Variant:
 			value = stream.ReadVariant()
 		}
 

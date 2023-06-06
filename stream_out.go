@@ -58,6 +58,12 @@ func (stream *StreamOut) WriteInt64LE(s64 int64) {
 	stream.WriteU64LENext([]uint64{uint64(s64)})
 }
 
+// WriteFloat64LE writes a float64 as LE
+func (stream *StreamOut) WriteFloat64LE(f64 float64) {
+	stream.Grow(8)
+	stream.WriteF64LENext([]float64{f64})
+}
+
 // WriteString writes a NEX string type
 func (stream *StreamOut) WriteString(str string) {
 	str = str + "\x00"
@@ -220,6 +226,41 @@ func (stream *StreamOut) WriteDataHolder(dataholder *DataHolder) {
 // WriteDateTime writes a NEX DateTime type
 func (stream *StreamOut) WriteDateTime(datetime *DateTime) {
 	stream.WriteUInt64LE(datetime.value)
+}
+
+// WriteVariant writes a Variant type
+func (stream *StreamOut) WriteVariant(variant *Variant) {
+	content := variant.Bytes(NewStreamOut(stream.Server))
+	stream.Grow(int64(len(content)))
+	stream.WriteBytesNext(content)
+}
+
+// WriteMap writes a Map type with the given key and value types
+func (stream *StreamOut) WriteMap(mapType interface{}) {
+	// TODO:
+	// Find a better solution that doesn't use reflect
+
+	mapValue := reflect.ValueOf(mapType)
+	count := mapValue.Len()
+
+	stream.WriteUInt32LE(uint32(count))
+
+	mapIter := mapValue.MapRange()
+
+	for mapIter.Next() {
+		key := mapIter.Key().Interface()
+		value := mapIter.Value().Interface()
+
+		switch key := key.(type) {
+		case string:
+			stream.WriteString(key)
+		}
+
+		switch value := value.(type) {
+		case *Variant:
+			stream.WriteVariant(value)
+		}
+	}
 }
 
 // NewStreamOut returns a new nex output stream
