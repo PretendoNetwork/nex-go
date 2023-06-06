@@ -236,15 +236,9 @@ func (stream *StreamOut) WriteVariant(variant *Variant) {
 }
 
 // WriteMap writes a Map type with the given key and value types
-func (stream *StreamOut) WriteMap(mapType interface{}, keyFunction interface{}, valueFunction interface{}) {
-	/*
-		TODO: Make this not suck
-
-		Map types can have any type as the key and any type as the value
-		To handle writing the keys and values in a generic way, we use reflect
-		to call the key and value functions, as the StreamOut write functions are
-		structured the same way (one input and no output).
-	*/
+func (stream *StreamOut) WriteMap(mapType interface{}) {
+	// TODO:
+	// Find a better solution that doesn't use reflect
 
 	mapValue := reflect.ValueOf(mapType)
 	count := mapValue.Len()
@@ -254,14 +248,18 @@ func (stream *StreamOut) WriteMap(mapType interface{}, keyFunction interface{}, 
 	mapIter := mapValue.MapRange()
 
 	for mapIter.Next() {
-		key := mapIter.Key()
-		value := mapIter.Value()
+		key := mapIter.Key().Interface()
+		value := mapIter.Value().Interface()
 
-		keyFunctionValue := reflect.ValueOf(keyFunction)
-		_ = keyFunctionValue.Call([]reflect.Value{key})
+		switch key := key.(type) {
+		case string:
+			stream.WriteString(key)
+		}
 
-		valueFunctionValue := reflect.ValueOf(valueFunction)
-		_ = valueFunctionValue.Call([]reflect.Value{value})
+		switch value := value.(type) {
+		case *Variant:
+			stream.WriteVariant(value)
+		}
 	}
 }
 

@@ -146,11 +146,8 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 		TODO: Make this not suck
 
 		Map types can have any type as the key and any type as the value
-		To handle reading the keys and values in a generic way, we use reflect
-		to call the key and value functions, as the StreamIn read functions are
-		usually structured the same way (no input and one output). However, this
-		is not always the case (like on ReadStructure), but currently we are not
-		aware of any real cases that require those types.
+		Due to strict typing we cannot just pass stream functions as these values and call them
+		At the moment this just reads what type you want from the interface{} function type
 	*/
 
 	length := stream.ReadUInt32LE()
@@ -159,31 +156,20 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 	for i := 0; i < int(length); i++ {
 		var key interface{}
 		var value interface{}
+		var err error
 
-		keyFunctionValue := reflect.ValueOf(keyFunction)
-		keyArguments := make([]reflect.Value, 0)
-		keyOut := keyFunctionValue.Call(keyArguments)
-		key = keyOut[0].Interface()
-
-		if len(keyOut) > 1 {
-			err := keyOut[1]
-
-			if err.Interface() != nil {
-				return nil, err.Interface().(error)
-			}
+		switch keyFunction.(type) {
+		case func() (string, error):
+			key, err = stream.ReadString()
 		}
 
-		valueFunctionValue := reflect.ValueOf(valueFunction)
-		valueArguments := make([]reflect.Value, 0)
-		valueOut := valueFunctionValue.Call(valueArguments)
-		value = valueOut[0].Interface()
+		if err != nil {
+			return nil, err
+		}
 
-		if len(valueOut) > 1 {
-			err := valueOut[1]
-
-			if err.Interface() != nil {
-				return nil, err.Interface().(error)
-			}
+		switch valueFunction.(type) {
+		case func() *Variant:
+			value = stream.ReadVariant()
 		}
 
 		newMap[key] = value
