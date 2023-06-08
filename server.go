@@ -120,6 +120,8 @@ func (server *Server) handleSocketMessage() error {
 	}
 
 	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
 		return nil
 	}
 
@@ -147,7 +149,13 @@ func (server *Server) handleSocketMessage() error {
 			// * Was connected before on the same device, using a different account
 			server.Emit("Disconnect", packet) // * Disconnect the old connection
 		}
-		client.Reset()
+		err := client.Reset()
+		if err != nil {
+			// TODO - Should this return the error too?
+			logger.Error(err.Error())
+			return nil
+		}
+
 		client.SetConnected(true)
 		client.StartTimeoutTimer()
 		server.Emit("Syn", packet)

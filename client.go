@@ -31,12 +31,15 @@ type Client struct {
 }
 
 // Reset resets the Client to default values
-func (client *Client) Reset() {
+func (client *Client) Reset() error {
 	client.sequenceIDIn = NewCounter(0)
 	client.sequenceIDOut = NewCounter(0)
 
 	client.UpdateAccessKey(client.Server().AccessKey())
-	client.UpdateRC4Key([]byte("CD&ML"))
+	err := client.UpdateRC4Key([]byte("CD&ML"))
+	if err != nil {
+		return fmt.Errorf("Failed to update client RC4 key. %s", err.Error())
+	}
 
 	if client.Server().PRUDPVersion() == 0 {
 		client.SetServerConnectionSignature(make([]byte, 4))
@@ -47,6 +50,8 @@ func (client *Client) Reset() {
 	}
 
 	client.SetConnected(false)
+
+	return nil
 }
 
 // Address returns the clients UDP address
@@ -230,7 +235,12 @@ func NewClient(address *net.UDPAddr, server *Server) *Client {
 		server:  server,
 	}
 
-	client.Reset()
+	err := client.Reset()
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+		return nil
+	}
 
 	return client
 }
