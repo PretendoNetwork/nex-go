@@ -113,13 +113,26 @@ func (dataHolder *DataHolder) SetObjectData(objectData StructureInterface) {
 
 // ExtractFromStream extracts a DataHolder structure from a stream
 func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
-	// TODO - Error checks
-	dataHolder.typeName, _ = stream.ReadString()
-	dataHolder.length1 = stream.ReadUInt32LE()
-	dataHolder.length2 = stream.ReadUInt32LE()
+	var err error
+
+	dataHolder.typeName, err = stream.ReadString()
+	if err != nil {
+		return fmt.Errorf("Failed to read DataHolder type name. %s", err.Error())
+	}
+
+	dataHolder.length1, err = stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read DataHolder length 1. %s", err.Error())
+	}
+
+	dataHolder.length2, err = stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read DataHolder length 2. %s", err.Error())
+	}
 
 	dataType := dataHolderKnownObjects[dataHolder.typeName]
 	if dataType == nil {
+		// TODO - Should we really log this here, or just pass the error to the caller?
 		message := fmt.Sprintf("UNKNOWN DATAHOLDER TYPE: %s", dataHolder.typeName)
 		logger.Critical(message)
 		return errors.New(message)
@@ -127,7 +140,10 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 
 	newObjectInstance := dataType.Copy()
 
-	dataHolder.objectData, _ = stream.ReadStructure(newObjectInstance)
+	dataHolder.objectData, err = stream.ReadStructure(newObjectInstance)
+	if err != nil {
+		return fmt.Errorf("Failed to read DataHolder object data. %s", err.Error())
+	}
 
 	return nil
 }
@@ -703,7 +719,12 @@ func (result *Result) IsError() bool {
 
 // ExtractFromStream extracts a Result structure from a stream
 func (result *Result) ExtractFromStream(stream *StreamIn) error {
-	result.code = stream.ReadUInt32LE()
+	code, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read Result code. %s", err.Error())
+	}
+
+	result.code = code
 
 	return nil
 }
@@ -749,8 +770,18 @@ type ResultRange struct {
 
 // ExtractFromStream extracts a ResultRange structure from a stream
 func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
-	resultRange.Offset = stream.ReadUInt32LE()
-	resultRange.Length = stream.ReadUInt32LE()
+	offset, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read ResultRange offset. %s", err.Error())
+	}
+
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read ResultRange length. %s", err.Error())
+	}
+
+	resultRange.Offset = offset
+	resultRange.Length = length
 
 	return nil
 }
@@ -802,27 +833,33 @@ type Variant struct {
 
 // ExtractFromStream extracts a Variant structure from a stream
 func (variant *Variant) ExtractFromStream(stream *StreamIn) error {
-	variant.TypeID = stream.ReadUInt8()
+	var err error
+
+	variant.TypeID, err = stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read Variant type ID. %s", err.Error())
+	}
 
 	// * A type ID of 0 means no value
 	switch variant.TypeID {
 	case 1: // * sint64
-		variant.Int64 = stream.ReadInt64LE()
+		variant.Int64, err = stream.ReadInt64LE()
 	case 2: // * double
-		variant.Float64 = stream.ReadFloat64LE()
+		variant.Float64, err = stream.ReadFloat64LE()
 	case 3: // * bool
-		variant.Bool = stream.ReadBool()
+		variant.Bool, err = stream.ReadBool()
 	case 4: // * string
-		str, err := stream.ReadString()
-		if err != nil {
-			return err
-		}
-
-		variant.String = str
+		variant.String, err = stream.ReadString()
 	case 5: // * datetime
-		variant.DateTime = stream.ReadDateTime()
+		variant.DateTime, err = stream.ReadDateTime()
 	case 6: // * uint64
-		variant.UInt64 = stream.ReadUInt64LE()
+		variant.UInt64, err = stream.ReadUInt64LE()
+	}
+
+	// * These errors contain details about each of the values type
+	// * No need to return special errors for each value type
+	if err != nil {
+		return fmt.Errorf("Failed to read Variant value. %s", err.Error())
 	}
 
 	return nil

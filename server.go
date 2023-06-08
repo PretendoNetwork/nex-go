@@ -54,13 +54,11 @@ func (server *Server) Listen(address string) {
 	protocol := "udp"
 
 	udpAddress, err := net.ResolveUDPAddr(protocol, address)
-
 	if err != nil {
 		panic(err)
 	}
 
 	socket, err := net.ListenUDP(protocol, udpAddress)
-
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +96,6 @@ func (server *Server) handleSocketMessage() error {
 	socket := server.Socket()
 
 	length, addr, err := socket.ReadFromUDP(buffer[0:])
-
 	if err != nil {
 		return err
 	}
@@ -211,6 +208,7 @@ func (server *Server) HPPListen(address string) {
 
 		pid, err := strconv.Atoi(pidValue)
 		if err != nil {
+			// TODO - Should this return the error too?
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -223,13 +221,19 @@ func (server *Server) HPPListen(address string) {
 		client := NewClient(nil, server)
 		client.SetPID(uint32(pid))
 
-		hppPacket, _ := NewHPPPacket(client, rmcRequestBytes)
+		hppPacket, err := NewHPPPacket(client, rmcRequestBytes)
+		if err != nil {
+			logger.Error(fmt.Sprintf("Failed to create new HPPPacket instance. %s", err.Error()))
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 
 		hppPacket.SetAccessKeySignature(accessKeySignature)
 		hppPacket.SetPasswordSignature(passwordSignature)
 
 		err = hppPacket.ValidateAccessKey()
 		if err != nil {
+			// TODO - Should this return the error too?
 			logger.Error(err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -242,11 +246,12 @@ func (server *Server) HPPListen(address string) {
 			callID := rmcRequest.CallID()
 
 			errorResponse := NewRMCResponse(0, callID)
-			// HPP returns PythonCore::ValidationError if password is missing or invalid
+			// * HPP returns PythonCore::ValidationError if password is missing or invalid
 			errorResponse.SetError(Errors.PythonCore.ValidationError)
 
 			_, err = w.Write(errorResponse.Bytes())
 			if err != nil {
+				// TODO - Should this return the error too?
 				logger.Error(err.Error())
 			}
 
@@ -257,11 +262,12 @@ func (server *Server) HPPListen(address string) {
 
 		server.Emit("Data", hppPacket)
 
-		rmcResponseBytes := <- server.hppClientResponses[client]
+		rmcResponseBytes := <-server.hppClientResponses[client]
 
 		if len(rmcResponseBytes) > 0 {
 			_, err = w.Write(rmcResponseBytes)
 			if err != nil {
+				// TODO - Should this return the error too?
 				logger.Error(err.Error())
 			}
 		}
@@ -350,14 +356,22 @@ func (server *Server) ClientConnected(client *Client) bool {
 // TimeoutKick removes a client from the server for inactivity
 func (server *Server) TimeoutKick(client *Client) {
 	var packet PacketInterface
+	var err error
 
 	if server.PRUDPVersion() == 0 {
-		packet, _ = NewPacketV0(client, nil)
+		packet, err = NewPacketV0(client, nil)
 		packet.SetVersion(0)
 	} else {
-		packet, _ = NewPacketV1(client, nil)
+		packet, err = NewPacketV1(client, nil)
 		packet.SetVersion(1)
 	}
+
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+		return
+	}
+
 	packet.SetSource(0xA1)
 	packet.SetDestination(0xAF)
 	packet.SetType(DisconnectPacket)
@@ -373,14 +387,22 @@ func (server *Server) TimeoutKick(client *Client) {
 // GracefulKick removes an active client from the server
 func (server *Server) GracefulKick(client *Client) {
 	var packet PacketInterface
+	var err error
 
 	if server.PRUDPVersion() == 0 {
-		packet, _ = NewPacketV0(client, nil)
+		packet, err = NewPacketV0(client, nil)
 		packet.SetVersion(0)
 	} else {
-		packet, _ = NewPacketV1(client, nil)
+		packet, err = NewPacketV1(client, nil)
 		packet.SetVersion(1)
 	}
+
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+		return
+	}
+
 	packet.SetSource(0xA1)
 	packet.SetDestination(0xAF)
 	packet.SetType(DisconnectPacket)
@@ -399,20 +421,27 @@ func (server *Server) GracefulKick(client *Client) {
 func (server *Server) GracefulKickAll() {
 	for _, client := range server.clients {
 		var packet PacketInterface
-
+		var err error
 		if server.PRUDPVersion() == 0 {
-			packet, _ = NewPacketV0(client, nil)
+			packet, err = NewPacketV0(client, nil)
 			packet.SetVersion(0)
 		} else {
-			packet, _ = NewPacketV1(client, nil)
+			packet, err = NewPacketV1(client, nil)
 			packet.SetVersion(1)
 		}
+
+		if err != nil {
+			// TODO - Should this return the error too?
+			logger.Error(err.Error())
+			continue
+		}
+
 		packet.SetSource(0xA1)
 		packet.SetDestination(0xAF)
 		packet.SetType(DisconnectPacket)
-	
+
 		packet.AddFlag(FlagReliable)
-	
+
 		server.Send(packet)
 
 		server.Emit("Kick", packet)
@@ -425,11 +454,18 @@ func (server *Server) GracefulKickAll() {
 // SendPing sends a ping packet to the given client
 func (server *Server) SendPing(client *Client) {
 	var pingPacket PacketInterface
+	var err error
 
 	if server.PRUDPVersion() == 0 {
-		pingPacket, _ = NewPacketV0(client, nil)
+		pingPacket, err = NewPacketV0(client, nil)
 	} else {
-		pingPacket, _ = NewPacketV1(client, nil)
+		pingPacket, err = NewPacketV1(client, nil)
+	}
+
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+		return
 	}
 
 	pingPacket.SetSource(0xA1)
@@ -446,11 +482,18 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 	sender := packet.Sender()
 
 	var ackPacket PacketInterface
+	var err error
 
 	if server.PRUDPVersion() == 0 {
-		ackPacket, _ = NewPacketV0(sender, nil)
+		ackPacket, err = NewPacketV0(sender, nil)
 	} else {
-		ackPacket, _ = NewPacketV1(sender, nil)
+		ackPacket, err = NewPacketV1(sender, nil)
+	}
+
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+		return
 	}
 
 	ackPacket.SetSource(packet.Destination())
@@ -775,6 +818,7 @@ func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 func (server *Server) SendRaw(conn *net.UDPAddr, data []byte) {
 	_, err := server.Socket().WriteToUDP(data, conn)
 	if err != nil {
+		// TODO - Should this return the error too?
 		logger.Error(err.Error())
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
 
 // PacketV0 reresents a PRUDPv0 packet
@@ -25,47 +26,74 @@ func (packet *PacketV0) Checksum() uint8 {
 
 // Decode decodes the packet
 func (packet *PacketV0) Decode() error {
-
-	if len(packet.Data()) < 9 {
-		return errors.New("[PRUDPv0] Packet length less than header minimum")
-	}
-
 	checksumSize := 1
 	var payloadSize uint16
 	var typeFlags uint16
 
 	stream := NewStreamIn(packet.Data(), packet.Sender().Server())
 
-	packet.SetSource(stream.ReadUInt8())
-	packet.SetDestination(stream.ReadUInt8())
+	source, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv0 source. %s", err.Error())
+	}
 
-	typeFlags = stream.ReadUInt16LE()
+	packet.SetSource(source)
 
-	packet.SetSessionID(stream.ReadUInt8())
-	packet.SetSignature(stream.ReadBytesNext(4))
-	packet.SetSequenceID(stream.ReadUInt16LE())
+	destination, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv0 destination. %s", err.Error())
+	}
+
+	packet.SetDestination(destination)
+
+	typeFlags, err = stream.ReadUInt16LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv0 type-flags. %s", err.Error())
+	}
 
 	packet.SetType(typeFlags & 0xF)
-	packet.SetFlags(typeFlags >> 4)
 
 	if _, ok := validTypes[packet.Type()]; !ok {
-		return errors.New("[PRUDPv0] Packet type not valid type")
+		return errors.New("Invalid PRUDP packet type")
 	}
+
+	packet.SetFlags(typeFlags >> 4)
+
+	sessionID, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv0 session ID. %s", err.Error())
+	}
+
+	packet.SetSessionID(sessionID)
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+		return errors.New("Failed to read PRUDPv0 packet signature. Not have enough data")
+	}
+
+	packet.SetSignature(stream.ReadBytesNext(4))
+
+	sequenceID, err := stream.ReadUInt16LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv0 sequence ID. %s", err.Error())
+	}
+
+	packet.SetSequenceID(sequenceID)
 
 	if packet.Type() == SynPacket || packet.Type() == ConnectPacket {
 		if len(packet.Data()[stream.ByteOffset():]) < 4 {
-			return errors.New("[PRUDPv0] Packet specific data not large enough for connection signature")
+			return errors.New("Failed to read PRUDPv0 connection signature. Not enough data")
 		}
 
 		packet.SetConnectionSignature(stream.ReadBytesNext(4))
 	}
 
 	if packet.Type() == DataPacket {
-		if len(packet.Data()[stream.ByteOffset():]) < 1 {
-			return errors.New("[PRUDPv0] Packet specific data not large enough for fragment ID")
+		fragmentID, err := stream.ReadUInt8()
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv0 connection signature. %s", err.Error())
 		}
 
-		packet.SetFragmentID(stream.ReadUInt8())
+		packet.SetFragmentID(fragmentID)
 	}
 
 	if packet.HasFlag(FlagHasSize) {
@@ -73,7 +101,10 @@ func (packet *PacketV0) Decode() error {
 			return errors.New("[PRUDPv0] Packet specific data not large enough for payload size")
 		}
 
-		payloadSize = stream.ReadUInt16LE()
+		payloadSize, err = stream.ReadUInt16LE()
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv0 payload size. %s", err.Error())
+		}
 	} else {
 		payloadSize = uint16(len(packet.data) - int(stream.ByteOffset()) - checksumSize)
 	}
@@ -93,7 +124,6 @@ func (packet *PacketV0) Decode() error {
 
 			request := NewRMCRequest()
 			err := request.FromBytes(ciphered)
-
 			if err != nil {
 				return errors.New("[PRUDPv0] Error parsing RMC request: " + err.Error())
 			}
@@ -106,7 +136,12 @@ func (packet *PacketV0) Decode() error {
 		return errors.New("[PRUDPv0] Packet data length less than checksum length")
 	}
 
-	packet.SetChecksum(stream.ReadUInt8())
+	checksum, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv0 packet checksum. %s", err.Error())
+	}
+
+	packet.SetChecksum(checksum)
 
 	packetBody := stream.Bytes()
 
@@ -298,7 +333,6 @@ func NewPacketV0(client *Client, data []byte) (*PacketV0, error) {
 
 	if data != nil {
 		err := packetv0.Decode()
-
 		if err != nil {
 			return &PacketV0{}, errors.New("[PRUDPv0] Error decoding packet data: " + err.Error())
 		}

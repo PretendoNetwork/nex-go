@@ -2,6 +2,7 @@ package nex
 
 import (
 	"crypto/rc4"
+	"fmt"
 	"net"
 	"time"
 )
@@ -79,12 +80,22 @@ func (client *Client) SetSupportedFunctions(supportedFunctions int) {
 }
 
 // UpdateRC4Key sets the client RC4 stream key
-func (client *Client) UpdateRC4Key(key []byte) {
-	cipher, _ := rc4.NewCipher(key)
+func (client *Client) UpdateRC4Key(key []byte) error {
+	cipher, err := rc4.NewCipher(key)
+	if err != nil {
+		return fmt.Errorf("Failed to create RC4 cipher. %s", err.Error())
+	}
+
 	client.cipher = cipher
 
-	decipher, _ := rc4.NewCipher(key)
+	decipher, err := rc4.NewCipher(key)
+	if err != nil {
+		return fmt.Errorf("Failed to create RC4 decipher. %s", err.Error())
+	}
+
 	client.decipher = decipher
+
+	return nil
 }
 
 // Cipher returns the RC4 cipher stream for out-bound packets

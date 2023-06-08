@@ -6,7 +6,11 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"errors"
+	"fmt"
 )
+
+// * Magic is the expected PRUDPv1 magic number
+var Magic = []byte{0xEA, 0xD0}
 
 // OptionAllFunctions is used with OptionSupportedFunctions to support all methods
 var OptionAllFunctions = 0xFFFFFFFF
@@ -89,42 +93,90 @@ func (packet *PacketV1) MaximumSubstreamID() uint8 {
 
 // Decode decodes the packet
 func (packet *PacketV1) Decode() error {
-	if len(packet.Data()) < 30 { // magic + header + signature
-		return errors.New("[PRUDPv1] Packet length less than minimum")
-	}
-
 	stream := NewStreamIn(packet.Data(), packet.Sender().Server())
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+		return errors.New("Failed to read PRUDPv1 magic. Not have enough data")
+	}
 
 	packet.magic = stream.ReadBytesNext(2)
 
-	if !bytes.Equal(packet.magic, []byte{0xEA, 0xD0}) {
-		return errors.New("PRUDPv1 packet magic did not match")
+	if !bytes.Equal(packet.magic, Magic) {
+		return fmt.Errorf("Invalid PRUDPv1 magic. Expected %x, got %x", Magic, packet.magic)
 	}
 
-	packet.SetVersion(stream.ReadUInt8())
+	version, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 version. %s", err.Error())
+	}
+
+	packet.SetVersion(version)
 
 	if packet.Version() != 1 {
-		return errors.New("PRUDPv1 version did not match")
+		return fmt.Errorf("Invalid PRUDPv1 version. Expected 1, got %d", packet.Version())
 	}
 
-	optionsLength := stream.ReadUInt8()
-	payloadSize := stream.ReadUInt16LE()
+	optionsLength, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 options length. %s", err.Error())
+	}
 
-	packet.SetSource(stream.ReadUInt8())
-	packet.SetDestination(stream.ReadUInt8())
+	payloadSize, err := stream.ReadUInt16LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 payload size. %s", err.Error())
+	}
 
-	typeFlags := stream.ReadUInt16LE()
+	source, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 source. %s", err.Error())
+	}
+
+	packet.SetSource(source)
+
+	destination, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 destination. %s", err.Error())
+	}
+
+	packet.SetDestination(destination)
+
+	typeFlags, err := stream.ReadUInt16LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 type-flags. %s", err.Error())
+	}
 
 	packet.SetType(typeFlags & 0xF)
-	packet.SetFlags(typeFlags >> 4)
 
 	if _, ok := validTypes[packet.Type()]; !ok {
-		return errors.New("[PRUDPv1] Packet type not valid type")
+		return errors.New("Invalid PRUDP packet type")
 	}
 
-	packet.SetSessionID(stream.ReadUInt8())
-	packet.SetSubstreamID(stream.ReadUInt8())
-	packet.SetSequenceID(stream.ReadUInt16LE())
+	packet.SetFlags(typeFlags >> 4)
+
+	sessionID, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 session ID. %s", err.Error())
+	}
+
+	packet.SetSessionID(sessionID)
+
+	substreamID, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 substream ID. %s", err.Error())
+	}
+
+	packet.SetSubstreamID(substreamID)
+
+	sequenceID, err := stream.ReadUInt16LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 sequence ID. %s", err.Error())
+	}
+
+	packet.SetSequenceID(sequenceID)
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < 16 {
+		return errors.New("Failed to read PRUDPv1 packet signature. Not have enough data")
+	}
 
 	packet.SetSignature(stream.ReadBytesNext(16))
 
@@ -134,11 +186,14 @@ func (packet *PacketV1) Decode() error {
 
 	options := stream.ReadBytesNext(int64(optionsLength))
 
-	packet.decodeOptions(options)
+	err = packet.decodeOptions(options)
+	if err != nil {
+		return fmt.Errorf("Failed to read PRUDPv1 options. %s", err.Error())
+	}
 
 	if payloadSize > 0 {
 		if len(packet.Data()[stream.ByteOffset():]) < int(payloadSize) {
-			return errors.New("[PRUDPv1] Packet data length less than payload length")
+			return errors.New("Failed to read PRUDPv1 packet payload. Not enough data")
 		}
 
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
@@ -152,9 +207,8 @@ func (packet *PacketV1) Decode() error {
 
 			request := NewRMCRequest()
 			err := request.FromBytes(ciphered)
-
 			if err != nil {
-				return errors.New("[PRUDPv1] Error parsing RMC request: " + err.Error())
+				return fmt.Errorf("Failed to read PRUDPv1 RMC request. %s", err.Error())
 			}
 
 			packet.rmcRequest = request
@@ -172,9 +226,7 @@ func (packet *PacketV1) Decode() error {
 
 // Bytes encodes the packet and returns a byte array
 func (packet *PacketV1) Bytes() []byte {
-
 	if packet.Type() == DataPacket {
-
 		if !packet.HasFlag(FlagMultiAck) {
 			payload := packet.Payload()
 
@@ -233,28 +285,56 @@ func (packet *PacketV1) Bytes() []byte {
 	return stream.Bytes()
 }
 
-func (packet *PacketV1) decodeOptions(options []byte) {
+func (packet *PacketV1) decodeOptions(options []byte) error {
 	optionsStream := NewStreamIn(options, packet.Sender().Server())
 
 	for optionsStream.ByteOffset() != optionsStream.ByteCapacity() {
-		optionID := optionsStream.ReadUInt8()
-		optionSize := optionsStream.ReadUInt8()
+		optionID, err := optionsStream.ReadUInt8()
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv1 option ID. %s", err.Error())
+		}
+
+		optionSize, err := optionsStream.ReadUInt8()
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv1 option size for option ID %d. %s", optionID, err.Error())
+		}
 
 		switch optionID {
 		case OptionSupportedFunctions:
-			supportedFunctions := optionsStream.ReadUInt32LE()
+			supportedFunctions, err := optionsStream.ReadUInt32LE()
+			if err != nil {
+				return fmt.Errorf("Failed to read PRUDPv1 option supported functions. %s", err.Error())
+			}
+
 			packet.sender.SetPRUDPProtocolMinorVersion(int(supportedFunctions & 0xFF))
 			packet.sender.SetSupportedFunctions(int(supportedFunctions >> 8))
 		case OptionConnectionSignature:
 			packet.SetConnectionSignature(optionsStream.ReadBytesNext(int64(optionSize)))
 		case OptionFragmentID:
-			packet.SetFragmentID(optionsStream.ReadUInt8())
+			fragmentID, err := optionsStream.ReadUInt8()
+			if err != nil {
+				return fmt.Errorf("Failed to read PRUDPv1 option fragment ID. %s", err.Error())
+			}
+
+			packet.SetFragmentID(fragmentID)
 		case OptionInitialSequenceID:
-			packet.SetInitialSequenceID(optionsStream.ReadUInt16LE())
+			sequenceID, err := optionsStream.ReadUInt16LE()
+			if err != nil {
+				return fmt.Errorf("Failed to read PRUDPv1 option sequence ID. %s", err.Error())
+			}
+
+			packet.SetInitialSequenceID(sequenceID)
 		case OptionMaxSubstreamID:
-			packet.SetMaximumSubstreamID(optionsStream.ReadUInt8())
+			maximumSubstreamID, err := optionsStream.ReadUInt8()
+			if err != nil {
+				return fmt.Errorf("Failed to read PRUDPv1 option maximum substream ID. %s", err.Error())
+			}
+
+			packet.SetMaximumSubstreamID(maximumSubstreamID)
 		}
 	}
+
+	return nil
 }
 
 func (packet *PacketV1) encodeOptions() []byte {
@@ -314,9 +394,8 @@ func NewPacketV1(client *Client, data []byte) (*PacketV1, error) {
 
 	if data != nil {
 		err := packetv1.Decode()
-
 		if err != nil {
-			return &PacketV1{}, errors.New("[PRUDPv1] Error decoding packet data: " + err.Error())
+			return &PacketV1{}, fmt.Errorf("Failed to decode PRUDPv1 packet. %s", err.Error())
 		}
 	}
 

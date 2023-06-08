@@ -1,6 +1,9 @@
 package nex
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // RMCRequest represets a RMC request
 type RMCRequest struct {
@@ -74,24 +77,45 @@ func (request *RMCRequest) FromBytes(data []byte) error {
 
 	stream := NewStreamIn(data, nil)
 
-	size := int(stream.ReadUInt32LE())
-
-	if size != (len(data) - 4) {
-		return errors.New("[RMC] Data size does not match")
+	size, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read RMC Request size. %s", err.Error())
 	}
 
-	protocolID := stream.ReadUInt8() ^ 0x80
-	if protocolID == 0x7f {
-		request.customID = stream.ReadUInt16LE()
+	if int(size) != (len(data) - 4) {
+		return errors.New("RMC Request size does not match length of buffer")
 	}
-	callID := stream.ReadUInt32LE()
-	methodID := stream.ReadUInt32LE()
-	parameters := data[stream.ByteOffset():]
 
-	request.protocolID = protocolID
-	request.callID = callID
-	request.methodID = methodID
-	request.parameters = parameters
+	protocolID, err := stream.ReadUInt8()
+	if err != nil {
+		return fmt.Errorf("Failed to read RMC Request protocol ID. %s", err.Error())
+	}
+
+	request.SetProtocolID(protocolID ^ 0x80)
+
+	if request.ProtocolID() == 0x7f {
+		customID, err := stream.ReadUInt16LE()
+		if err != nil {
+			return fmt.Errorf("Failed to read RMC Request custom protocol ID. %s", err.Error())
+		}
+
+		request.SetCustomID(customID)
+	}
+
+	callID, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read RMC Request call ID. %s", err.Error())
+	}
+
+	request.SetCallID(callID)
+
+	methodID, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read RMC Request method ID. %s", err.Error())
+	}
+
+	request.SetMethodID(methodID)
+	request.SetParameters(data[stream.ByteOffset():])
 
 	return nil
 }
