@@ -9,7 +9,7 @@ import (
 	"fmt"
 )
 
-// * Magic is the expected PRUDPv1 magic number
+// Magic is the expected PRUDPv1 magic number
 var Magic = []byte{0xEA, 0xD0}
 
 // OptionAllFunctions is used with OptionSupportedFunctions to support all methods
