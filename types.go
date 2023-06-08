@@ -12,8 +12,9 @@ import (
 // StructureInterface implements all Structure methods
 type StructureInterface interface {
 	SetParentType(StructureInterface)
-	SetStructureVersion(uint8)
 	ParentType() StructureInterface
+	SetStructureVersion(uint8)
+	StructureVersion() uint8
 	ExtractFromStream(*StreamIn) error
 	Bytes(*StreamOut) []byte
 	Copy() StructureInterface
@@ -23,7 +24,7 @@ type StructureInterface interface {
 // Structure represents a nex Structure type
 type Structure struct {
 	parentType       StructureInterface
-	StructureVersion uint8
+	structureVersion uint8
 	StructureInterface
 }
 
@@ -32,14 +33,19 @@ func (structure *Structure) SetParentType(parentType StructureInterface) {
 	structure.parentType = parentType
 }
 
-// SetStructureVersion sets the structures version. Only used in NEX 3.5+
-func (structure *Structure) SetStructureVersion(version uint8) {
-	structure.StructureVersion = version
-}
-
 // ParentType returns the Structures parent type. nil if the type does not inherit another Structure
 func (structure *Structure) ParentType() StructureInterface {
 	return structure.parentType
+}
+
+// SetStructureVersion sets the structures version. Only used in NEX 3.5+
+func (structure *Structure) SetStructureVersion(version uint8) {
+	structure.structureVersion = version
+}
+
+// StructureVersion returns the structures version. Only used in NEX 3.5+
+func (structure *Structure) StructureVersion() uint8 {
+	return structure.structureVersion
 }
 
 // Data represents a structure with no data
