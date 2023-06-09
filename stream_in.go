@@ -33,7 +33,16 @@ func (stream *StreamIn) ReadUInt8() (uint8, error) {
 	return uint8(stream.ReadByteNext()), nil
 }
 
-// ReadUInt16LE reads a uint16
+// ReadInt8 reads a uint8
+func (stream *StreamIn) ReadInt8() (int8, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 1 {
+		return 0, errors.New("Not enough data to read int8")
+	}
+
+	return int8(stream.ReadByteNext()), nil
+}
+
+// ReadUInt16LE reads a Little-Endian encoded uint16
 func (stream *StreamIn) ReadUInt16LE() (uint16, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
 		return 0, errors.New("Not enough data to read uint16")
@@ -42,7 +51,34 @@ func (stream *StreamIn) ReadUInt16LE() (uint16, error) {
 	return stream.ReadU16LENext(1)[0], nil
 }
 
-// ReadUInt32LE reads a uint32
+// ReadUInt16BE reads a Big-Endian encoded uint16
+func (stream *StreamIn) ReadUInt16BE() (uint16, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+		return 0, errors.New("Not enough data to read uint16")
+	}
+
+	return stream.ReadU16BENext(1)[0], nil
+}
+
+// ReadInt16LE reads a Little-Endian encoded int16
+func (stream *StreamIn) ReadInt16LE() (int16, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+		return 0, errors.New("Not enough data to read int16")
+	}
+
+	return int16(stream.ReadU16LENext(1)[0]), nil
+}
+
+// ReadInt16BE reads a Big-Endian encoded int16
+func (stream *StreamIn) ReadInt16BE() (int16, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+		return 0, errors.New("Not enough data to read int16")
+	}
+
+	return int16(stream.ReadU16BENext(1)[0]), nil
+}
+
+// ReadUInt32LE reads a Little-Endian encoded uint32
 func (stream *StreamIn) ReadUInt32LE() (uint32, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
 		return 0, errors.New("Not enough data to read uint32")
@@ -51,7 +87,7 @@ func (stream *StreamIn) ReadUInt32LE() (uint32, error) {
 	return stream.ReadU32LENext(1)[0], nil
 }
 
-// ReadUInt32BE reads a uint32
+// ReadUInt32BE reads a Big-Endian encoded uint32
 func (stream *StreamIn) ReadUInt32BE() (uint32, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
 		return 0, errors.New("Not enough data to read uint32")
@@ -60,7 +96,7 @@ func (stream *StreamIn) ReadUInt32BE() (uint32, error) {
 	return stream.ReadU32BENext(1)[0], nil
 }
 
-// ReadInt32LE reads a int32
+// ReadInt32LE reads a Little-Endian encoded int32
 func (stream *StreamIn) ReadInt32LE() (int32, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
 		return 0, errors.New("Not enough data to read int32")
@@ -69,7 +105,16 @@ func (stream *StreamIn) ReadInt32LE() (int32, error) {
 	return int32(stream.ReadU32LENext(1)[0]), nil
 }
 
-// ReadUInt64LE reads a uint64
+// ReadInt32BE reads a Big-Endian encoded int32
+func (stream *StreamIn) ReadInt32BE() (int32, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+		return 0, errors.New("Not enough data to read int32")
+	}
+
+	return int32(stream.ReadU32BENext(1)[0]), nil
+}
+
+// ReadUInt64LE reads a Little-Endian encoded uint64
 func (stream *StreamIn) ReadUInt64LE() (uint64, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
 		return 0, errors.New("Not enough data to read uint64")
@@ -78,16 +123,7 @@ func (stream *StreamIn) ReadUInt64LE() (uint64, error) {
 	return stream.ReadU64LENext(1)[0], nil
 }
 
-// ReadInt64LE reads a int64
-func (stream *StreamIn) ReadInt64LE() (int64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
-		return 0, errors.New("Not enough data to read int64")
-	}
-
-	return int64(stream.ReadU64LENext(1)[0]), nil
-}
-
-// ReadUInt64BE reads a uint64
+// ReadUInt64BE reads a Big-Endian encoded uint64
 func (stream *StreamIn) ReadUInt64BE() (uint64, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
 		return 0, errors.New("Not enough data to read uint64")
@@ -96,13 +132,58 @@ func (stream *StreamIn) ReadUInt64BE() (uint64, error) {
 	return stream.ReadU64BENext(1)[0], nil
 }
 
-// ReadFloat64LE reads a int64
+// ReadInt64LE reads a Little-Endian encoded int64
+func (stream *StreamIn) ReadInt64LE() (int64, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+		return 0, errors.New("Not enough data to read int64")
+	}
+
+	return int64(stream.ReadU64LENext(1)[0]), nil
+}
+
+// ReadInt64BE reads a Big-Endian encoded int64
+func (stream *StreamIn) ReadInt64BE() (int64, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+		return 0, errors.New("Not enough data to read int64")
+	}
+
+	return int64(stream.ReadU64BENext(1)[0]), nil
+}
+
+// ReadFloat32LE reads a Little-Endian encoded float32
+func (stream *StreamIn) ReadFloat32LE() (float32, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+		return 0, errors.New("Not enough data to read float32")
+	}
+
+	return stream.ReadF32LENext(1)[0], nil
+}
+
+// ReadFloat32BE reads a Big-Endian encoded float32
+func (stream *StreamIn) ReadFloat32BE() (float32, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+		return 0, errors.New("Not enough data to read float32")
+	}
+
+	return stream.ReadF32BENext(1)[0], nil
+}
+
+// ReadFloat64LE reads a Little-Endian encoded float64
 func (stream *StreamIn) ReadFloat64LE() (float64, error) {
 	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
 		return 0, errors.New("Not enough data to read float64")
 	}
 
 	return stream.ReadF64LENext(1)[0], nil
+}
+
+// ReadFloat64BE reads a Big-Endian encoded float64
+func (stream *StreamIn) ReadFloat64BE() (float64, error) {
+	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+		return 0, errors.New("Not enough data to read float64")
+	}
+
+	return stream.ReadF64BENext(1)[0], nil
 }
 
 // ReadString reads and returns a nex string type
@@ -305,7 +386,32 @@ func (stream *StreamIn) ReadListUInt8() ([]uint8, error) {
 	return list, nil
 }
 
-// ReadListUInt16LE reads a list of uint16 types
+// ReadListInt8 reads a list of int8 types
+func (stream *StreamIn) ReadListInt8() ([]int8, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int8> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+		return nil, errors.New("NEX List<int8> length longer than data size")
+	}
+
+	list := make([]int8, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt8()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int8> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListUInt16LE reads a list of Little-Endian encoded uint16 types
 func (stream *StreamIn) ReadListUInt16LE() ([]uint16, error) {
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
@@ -330,7 +436,82 @@ func (stream *StreamIn) ReadListUInt16LE() ([]uint16, error) {
 	return list, nil
 }
 
-// ReadListUInt32LE reads a list of uint32 types
+// ReadListUInt16BE reads a list of Big-Endian encoded uint16 types
+func (stream *StreamIn) ReadListUInt16BE() ([]uint16, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<uint16> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+		return nil, errors.New("NEX List<uint16> length longer than data size")
+	}
+
+	list := make([]uint16, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadUInt16BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<uint16> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListInt16LE reads a list of Little-Endian encoded int16 types
+func (stream *StreamIn) ReadListInt16LE() ([]int16, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int16> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+		return nil, errors.New("NEX List<int16> length longer than data size")
+	}
+
+	list := make([]int16, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt16LE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int16> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListInt16BE reads a list of Big-Endian encoded uint16 types
+func (stream *StreamIn) ReadListInt16BE() ([]int16, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int16> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+		return nil, errors.New("NEX List<int16> length longer than data size")
+	}
+
+	list := make([]int16, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt16BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int16> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListUInt32LE reads a list of Little-Endian encoded uint32 types
 func (stream *StreamIn) ReadListUInt32LE() ([]uint32, error) {
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
@@ -355,8 +536,8 @@ func (stream *StreamIn) ReadListUInt32LE() ([]uint32, error) {
 	return list, nil
 }
 
-// ReadListInt32LE reads a list of int32 types
-func (stream *StreamIn) ReadListInt32LE() ([]int32, error) {
+// ReadListUInt32BE reads a list of Big-Endian encoded uint32 types
+func (stream *StreamIn) ReadListUInt32BE() ([]uint32, error) {
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read List<uint32> length. %s", err.Error())
@@ -366,10 +547,10 @@ func (stream *StreamIn) ReadListInt32LE() ([]int32, error) {
 		return nil, errors.New("NEX List<uint32> length longer than data size")
 	}
 
-	list := make([]int32, 0, length)
+	list := make([]uint32, 0, length)
 
 	for i := 0; i < int(length); i++ {
-		value, err := stream.ReadInt32LE()
+		value, err := stream.ReadUInt32BE()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read List<uint32> value at index %d. %s", i, err.Error())
 		}
@@ -380,7 +561,57 @@ func (stream *StreamIn) ReadListInt32LE() ([]int32, error) {
 	return list, nil
 }
 
-// ReadListUInt64LE reads a list of uint64 types
+// ReadListInt32LE reads a list of Little-Endian encoded int32 types
+func (stream *StreamIn) ReadListInt32LE() ([]int32, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int32> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+		return nil, errors.New("NEX List<int32> length longer than data size")
+	}
+
+	list := make([]int32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt32LE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int32> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListInt32BE reads a list of Big-Endian encoded int32 types
+func (stream *StreamIn) ReadListInt32BE() ([]int32, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int32> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+		return nil, errors.New("NEX List<int32> length longer than data size")
+	}
+
+	list := make([]int32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt32BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int32> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListUInt64LE reads a list of Little-Endian encoded uint64 types
 func (stream *StreamIn) ReadListUInt64LE() ([]uint64, error) {
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
@@ -397,6 +628,181 @@ func (stream *StreamIn) ReadListUInt64LE() ([]uint64, error) {
 		value, err := stream.ReadUInt64LE()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read List<uint64> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListUInt64BE reads a list of Big-Endian encoded uint64 types
+func (stream *StreamIn) ReadListUInt64BE() ([]uint64, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<uint64> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+		return nil, errors.New("NEX List<uint64> length longer than data size")
+	}
+
+	list := make([]uint64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadUInt64BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<uint64> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListInt64LE reads a list of Little-Endian encoded int64 types
+func (stream *StreamIn) ReadListInt64LE() ([]int64, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int64> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+		return nil, errors.New("NEX List<int64> length longer than data size")
+	}
+
+	list := make([]int64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt64LE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int64> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListInt64BE reads a list of Big-Endian encoded int64 types
+func (stream *StreamIn) ReadListInt64BE() ([]int64, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<int64> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+		return nil, errors.New("NEX List<int64> length longer than data size")
+	}
+
+	list := make([]int64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadInt64BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<int64> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListFloat32LE reads a list of Little-Endian encoded float32 types
+func (stream *StreamIn) ReadListFloat32LE() ([]float32, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<float32> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+		return nil, errors.New("NEX List<float32> length longer than data size")
+	}
+
+	list := make([]float32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadFloat32LE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<float32> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListFloat32BE reads a list of Big-Endian encoded float32 types
+func (stream *StreamIn) ReadListFloat32BE() ([]float32, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<float32> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+		return nil, errors.New("NEX List<float32> length longer than data size")
+	}
+
+	list := make([]float32, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadFloat32BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<float32> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListFloat64LE reads a list of Little-Endian encoded float64 types
+func (stream *StreamIn) ReadListFloat64LE() ([]float64, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<float64> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+		return nil, errors.New("NEX List<float64> length longer than data size")
+	}
+
+	list := make([]float64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadFloat64LE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<float64> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
+// ReadListFloat64BE reads a list of Big-Endian encoded float64 types
+func (stream *StreamIn) ReadListFloat64BE() ([]float64, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<float64> length. %s", err.Error())
+	}
+
+	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+		return nil, errors.New("NEX List<float64> length longer than data size")
+	}
+
+	list := make([]float64, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadFloat64BE()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<float64> value at index %d. %s", i, err.Error())
 		}
 
 		list = append(list, value)

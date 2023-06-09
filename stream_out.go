@@ -28,10 +28,34 @@ func (stream *StreamOut) WriteUInt8(u8 uint8) {
 	stream.WriteByteNext(byte(u8))
 }
 
+// WriteInt8 writes a int8
+func (stream *StreamOut) WriteInt8(s8 int8) {
+	stream.Grow(1)
+	stream.WriteByteNext(byte(s8))
+}
+
 // WriteUInt16LE writes a uint16 as LE
 func (stream *StreamOut) WriteUInt16LE(u16 uint16) {
 	stream.Grow(2)
 	stream.WriteU16LENext([]uint16{u16})
+}
+
+// WriteUInt16BE writes a uint16 as BE
+func (stream *StreamOut) WriteUInt16BE(u16 uint16) {
+	stream.Grow(2)
+	stream.WriteU16BENext([]uint16{u16})
+}
+
+// WriteInt16LE writes a uint16 as LE
+func (stream *StreamOut) WriteInt16LE(s16 int16) {
+	stream.Grow(2)
+	stream.WriteU16LENext([]uint16{uint16(s16)})
+}
+
+// WriteInt16BE writes a uint16 as BE
+func (stream *StreamOut) WriteInt16BE(s16 int16) {
+	stream.Grow(2)
+	stream.WriteU16BENext([]uint16{uint16(s16)})
 }
 
 // WriteUInt32LE writes a uint32 as LE
@@ -40,10 +64,22 @@ func (stream *StreamOut) WriteUInt32LE(u32 uint32) {
 	stream.WriteU32LENext([]uint32{u32})
 }
 
+// WriteUInt32BE writes a uint32 as BE
+func (stream *StreamOut) WriteUInt32BE(u32 uint32) {
+	stream.Grow(4)
+	stream.WriteU32BENext([]uint32{u32})
+}
+
 // WriteInt32LE writes a int32 as LE
 func (stream *StreamOut) WriteInt32LE(s32 int32) {
 	stream.Grow(4)
 	stream.WriteU32LENext([]uint32{uint32(s32)})
+}
+
+// WriteInt32BE writes a int32 as BE
+func (stream *StreamOut) WriteInt32BE(s32 int32) {
+	stream.Grow(4)
+	stream.WriteU32BENext([]uint32{uint32(s32)})
 }
 
 // WriteUInt64LE writes a uint64 as LE
@@ -52,16 +88,46 @@ func (stream *StreamOut) WriteUInt64LE(u64 uint64) {
 	stream.WriteU64LENext([]uint64{u64})
 }
 
+// WriteUInt64BE writes a uint64 as BE
+func (stream *StreamOut) WriteUInt64BE(u64 uint64) {
+	stream.Grow(8)
+	stream.WriteU64BENext([]uint64{u64})
+}
+
 // WriteInt64LE writes a int64 as LE
 func (stream *StreamOut) WriteInt64LE(s64 int64) {
 	stream.Grow(8)
 	stream.WriteU64LENext([]uint64{uint64(s64)})
 }
 
+// WriteInt64BE writes a int64 as BE
+func (stream *StreamOut) WriteInt64BE(s64 int64) {
+	stream.Grow(8)
+	stream.WriteU64BENext([]uint64{uint64(s64)})
+}
+
+// WriteFloat32LE writes a float32 as LE
+func (stream *StreamOut) WriteFloat32LE(f32 float32) {
+	stream.Grow(4)
+	stream.WriteF32LENext([]float32{f32})
+}
+
+// WriteFloat32BE writes a float32 as BE
+func (stream *StreamOut) WriteFloat32BE(f32 float32) {
+	stream.Grow(4)
+	stream.WriteF32BENext([]float32{f32})
+}
+
 // WriteFloat64LE writes a float64 as LE
 func (stream *StreamOut) WriteFloat64LE(f64 float64) {
 	stream.Grow(8)
 	stream.WriteF64LENext([]float64{f64})
+}
+
+// WriteFloat64BE writes a float64 as BE
+func (stream *StreamOut) WriteFloat64BE(f64 float64) {
+	stream.Grow(8)
+	stream.WriteF64BENext([]float64{f64})
 }
 
 // WriteString writes a NEX string type
@@ -131,7 +197,16 @@ func (stream *StreamOut) WriteListUInt8(list []uint8) {
 	}
 }
 
-// WriteListUInt16LE writes a list of uint16 types
+// WriteListInt8 writes a list of int8 types
+func (stream *StreamOut) WriteListInt8(list []int8) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt8(list[i])
+	}
+}
+
+// WriteListUInt16LE writes a list of Little-Endian encoded uint16 types
 func (stream *StreamOut) WriteListUInt16LE(list []uint16) {
 	stream.WriteUInt32LE(uint32(len(list)))
 
@@ -140,7 +215,34 @@ func (stream *StreamOut) WriteListUInt16LE(list []uint16) {
 	}
 }
 
-// WriteListUInt32LE writes a list of uint32 types
+// WriteListUInt16BE writes a list of Big-Endian encoded uint16 types
+func (stream *StreamOut) WriteListUInt16BE(list []uint16) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt16BE(list[i])
+	}
+}
+
+// WriteListInt16LE writes a list of Little-Endian encoded int16 types
+func (stream *StreamOut) WriteListInt16LE(list []int16) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt16LE(list[i])
+	}
+}
+
+// WriteListInt16BE writes a list of Big-Endian encoded int16 types
+func (stream *StreamOut) WriteListInt16BE(list []int16) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt16BE(list[i])
+	}
+}
+
+// WriteListUInt32LE writes a list of Little-Endian encoded uint32 types
 func (stream *StreamOut) WriteListUInt32LE(list []uint32) {
 	stream.WriteUInt32LE(uint32(len(list)))
 
@@ -149,7 +251,34 @@ func (stream *StreamOut) WriteListUInt32LE(list []uint32) {
 	}
 }
 
-// WriteListUInt64LE writes a list of uint64 types
+// WriteListUInt32BE writes a list of Big-Endian encoded uint32 types
+func (stream *StreamOut) WriteListUInt32BE(list []uint32) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt32BE(list[i])
+	}
+}
+
+// WriteListInt32LE writes a list of Little-Endian encoded int32 types
+func (stream *StreamOut) WriteListInt32LE(list []int32) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt32LE(list[i])
+	}
+}
+
+// WriteListInt32BE writes a list of Big-Endian encoded int32 types
+func (stream *StreamOut) WriteListInt32BE(list []int32) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt32BE(list[i])
+	}
+}
+
+// WriteListUInt64LE writes a list of Little-Endian encoded uint64 types
 func (stream *StreamOut) WriteListUInt64LE(list []uint64) {
 	stream.WriteUInt32LE(uint32(len(list)))
 
@@ -158,12 +287,66 @@ func (stream *StreamOut) WriteListUInt64LE(list []uint64) {
 	}
 }
 
-// WriteListInt64LE writes a list of int64 types
+// WriteListUInt64BE writes a list of Big-Endian encoded uint64 types
+func (stream *StreamOut) WriteListUInt64BE(list []uint64) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteUInt64BE(list[i])
+	}
+}
+
+// WriteListInt64LE writes a list of Little-Endian encoded int64 types
 func (stream *StreamOut) WriteListInt64LE(list []int64) {
 	stream.WriteUInt32LE(uint32(len(list)))
 
 	for i := 0; i < len(list); i++ {
 		stream.WriteInt64LE(list[i])
+	}
+}
+
+// WriteListInt64BE writes a list of Big-Endian encoded int64 types
+func (stream *StreamOut) WriteListInt64BE(list []int64) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteInt64BE(list[i])
+	}
+}
+
+// WriteListFloat32LE writes a list of Little-Endian encoded float32 types
+func (stream *StreamOut) WriteListFloat32LE(list []float32) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteFloat32LE(list[i])
+	}
+}
+
+// WriteListFloat32BE writes a list of Big-Endian encoded float32 types
+func (stream *StreamOut) WriteListFloat32BE(list []float32) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteFloat32BE(list[i])
+	}
+}
+
+// WriteListFloat64LE writes a list of Little-Endian encoded float64 types
+func (stream *StreamOut) WriteListFloat64LE(list []float64) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteFloat64LE(list[i])
+	}
+}
+
+// WriteListFloat64BE writes a list of Big-Endian encoded float64 types
+func (stream *StreamOut) WriteListFloat64BE(list []float64) {
+	stream.WriteUInt32LE(uint32(len(list)))
+
+	for i := 0; i < len(list); i++ {
+		stream.WriteFloat64BE(list[i])
 	}
 }
 
