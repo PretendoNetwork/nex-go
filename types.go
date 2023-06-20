@@ -254,10 +254,15 @@ func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
 
 // Bytes encodes the RVConnectionData and returns a byte array
 func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
+	nexVersion := stream.Server.NEXVersion()
+
 	stream.WriteString(rvConnectionData.stationURL)
-	stream.WriteUInt32LE(0) // Always 0
+	stream.WriteListUInt8(rvConnectionData.specialProtocols)
 	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
-	stream.WriteUInt64LE(rvConnectionData.time)
+
+	if nexVersion.Major >= 3 && nexVersion.Minor >= 5 {
+		stream.WriteUInt64LE(rvConnectionData.time)
+	}
 
 	return stream.Bytes()
 }
