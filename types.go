@@ -229,7 +229,7 @@ type RVConnectionData struct {
 	stationURL                 string
 	specialProtocols           []byte
 	stationURLSpecialProtocols string
-	time                       uint64
+	time                       *DateTime
 }
 
 // SetStationURL sets the RVConnectionData station URL
@@ -248,7 +248,7 @@ func (rvConnectionData *RVConnectionData) SetStationURLSpecialProtocols(stationU
 }
 
 // SetTime sets the RVConnectionData time
-func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
+func (rvConnectionData *RVConnectionData) SetTime(time *DateTime) {
 	rvConnectionData.time = time
 }
 
@@ -261,7 +261,8 @@ func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
 
 	if nexVersion.Major >= 3 && nexVersion.Minor >= 5 {
-		stream.WriteUInt64LE(rvConnectionData.time)
+		rvConnectionData.SetStructureVersion(1)
+		stream.WriteDateTime(rvConnectionData.time)
 	}
 
 	return stream.Bytes()
@@ -278,7 +279,10 @@ func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 	copy(copied.specialProtocols, rvConnectionData.specialProtocols)
 
 	copied.stationURLSpecialProtocols = rvConnectionData.stationURLSpecialProtocols
-	copied.time = rvConnectionData.time
+
+	if rvConnectionData.time != nil {
+		copied.time = rvConnectionData.time.Copy()
+	}
 
 	return copied
 }
@@ -299,8 +303,18 @@ func (rvConnectionData *RVConnectionData) Equals(structure StructureInterface) b
 		return false
 	}
 
-	if rvConnectionData.time != other.time {
+	if rvConnectionData.time != nil && other.time == nil {
 		return false
+	}
+
+	if rvConnectionData.time == nil && other.time != nil {
+		return false
+	}
+
+	if rvConnectionData.time != nil && other.time != nil {
+		if !rvConnectionData.time.Equals(other.time) {
+			return false
+		}
 	}
 
 	return true
