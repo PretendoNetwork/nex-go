@@ -229,7 +229,7 @@ type RVConnectionData struct {
 	stationURL                 string
 	specialProtocols           []byte
 	stationURLSpecialProtocols string
-	time                       uint64
+	time                       *DateTime
 }
 
 // SetStationURL sets the RVConnectionData station URL
@@ -248,16 +248,22 @@ func (rvConnectionData *RVConnectionData) SetStationURLSpecialProtocols(stationU
 }
 
 // SetTime sets the RVConnectionData time
-func (rvConnectionData *RVConnectionData) SetTime(time uint64) {
+func (rvConnectionData *RVConnectionData) SetTime(time *DateTime) {
 	rvConnectionData.time = time
 }
 
 // Bytes encodes the RVConnectionData and returns a byte array
 func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
+	nexVersion := stream.Server.NEXVersion()
+
 	stream.WriteString(rvConnectionData.stationURL)
-	stream.WriteUInt32LE(0) // Always 0
+	stream.WriteListUInt8(rvConnectionData.specialProtocols)
 	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
-	stream.WriteUInt64LE(rvConnectionData.time)
+
+	if nexVersion.Major >= 3 && nexVersion.Minor >= 5 {
+		rvConnectionData.SetStructureVersion(1)
+		stream.WriteDateTime(rvConnectionData.time)
+	}
 
 	return stream.Bytes()
 }
@@ -273,7 +279,10 @@ func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 	copy(copied.specialProtocols, rvConnectionData.specialProtocols)
 
 	copied.stationURLSpecialProtocols = rvConnectionData.stationURLSpecialProtocols
-	copied.time = rvConnectionData.time
+
+	if rvConnectionData.time != nil {
+		copied.time = rvConnectionData.time.Copy()
+	}
 
 	return copied
 }
@@ -294,8 +303,18 @@ func (rvConnectionData *RVConnectionData) Equals(structure StructureInterface) b
 		return false
 	}
 
-	if rvConnectionData.time != other.time {
+	if rvConnectionData.time != nil && other.time == nil {
 		return false
+	}
+
+	if rvConnectionData.time == nil && other.time != nil {
+		return false
+	}
+
+	if rvConnectionData.time != nil && other.time != nil {
+		if !rvConnectionData.time.Equals(other.time) {
+			return false
+		}
 	}
 
 	return true
@@ -441,113 +460,113 @@ func (stationURL *StationURL) SetPort(port string) {
 }
 
 // SetStream sets the StationURL stream
-func (stationURLstationURL *StationURL) SetStream(stream string) {
-	stationURLstationURL.stream = stream
+func (stationURL *StationURL) SetStream(stream string) {
+	stationURL.stream = stream
 }
 
 // SetSID sets the StationURL SID
-func (stationURLstationURL *StationURL) SetSID(sid string) {
-	stationURLstationURL.sid = sid
+func (stationURL *StationURL) SetSID(sid string) {
+	stationURL.sid = sid
 }
 
 // SetCID sets the StationURL CID
-func (stationURLstationURL *StationURL) SetCID(cid string) {
-	stationURLstationURL.cid = cid
+func (stationURL *StationURL) SetCID(cid string) {
+	stationURL.cid = cid
 }
 
 // SetPID sets the StationURL PID
-func (stationURLstationURL *StationURL) SetPID(pid string) {
-	stationURLstationURL.pid = pid
+func (stationURL *StationURL) SetPID(pid string) {
+	stationURL.pid = pid
 }
 
 // SetType sets the StationURL transportType
-func (stationURLstationURL *StationURL) SetType(transportType string) {
-	stationURLstationURL.transportType = transportType
+func (stationURL *StationURL) SetType(transportType string) {
+	stationURL.transportType = transportType
 }
 
 // SetRVCID sets the StationURL RVCID
-func (stationURLstationURL *StationURL) SetRVCID(rvcid string) {
-	stationURLstationURL.rvcid = rvcid
+func (stationURL *StationURL) SetRVCID(rvcid string) {
+	stationURL.rvcid = rvcid
 }
 
 // SetNatm sets the StationURL Natm
-func (stationURLstationURL *StationURL) SetNatm(natm string) {
-	stationURLstationURL.natm = natm
+func (stationURL *StationURL) SetNatm(natm string) {
+	stationURL.natm = natm
 }
 
 // SetNatf sets the StationURL Natf
-func (stationURLstationURL *StationURL) SetNatf(natf string) {
-	stationURLstationURL.natf = natf
+func (stationURL *StationURL) SetNatf(natf string) {
+	stationURL.natf = natf
 }
 
 // SetUpnp sets the StationURL Upnp
-func (stationURLstationURL *StationURL) SetUpnp(upnp string) {
-	stationURLstationURL.upnp = upnp
+func (stationURL *StationURL) SetUpnp(upnp string) {
+	stationURL.upnp = upnp
 }
 
 // SetPmp sets the StationURL Pmp
-func (stationURLstationURL *StationURL) SetPmp(pmp string) {
-	stationURLstationURL.pmp = pmp
+func (stationURL *StationURL) SetPmp(pmp string) {
+	stationURL.pmp = pmp
 }
 
 // SetProbeInit sets the StationURL ProbeInit
-func (stationURLstationURL *StationURL) SetProbeInit(probeinit string) {
-	stationURLstationURL.probeinit = probeinit
+func (stationURL *StationURL) SetProbeInit(probeinit string) {
+	stationURL.probeinit = probeinit
 }
 
 // SetPRID sets the StationURL PRID
-func (stationURLstationURL *StationURL) SetPRID(prid string) {
-	stationURLstationURL.prid = prid
+func (stationURL *StationURL) SetPRID(prid string) {
+	stationURL.prid = prid
 }
 
 // Scheme returns the StationURL scheme type
-func (stationURLstationURL *StationURL) Scheme() string {
-	return stationURLstationURL.address
+func (stationURL *StationURL) Scheme() string {
+	return stationURL.address
 }
 
 // Address returns the StationURL address
-func (stationURLstationURL *StationURL) Address() string {
-	return stationURLstationURL.address
+func (stationURL *StationURL) Address() string {
+	return stationURL.address
 }
 
 // Port returns the StationURL port
-func (stationURLstationURL *StationURL) Port() string {
-	return stationURLstationURL.port
+func (stationURL *StationURL) Port() string {
+	return stationURL.port
 }
 
 // Stream returns the StationURL stream value
-func (stationURLstationURL *StationURL) Stream() string {
-	return stationURLstationURL.stream
+func (stationURL *StationURL) Stream() string {
+	return stationURL.stream
 }
 
 // SID returns the StationURL SID value
-func (stationURLstationURL *StationURL) SID() string {
-	return stationURLstationURL.sid
+func (stationURL *StationURL) SID() string {
+	return stationURL.sid
 }
 
 // CID returns the StationURL CID value
-func (stationURLstationURL *StationURL) CID() string {
-	return stationURLstationURL.cid
+func (stationURL *StationURL) CID() string {
+	return stationURL.cid
 }
 
 // PID returns the StationURL PID value
-func (stationURLstationURL *StationURL) PID() string {
-	return stationURLstationURL.pid
+func (stationURL *StationURL) PID() string {
+	return stationURL.pid
 }
 
 // Type returns the StationURL type
-func (stationURLstationURL *StationURL) Type() string {
-	return stationURLstationURL.transportType
+func (stationURL *StationURL) Type() string {
+	return stationURL.transportType
 }
 
 // RVCID returns the StationURL RVCID
-func (stationURLstationURL *StationURL) RVCID() string {
-	return stationURLstationURL.rvcid
+func (stationURL *StationURL) RVCID() string {
+	return stationURL.rvcid
 }
 
 // Natm returns the StationURL Natm value
-func (stationURLstationURL *StationURL) Natm() string {
-	return stationURLstationURL.natm
+func (stationURL *StationURL) Natm() string {
+	return stationURL.natm
 }
 
 // Natf returns the StationURL Natf value
@@ -792,7 +811,7 @@ func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
 	return nil
 }
 
-// Copy returns a new copied instance of RVConnectionData
+// Copy returns a new copied instance of ResultRange
 func (resultRange *ResultRange) Copy() StructureInterface {
 	copied := NewResultRange()
 
@@ -894,7 +913,7 @@ func (variant *Variant) Bytes(stream *StreamOut) []byte {
 	return stream.Bytes()
 }
 
-// Copy returns a new copied instance of RVConnectionData
+// Copy returns a new copied instance of Variant
 func (variant *Variant) Copy() *Variant {
 	copied := NewVariant()
 
