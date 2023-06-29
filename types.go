@@ -19,6 +19,7 @@ type StructureInterface interface {
 	Bytes(*StreamOut) []byte
 	Copy() StructureInterface
 	Equals(StructureInterface) bool
+	FormatToString(int) string
 }
 
 // Structure represents a nex Structure type
@@ -74,6 +75,25 @@ func (data *Data) Copy() StructureInterface {
 // Equals checks if the passed Structure contains the same data as the current instance
 func (data *Data) Equals(structure StructureInterface) bool {
 	return true // * Has no fields, always equal
+}
+
+// String returns a string representation of the struct
+func (data *Data) String() string {
+	return data.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (data *Data) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("Data{\n")
+	b.WriteString(fmt.Sprintf("%sstructureVersion: %d\n", indentationValues, data.structureVersion))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewData returns a new Data Structure
@@ -218,6 +238,28 @@ func (dataHolder *DataHolder) Equals(other *DataHolder) bool {
 	return true
 }
 
+// String returns a string representation of the struct
+func (dataHolder *DataHolder) String() string {
+	return dataHolder.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (dataHolder *DataHolder) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("DataHolder{\n")
+	b.WriteString(fmt.Sprintf("%stypeName: %s,\n", indentationValues, dataHolder.typeName))
+	b.WriteString(fmt.Sprintf("%slength1: %d,\n", indentationValues, dataHolder.length1))
+	b.WriteString(fmt.Sprintf("%slength2: %d,\n", indentationValues, dataHolder.length2))
+	b.WriteString(fmt.Sprintf("%sobjectData: %s\n", indentationValues, dataHolder.objectData.FormatToString(indentationLevel+1)))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
 // NewDataHolder returns a new DataHolder
 func NewDataHolder() *DataHolder {
 	return &DataHolder{}
@@ -320,6 +362,35 @@ func (rvConnectionData *RVConnectionData) Equals(structure StructureInterface) b
 	return true
 }
 
+// String returns a string representation of the struct
+func (rvConnectionData *RVConnectionData) String() string {
+	return rvConnectionData.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (rvConnectionData *RVConnectionData) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("RVConnectionData{\n")
+	b.WriteString(fmt.Sprintf("%sstructureVersion: %d,\n", indentationValues, rvConnectionData.structureVersion))
+	b.WriteString(fmt.Sprintf("%sstationURL: %q,\n", indentationValues, rvConnectionData.stationURL))
+	b.WriteString(fmt.Sprintf("%sspecialProtocols: %v,\n", indentationValues, rvConnectionData.specialProtocols))
+	b.WriteString(fmt.Sprintf("%sstationURLSpecialProtocols: %q,\n", indentationValues, rvConnectionData.stationURLSpecialProtocols))
+
+	if rvConnectionData.time != nil {
+		b.WriteString(fmt.Sprintf("%stime: %s\n", indentationValues, rvConnectionData.time.FormatToString(indentationLevel+1)))
+	} else {
+		b.WriteString(fmt.Sprintf("%stime: nil\n", indentationValues))
+	}
+
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
 // NewRVConnectionData returns a new RVConnectionData
 func NewRVConnectionData() *RVConnectionData {
 	rvConnectionData := &RVConnectionData{}
@@ -418,6 +489,25 @@ func (datetime *DateTime) Copy() *DateTime {
 // Equals checks if the passed Structure contains the same data as the current instance
 func (datetime *DateTime) Equals(other *DateTime) bool {
 	return datetime.value == other.value
+}
+
+// String returns a string representation of the struct
+func (datetime *DateTime) String() string {
+	return datetime.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (datetime *DateTime) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("DateTime{\n")
+	b.WriteString(fmt.Sprintf("%svalue: %d (%s)\n", indentationValues, datetime.value, datetime.Standard().Format("2006-01-02 15:04:05")))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewDateTime returns a new DateTime instance
@@ -716,6 +806,25 @@ func (stationURL *StationURL) Equals(other *StationURL) bool {
 	return stationURL.EncodeToString() == other.EncodeToString()
 }
 
+// String returns a string representation of the struct
+func (stationURL *StationURL) String() string {
+	return stationURL.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (stationURL *StationURL) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("StationURL{\n")
+	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, stationURL.EncodeToString()))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
 // NewStationURL returns a new StationURL
 func NewStationURL(str string) *StationURL {
 	stationURL := &StationURL{}
@@ -769,6 +878,31 @@ func (result *Result) Copy() *Result {
 // Equals checks if the passed Structure contains the same data as the current instance
 func (result *Result) Equals(other *Result) bool {
 	return result.code == other.code
+}
+
+// String returns a string representation of the struct
+func (result *Result) String() string {
+	return result.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (result *Result) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("Result{\n")
+
+	if result.IsSuccess() {
+		b.WriteString(fmt.Sprintf("%scode: %d (success)\n", indentationValues, result.code))
+	} else {
+		b.WriteString(fmt.Sprintf("%scode: %d (error)\n", indentationValues, result.code))
+	}
+
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewResult returns a new Result
@@ -836,6 +970,27 @@ func (resultRange *ResultRange) Equals(structure StructureInterface) bool {
 	return true
 }
 
+// String returns a string representation of the struct
+func (resultRange *ResultRange) String() string {
+	return resultRange.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (resultRange *ResultRange) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("ResultRange{\n")
+	b.WriteString(fmt.Sprintf("%sstructureVersion: %d,\n", indentationValues, resultRange.structureVersion))
+	b.WriteString(fmt.Sprintf("%sOffset: %d,\n", indentationValues, resultRange.Offset))
+	b.WriteString(fmt.Sprintf("%sLength: %d\n", indentationValues, resultRange.Length))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
 // NewResultRange returns a new ResultRange
 func NewResultRange() *ResultRange {
 	return &ResultRange{}
@@ -851,7 +1006,7 @@ type Variant struct {
 	Int64    int64
 	Float64  float64
 	Bool     bool
-	String   string
+	Str      string
 	DateTime *DateTime
 	UInt64   uint64
 }
@@ -874,7 +1029,7 @@ func (variant *Variant) ExtractFromStream(stream *StreamIn) error {
 	case 3: // * bool
 		variant.Bool, err = stream.ReadBool()
 	case 4: // * string
-		variant.String, err = stream.ReadString()
+		variant.Str, err = stream.ReadString()
 	case 5: // * datetime
 		variant.DateTime, err = stream.ReadDateTime()
 	case 6: // * uint64
@@ -903,7 +1058,7 @@ func (variant *Variant) Bytes(stream *StreamOut) []byte {
 	case 3: // * bool
 		stream.WriteBool(variant.Bool)
 	case 4: // * string
-		stream.WriteString(variant.String)
+		stream.WriteString(variant.Str)
 	case 5: // * datetime
 		stream.WriteDateTime(variant.DateTime)
 	case 6: // * uint64
@@ -921,7 +1076,7 @@ func (variant *Variant) Copy() *Variant {
 	copied.Int64 = variant.Int64
 	copied.Float64 = variant.Float64
 	copied.Bool = variant.Bool
-	copied.String = variant.String
+	copied.Str = variant.Str
 
 	if variant.DateTime != nil {
 		copied.DateTime = variant.DateTime.Copy()
@@ -949,7 +1104,7 @@ func (variant *Variant) Equals(other *Variant) bool {
 	case 3: // * bool
 		return variant.Bool == other.Bool
 	case 4: // * string
-		return variant.String == other.String
+		return variant.Str == other.Str
 	case 5: // * datetime
 		return variant.DateTime.Equals(other.DateTime)
 	case 6: // * uint64
@@ -957,6 +1112,45 @@ func (variant *Variant) Equals(other *Variant) bool {
 	default: // * Something went horribly wrong
 		return false
 	}
+}
+
+// String returns a string representation of the struct
+func (variant *Variant) String() string {
+	return variant.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (variant *Variant) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("Variant{\n")
+	b.WriteString(fmt.Sprintf("%sTypeID: %d\n", indentationValues, variant.TypeID))
+
+	switch variant.TypeID {
+	case 0: // * no value
+		b.WriteString(fmt.Sprintf("%svalue: nil\n", indentationValues))
+	case 1: // * sint64
+		b.WriteString(fmt.Sprintf("%svalue: %d\n", indentationValues, variant.Int64))
+	case 2: // * double
+		b.WriteString(fmt.Sprintf("%svalue: %g\n", indentationValues, variant.Float64))
+	case 3: // * bool
+		b.WriteString(fmt.Sprintf("%svalue: %t\n", indentationValues, variant.Bool))
+	case 4: // * string
+		b.WriteString(fmt.Sprintf("%svalue: %q\n", indentationValues, variant.Str))
+	case 5: // * datetime
+		b.WriteString(fmt.Sprintf("%svalue: %s\n", indentationValues, variant.DateTime.FormatToString(indentationLevel+1)))
+	case 6: // * uint64
+		b.WriteString(fmt.Sprintf("%svalue: %d\n", indentationValues, variant.UInt64))
+	default:
+		b.WriteString(fmt.Sprintf("%svalue: Unknown\n", indentationValues))
+	}
+
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewVariant returns a new Variant
