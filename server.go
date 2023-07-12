@@ -20,33 +20,34 @@ import (
 
 // Server represents a PRUDP server
 type Server struct {
-	socket                     *net.UDPConn
-	clients                    map[string]*Client
-	genericEventHandles        map[string][]func(PacketInterface)
-	prudpV0EventHandles        map[string][]func(*PacketV0)
-	prudpV1EventHandles        map[string][]func(*PacketV1)
-	hppEventHandles            map[string][]func(*HPPPacket)
-	hppClientResponses         map[*Client](chan []byte)
-	passwordFromPIDHandler     func(pid uint32) (string, uint32)
-	accessKey                  string
-	prudpVersion               int
-	prudpProtocolMinorVersion  int
-	supportedFunctions         int
-	fragmentSize               int16
-	resendTimeout              float32
-	pingTimeout                int
-	kerberosPassword           string
-	kerberosKeySize            int
-	kerberosKeyDerivation      int
-	kerberosTicketVersion      int
-	connectionIDCounter        *Counter
-	nexVersion                 *NEXVersion
-	datastoreProtocolVersion   *NEXVersion
-	matchMakingProtocolVersion *NEXVersion
-	rankingProtocolVersion     *NEXVersion
-	ranking2ProtocolVersion    *NEXVersion
-	messagingProtocolVersion   *NEXVersion
-	utilityProtocolVersion     *NEXVersion
+	socket                      *net.UDPConn
+	clients                     map[string]*Client
+	genericEventHandles         map[string][]func(PacketInterface)
+	prudpV0EventHandles         map[string][]func(*PacketV0)
+	prudpV1EventHandles         map[string][]func(*PacketV1)
+	hppEventHandles             map[string][]func(*HPPPacket)
+	hppClientResponses          map[*Client](chan []byte)
+	passwordFromPIDHandler      func(pid uint32) (string, uint32)
+	accessKey                   string
+	prudpVersion                int
+	prudpProtocolMinorVersion   int
+	supportedFunctions          int
+	fragmentSize                int16
+	resendTimeout               float32
+	pingTimeout                 int
+	kerberosPassword            string
+	kerberosKeySize             int
+	kerberosKeyDerivation       int
+	kerberosTicketVersion       int
+	connectionIDCounter         *Counter
+	nexVersion                  *NEXVersion
+	datastoreProtocolVersion    *NEXVersion
+	matchMakingProtocolVersion  *NEXVersion
+	rankingProtocolVersion      *NEXVersion
+	ranking2ProtocolVersion     *NEXVersion
+	messagingProtocolVersion    *NEXVersion
+	utilityProtocolVersion      *NEXVersion
+	natTraversalProtocolVersion *NEXVersion
 }
 
 // Listen starts a NEX server on a given address
@@ -615,6 +616,7 @@ func (server *Server) SetDefaultNEXVersion(nexVersion *NEXVersion) {
 	server.ranking2ProtocolVersion = nexVersion.Copy()
 	server.messagingProtocolVersion = nexVersion.Copy()
 	server.utilityProtocolVersion = nexVersion.Copy()
+	server.natTraversalProtocolVersion = nexVersion.Copy()
 }
 
 // DataStoreProtocolVersion returns the servers DataStore protocol version
@@ -675,6 +677,16 @@ func (server *Server) UtilityProtocolVersion() *NEXVersion {
 // SetUtilityProtocolVersion sets the servers Utility protocol version
 func (server *Server) SetUtilityProtocolVersion(nexVersion *NEXVersion) {
 	server.utilityProtocolVersion = nexVersion
+}
+
+// SetNATTraversalProtocolVersion sets the servers NAT Traversal protocol version
+func (server *Server) SetNATTraversalProtocolVersion(nexVersion *NEXVersion) {
+	server.natTraversalProtocolVersion = nexVersion
+}
+
+// NATTraversalProtocolVersion returns the servers NAT Traversal protocol version
+func (server *Server) NATTraversalProtocolVersion() *NEXVersion {
+	return server.natTraversalProtocolVersion
 }
 
 // SupportedFunctions returns the supported PRUDP functions by the server
