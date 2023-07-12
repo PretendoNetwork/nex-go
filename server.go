@@ -609,12 +609,12 @@ func (server *Server) NEXVersion() *NEXVersion {
 // SetDefaultNEXVersion sets the default NEX protocol versions
 func (server *Server) SetDefaultNEXVersion(nexVersion *NEXVersion) {
 	server.nexVersion = nexVersion
-	server.datastoreProtocolVersion = nexVersion
-	server.matchMakingProtocolVersion = nexVersion
-	server.rankingProtocolVersion = nexVersion
-	server.ranking2ProtocolVersion = nexVersion
-	server.messagingProtocolVersion = nexVersion
-	server.utilityProtocolVersion = nexVersion
+	server.datastoreProtocolVersion = nexVersion.Copy()
+	server.matchMakingProtocolVersion = nexVersion.Copy()
+	server.rankingProtocolVersion = nexVersion.Copy()
+	server.ranking2ProtocolVersion = nexVersion.Copy()
+	server.messagingProtocolVersion = nexVersion.Copy()
+	server.utilityProtocolVersion = nexVersion.Copy()
 }
 
 // DataStoreProtocolVersion returns the servers DataStore protocol version
