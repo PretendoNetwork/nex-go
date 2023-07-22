@@ -832,6 +832,27 @@ func (stream *StreamIn) ReadListString() ([]string, error) {
 	return list, nil
 }
 
+// ReadListBuffer reads a list of NEX Buffer types
+func (stream *StreamIn) ReadListBuffer() ([][]byte, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<Buffer> length. %s", err.Error())
+	}
+
+	list := make([][]byte, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadBuffer()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<Buffer> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
 // ReadListQBuffer reads a list of NEX qBuffer types
 func (stream *StreamIn) ReadListQBuffer() ([][]byte, error) {
 	length, err := stream.ReadUInt32LE()
