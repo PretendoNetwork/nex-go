@@ -324,7 +324,7 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 			return nil, fmt.Errorf("Failed to read Map key. %s", err.Error())
 		}
 
-		value, err := typeReader(keyFunction)
+		value, err := typeReader(valueFunction)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read Map value. %s", err.Error())
 		}
