@@ -299,27 +299,32 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 		return nil, fmt.Errorf("Failed to read Map length. %s", err.Error())
 	}
 
-	newMap := make(map[interface{}]interface{})
-
-	for i := 0; i < int(length); i++ {
-		var key interface{}
+	typeReader := func(function interface{}) (interface{}, error) {
 		var value interface{}
 		var err error
 
-		switch keyFunction.(type) {
+		switch function.(type) {
 		case func() (string, error):
-			key, err = stream.ReadString()
+			value, err = stream.ReadString()
+		case func() (*Variant, error):
+			value, err = stream.ReadVariant()
+		default:
+			value = nil
+			err = errors.New("Unsupported type in ReadMap")
 		}
 
+		return value, err
+	}
+
+	newMap := make(map[interface{}]interface{})
+
+	for i := 0; i < int(length); i++ {
+		key, err := typeReader(keyFunction)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read Map key. %s", err.Error())
 		}
 
-		switch valueFunction.(type) {
-		case func() (*Variant, error):
-			value, err = stream.ReadVariant()
-		}
-
+		value, err := typeReader(keyFunction)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read Map value. %s", err.Error())
 		}
