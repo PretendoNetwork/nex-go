@@ -316,7 +316,7 @@ func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface
 		}
 
 		switch valueFunction.(type) {
-		case func() *Variant:
+		case func() (*Variant, error):
 			value, err = stream.ReadVariant()
 		}
 
