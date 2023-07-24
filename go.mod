@@ -8,7 +8,6 @@ require (
 )
 
 require (
-	github.com/PretendoNetwork/nex-protocols-go v1.0.44 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/jwalton/go-supportscolor v1.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
