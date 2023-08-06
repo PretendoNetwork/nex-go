@@ -103,12 +103,8 @@ func NewData() *Data {
 var dataHolderKnownObjects = make(map[string]StructureInterface)
 
 // RegisterDataHolderType registers a structure to be a valid type in the DataHolder structure
-func RegisterDataHolderType(structure StructureInterface) {
-	_, name, found := strings.Cut(fmt.Sprintf("%T", structure), ".")
-
-	if found {
-		dataHolderKnownObjects[name] = structure
-	}
+func RegisterDataHolderType(name string, structure StructureInterface) {
+	dataHolderKnownObjects[name] = structure
 }
 
 // DataHolder represents a structure which can hold any other structure

@@ -3,7 +3,7 @@ module github.com/PretendoNetwork/nex-go
 go 1.18
 
 require (
-	github.com/PretendoNetwork/plogger-go v1.0.3
+	github.com/PretendoNetwork/plogger-go v1.0.4
 	github.com/superwhiskers/crunch/v3 v3.5.7
 )
 
