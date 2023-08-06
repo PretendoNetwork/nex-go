@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
+	"crypto/rand"
 	"crypto/rc4"
 	"fmt"
-	"math/rand"
 )
 
 // KerberosEncryption is used to encrypt/decrypt using Kerberos
@@ -178,7 +178,10 @@ func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *Stream
 
 	if stream.Server.KerberosTicketVersion() == 1 {
 		ticketKey := make([]byte, 16)
-		rand.Read(ticketKey)
+		_, err := rand.Read(ticketKey)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to generate ticket key. %s", err.Error())
+		}
 
 		finalKey := MD5Hash(append(key, ticketKey...))
 
