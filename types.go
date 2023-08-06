@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -104,8 +103,7 @@ func NewData() *Data {
 var dataHolderKnownObjects = make(map[string]StructureInterface)
 
 // RegisterDataHolderType registers a structure to be a valid type in the DataHolder structure
-func RegisterDataHolderType(structure StructureInterface) {
-	name := reflect.TypeOf(structure).Elem().Name()
+func RegisterDataHolderType(name string, structure StructureInterface) {
 	dataHolderKnownObjects[name] = structure
 }
 

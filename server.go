@@ -9,8 +9,8 @@
 package nex
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"runtime"
@@ -534,7 +534,12 @@ func (server *Server) AcknowledgePacket(packet PacketInterface, payload []byte) 
 
 		if packet.Type() == SynPacket {
 			serverConnectionSignature := make([]byte, 16)
-			rand.Read(serverConnectionSignature)
+			_, err := rand.Read(serverConnectionSignature)
+			if err != nil {
+				// TODO - Should this return the error too?
+				logger.Error(err.Error())
+				return
+			}
 
 			ackPacket.Sender().SetServerConnectionSignature(serverConnectionSignature)
 			ackPacket.SetConnectionSignature(serverConnectionSignature)
