@@ -23,7 +23,7 @@ type Client struct {
 	sequenceIDIn              *Counter
 	sequenceIDOut             *Counter
 	pid                       uint32
-	stationURLs               []string
+	stationURLs               []*StationURL
 	connectionID              uint32
 	pingCheckTimer            *time.Timer
 	pingKickTimer             *time.Timer
@@ -180,12 +180,17 @@ func (client *Client) PID() uint32 {
 }
 
 // SetStationURLs sets the clients Station URLs
-func (client *Client) SetStationURLs(stationURLs []string) {
+func (client *Client) SetStationURLs(stationURLs []*StationURL) {
 	client.stationURLs = stationURLs
 }
 
+// AddStationURL adds the StationURL to the clients StationURLs
+func (client *Client) AddStationURL(stationURL *StationURL) {
+	client.stationURLs = append(client.stationURLs, stationURL)
+}
+
 // StationURLs returns the clients Station URLs
-func (client *Client) StationURLs() []string {
+func (client *Client) StationURLs() []*StationURL {
 	return client.stationURLs
 }
 
