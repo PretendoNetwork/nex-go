@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -513,23 +514,48 @@ func NewDateTime(value uint64) *DateTime {
 	return &DateTime{value: value}
 }
 
-// StationURL contains the data for a NEX station URL
+// StationURL contains the data for a NEX station URL.
+// Uses uint32 pointers to check for nil, 0 is valid
 type StationURL struct {
+	local         bool // * Not part of the data structure. Used for easier lookups elsewhere
+	public        bool // * Not part of the data structure. Used for easier lookups elsewhere
 	scheme        string
 	address       string
-	port          string
-	stream        string
-	sid           string
-	cid           string
-	pid           string
-	transportType string
-	rvcid         string
-	natm          string
-	natf          string
-	upnp          string
-	pmp           string
-	probeinit     string
-	prid          string
+	port          *uint32
+	stream        *uint32
+	sid           *uint32
+	cid           *uint32
+	pid           *uint32
+	transportType *uint32
+	rvcid         *uint32
+	natm          *uint32
+	natf          *uint32
+	upnp          *uint32
+	pmp           *uint32
+	probeinit     *uint32
+	prid          *uint32
+}
+
+// SetLocal marks the StationURL as an local URL
+func (stationURL *StationURL) SetLocal() {
+	stationURL.local = true
+	stationURL.public = false
+}
+
+// SetPublic marks the StationURL as an public URL
+func (stationURL *StationURL) SetPublic() {
+	stationURL.local = false
+	stationURL.public = true
+}
+
+// IsLocal checks if the StationURL is a local URL
+func (stationURL *StationURL) IsLocal() bool {
+	return stationURL.local
+}
+
+// IsPublic checks if the StationURL is a public URL
+func (stationURL *StationURL) IsPublic() bool {
+	return stationURL.public
 }
 
 // SetScheme sets the StationURL scheme
@@ -543,68 +569,68 @@ func (stationURL *StationURL) SetAddress(address string) {
 }
 
 // SetPort sets the StationURL port
-func (stationURL *StationURL) SetPort(port string) {
-	stationURL.port = port
+func (stationURL *StationURL) SetPort(port uint32) {
+	stationURL.port = &port
 }
 
 // SetStream sets the StationURL stream
-func (stationURL *StationURL) SetStream(stream string) {
-	stationURL.stream = stream
+func (stationURL *StationURL) SetStream(stream uint32) {
+	stationURL.stream = &stream
 }
 
 // SetSID sets the StationURL SID
-func (stationURL *StationURL) SetSID(sid string) {
-	stationURL.sid = sid
+func (stationURL *StationURL) SetSID(sid uint32) {
+	stationURL.sid = &sid
 }
 
 // SetCID sets the StationURL CID
-func (stationURL *StationURL) SetCID(cid string) {
-	stationURL.cid = cid
+func (stationURL *StationURL) SetCID(cid uint32) {
+	stationURL.cid = &cid
 }
 
 // SetPID sets the StationURL PID
-func (stationURL *StationURL) SetPID(pid string) {
-	stationURL.pid = pid
+func (stationURL *StationURL) SetPID(pid uint32) {
+	stationURL.pid = &pid
 }
 
 // SetType sets the StationURL transportType
-func (stationURL *StationURL) SetType(transportType string) {
-	stationURL.transportType = transportType
+func (stationURL *StationURL) SetType(transportType uint32) {
+	stationURL.transportType = &transportType
 }
 
 // SetRVCID sets the StationURL RVCID
-func (stationURL *StationURL) SetRVCID(rvcid string) {
-	stationURL.rvcid = rvcid
+func (stationURL *StationURL) SetRVCID(rvcid uint32) {
+	stationURL.rvcid = &rvcid
 }
 
 // SetNatm sets the StationURL Natm
-func (stationURL *StationURL) SetNatm(natm string) {
-	stationURL.natm = natm
+func (stationURL *StationURL) SetNatm(natm uint32) {
+	stationURL.natm = &natm
 }
 
 // SetNatf sets the StationURL Natf
-func (stationURL *StationURL) SetNatf(natf string) {
-	stationURL.natf = natf
+func (stationURL *StationURL) SetNatf(natf uint32) {
+	stationURL.natf = &natf
 }
 
 // SetUpnp sets the StationURL Upnp
-func (stationURL *StationURL) SetUpnp(upnp string) {
-	stationURL.upnp = upnp
+func (stationURL *StationURL) SetUpnp(upnp uint32) {
+	stationURL.upnp = &upnp
 }
 
 // SetPmp sets the StationURL Pmp
-func (stationURL *StationURL) SetPmp(pmp string) {
-	stationURL.pmp = pmp
+func (stationURL *StationURL) SetPmp(pmp uint32) {
+	stationURL.pmp = &pmp
 }
 
 // SetProbeInit sets the StationURL ProbeInit
-func (stationURL *StationURL) SetProbeInit(probeinit string) {
-	stationURL.probeinit = probeinit
+func (stationURL *StationURL) SetProbeInit(probeinit uint32) {
+	stationURL.probeinit = &probeinit
 }
 
 // SetPRID sets the StationURL PRID
-func (stationURL *StationURL) SetPRID(prid string) {
-	stationURL.prid = prid
+func (stationURL *StationURL) SetPRID(prid uint32) {
+	stationURL.prid = &prid
 }
 
 // Scheme returns the StationURL scheme type
@@ -618,68 +644,120 @@ func (stationURL *StationURL) Address() string {
 }
 
 // Port returns the StationURL port
-func (stationURL *StationURL) Port() string {
-	return stationURL.port
+func (stationURL *StationURL) Port() uint32 {
+	if stationURL.port == nil {
+		return 0
+	} else {
+		return *stationURL.port
+	}
 }
 
 // Stream returns the StationURL stream value
-func (stationURL *StationURL) Stream() string {
-	return stationURL.stream
+func (stationURL *StationURL) Stream() uint32 {
+	if stationURL.stream == nil {
+		return 0
+	} else {
+		return *stationURL.stream
+	}
 }
 
 // SID returns the StationURL SID value
-func (stationURL *StationURL) SID() string {
-	return stationURL.sid
+func (stationURL *StationURL) SID() uint32 {
+	if stationURL.sid == nil {
+		return 0
+	} else {
+		return *stationURL.sid
+	}
 }
 
 // CID returns the StationURL CID value
-func (stationURL *StationURL) CID() string {
-	return stationURL.cid
+func (stationURL *StationURL) CID() uint32 {
+	if stationURL.cid == nil {
+		return 0
+	} else {
+		return *stationURL.cid
+	}
 }
 
 // PID returns the StationURL PID value
-func (stationURL *StationURL) PID() string {
-	return stationURL.pid
+func (stationURL *StationURL) PID() uint32 {
+	if stationURL.pid == nil {
+		return 0
+	} else {
+		return *stationURL.pid
+	}
 }
 
 // Type returns the StationURL type
-func (stationURL *StationURL) Type() string {
-	return stationURL.transportType
+func (stationURL *StationURL) Type() uint32 {
+	if stationURL.transportType == nil {
+		return 0
+	} else {
+		return *stationURL.transportType
+	}
 }
 
 // RVCID returns the StationURL RVCID
-func (stationURL *StationURL) RVCID() string {
-	return stationURL.rvcid
+func (stationURL *StationURL) RVCID() uint32 {
+	if stationURL.rvcid == nil {
+		return 0
+	} else {
+		return *stationURL.rvcid
+	}
 }
 
 // Natm returns the StationURL Natm value
-func (stationURL *StationURL) Natm() string {
-	return stationURL.natm
+func (stationURL *StationURL) Natm() uint32 {
+	if stationURL.natm == nil {
+		return 0
+	} else {
+		return *stationURL.natm
+	}
 }
 
 // Natf returns the StationURL Natf value
-func (stationURL *StationURL) Natf() string {
-	return stationURL.natf
+func (stationURL *StationURL) Natf() uint32 {
+	if stationURL.natf == nil {
+		return 0
+	} else {
+		return *stationURL.natf
+	}
 }
 
 // Upnp returns the StationURL Upnp value
-func (stationURL *StationURL) Upnp() string {
-	return stationURL.upnp
+func (stationURL *StationURL) Upnp() uint32 {
+	if stationURL.upnp == nil {
+		return 0
+	} else {
+		return *stationURL.upnp
+	}
 }
 
 // Pmp returns the StationURL Pmp value
-func (stationURL *StationURL) Pmp() string {
-	return stationURL.pmp
+func (stationURL *StationURL) Pmp() uint32 {
+	if stationURL.pmp == nil {
+		return 0
+	} else {
+		return *stationURL.pmp
+	}
 }
 
 // ProbeInit returns the StationURL ProbeInit value
-func (stationURL *StationURL) ProbeInit() string {
-	return stationURL.probeinit
+func (stationURL *StationURL) ProbeInit() uint32 {
+	if stationURL.probeinit == nil {
+		return 0
+	} else {
+		return *stationURL.probeinit
+	}
 }
 
 // PRID returns the StationURL PRID value
-func (stationURL *StationURL) PRID() string {
-	return stationURL.prid
+func (stationURL *StationURL) PRID() uint32 {
+	if stationURL.prid == nil {
+		return 0
+	} else {
+		return *stationURL.prid
+	}
 }
 
 // FromString parses the StationURL data from a string
@@ -702,31 +780,44 @@ func (stationURL *StationURL) FromString(str string) {
 		case "address":
 			stationURL.address = value
 		case "port":
-			stationURL.port = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetPort(uint32(ui64))
 		case "stream":
-			stationURL.stream = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetStream(uint32(ui64))
 		case "sid":
-			stationURL.sid = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetSID(uint32(ui64))
 		case "CID":
-			stationURL.cid = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetCID(uint32(ui64))
 		case "PID":
-			stationURL.pid = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetPID(uint32(ui64))
 		case "type":
-			stationURL.transportType = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetType(uint32(ui64))
 		case "RVCID":
-			stationURL.rvcid = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetRVCID(uint32(ui64))
 		case "natm":
-			stationURL.natm = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetNatm(uint32(ui64))
 		case "natf":
-			stationURL.natf = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetNatf(uint32(ui64))
 		case "upnp":
-			stationURL.upnp = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetUpnp(uint32(ui64))
 		case "pmp":
-			stationURL.pmp = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetPmp(uint32(ui64))
 		case "probeinit":
-			stationURL.probeinit = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetProbeInit(uint32(ui64))
 		case "PRID":
-			stationURL.prid = value
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetPRID(uint32(ui64))
 		}
 	}
 }
@@ -739,56 +830,56 @@ func (stationURL *StationURL) EncodeToString() string {
 		fields = append(fields, "address="+stationURL.address)
 	}
 
-	if stationURL.port != "" {
-		fields = append(fields, "port="+stationURL.port)
+	if stationURL.port != nil {
+		fields = append(fields, "port="+strconv.FormatUint(uint64(stationURL.Port()), 10))
 	}
 
-	if stationURL.stream != "" {
-		fields = append(fields, "stream="+stationURL.stream)
+	if stationURL.stream != nil {
+		fields = append(fields, "stream="+strconv.FormatUint(uint64(stationURL.Stream()), 10))
 	}
 
-	if stationURL.sid != "" {
-		fields = append(fields, "sid="+stationURL.sid)
+	if stationURL.sid != nil {
+		fields = append(fields, "sid="+strconv.FormatUint(uint64(stationURL.SID()), 10))
 	}
 
-	if stationURL.cid != "" {
-		fields = append(fields, "CID="+stationURL.cid)
+	if stationURL.cid != nil {
+		fields = append(fields, "CID="+strconv.FormatUint(uint64(stationURL.CID()), 10))
 	}
 
-	if stationURL.pid != "" {
-		fields = append(fields, "PID="+stationURL.pid)
+	if stationURL.pid != nil {
+		fields = append(fields, "PID="+strconv.FormatUint(uint64(stationURL.PID()), 10))
 	}
 
-	if stationURL.transportType != "" {
-		fields = append(fields, "type="+stationURL.transportType)
+	if stationURL.transportType != nil {
+		fields = append(fields, "type="+strconv.FormatUint(uint64(stationURL.Type()), 10))
 	}
 
-	if stationURL.rvcid != "" {
-		fields = append(fields, "RVCID="+stationURL.rvcid)
+	if stationURL.rvcid != nil {
+		fields = append(fields, "RVCID="+strconv.FormatUint(uint64(stationURL.RVCID()), 10))
 	}
 
-	if stationURL.natm != "" {
-		fields = append(fields, "natm="+stationURL.natm)
+	if stationURL.natm != nil {
+		fields = append(fields, "natm="+strconv.FormatUint(uint64(stationURL.Natm()), 10))
 	}
 
-	if stationURL.natf != "" {
-		fields = append(fields, "natf="+stationURL.natf)
+	if stationURL.natf != nil {
+		fields = append(fields, "natf="+strconv.FormatUint(uint64(stationURL.Natf()), 10))
 	}
 
-	if stationURL.upnp != "" {
-		fields = append(fields, "upnp="+stationURL.upnp)
+	if stationURL.upnp != nil {
+		fields = append(fields, "upnp="+strconv.FormatUint(uint64(stationURL.Upnp()), 10))
 	}
 
-	if stationURL.pmp != "" {
-		fields = append(fields, "pmp="+stationURL.pmp)
+	if stationURL.pmp != nil {
+		fields = append(fields, "pmp="+strconv.FormatUint(uint64(stationURL.Pmp()), 10))
 	}
 
-	if stationURL.probeinit != "" {
-		fields = append(fields, "probeinit="+stationURL.probeinit)
+	if stationURL.probeinit != nil {
+		fields = append(fields, "probeinit="+strconv.FormatUint(uint64(stationURL.ProbeInit()), 10))
 	}
 
-	if stationURL.prid != "" {
-		fields = append(fields, "PRID="+stationURL.prid)
+	if stationURL.prid != nil {
+		fields = append(fields, "PRID="+strconv.FormatUint(uint64(stationURL.PRID()), 10))
 	}
 
 	return stationURL.scheme + ":/" + strings.Join(fields, ";")
