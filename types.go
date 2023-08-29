@@ -522,6 +522,7 @@ type StationURL struct {
 	scheme        string
 	address       string
 	port          *uint32
+	pl            *uint32 // * Seen in Minecraft
 	stream        *uint32
 	sid           *uint32
 	cid           *uint32
@@ -571,6 +572,11 @@ func (stationURL *StationURL) SetAddress(address string) {
 // SetPort sets the StationURL port
 func (stationURL *StationURL) SetPort(port uint32) {
 	stationURL.port = &port
+}
+
+// SetPL sets the StationURL Pl
+func (stationURL *StationURL) SetPL(pl uint32) {
+	stationURL.pl = &pl
 }
 
 // SetStream sets the StationURL stream
@@ -649,6 +655,15 @@ func (stationURL *StationURL) Port() uint32 {
 		return 0
 	} else {
 		return *stationURL.port
+	}
+}
+
+// PL returns the StationURL Pl
+func (stationURL *StationURL) PL() uint32 {
+	if stationURL.pl == nil {
+		return 0
+	} else {
+		return *stationURL.pl
 	}
 }
 
@@ -782,6 +797,9 @@ func (stationURL *StationURL) FromString(str string) {
 		case "port":
 			ui64, _ := strconv.ParseUint(value, 10, 32)
 			stationURL.SetPort(uint32(ui64))
+		case "Pl":
+			ui64, _ := strconv.ParseUint(value, 10, 32)
+			stationURL.SetPL(uint32(ui64))
 		case "stream":
 			ui64, _ := strconv.ParseUint(value, 10, 32)
 			stationURL.SetStream(uint32(ui64))
@@ -832,6 +850,10 @@ func (stationURL *StationURL) EncodeToString() string {
 
 	if stationURL.port != nil {
 		fields = append(fields, "port="+strconv.FormatUint(uint64(stationURL.Port()), 10))
+	}
+
+	if stationURL.pl != nil {
+		fields = append(fields, "Pl="+strconv.FormatUint(uint64(stationURL.PL()), 10))
 	}
 
 	if stationURL.stream != nil {
