@@ -69,12 +69,16 @@ func (data *Data) Bytes(stream *StreamOut) []byte {
 
 // Copy returns a new copied instance of Data
 func (data *Data) Copy() StructureInterface {
-	return NewData() // * Has no fields, nothing to copy
+	copied := NewData()
+
+	copied.SetStructureVersion(data.StructureVersion())
+
+	return copied
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
 func (data *Data) Equals(structure StructureInterface) bool {
-	return true // * Has no fields, always equal
+	return data.StructureVersion() == structure.StructureVersion()
 }
 
 // String returns a string representation of the struct
@@ -301,7 +305,7 @@ func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 	stream.WriteListUInt8(rvConnectionData.specialProtocols)
 	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
 
-	if nexVersion.Major >= 3 && nexVersion.Minor >= 5 {
+	if nexVersion.GreaterOrEqual("3.5.0") {
 		rvConnectionData.SetStructureVersion(1)
 		stream.WriteDateTime(rvConnectionData.time)
 	}
@@ -313,6 +317,7 @@ func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
 func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 	copied := NewRVConnectionData()
 
+	copied.SetStructureVersion(rvConnectionData.StructureVersion())
 	copied.parentType = rvConnectionData.parentType
 	copied.stationURL = rvConnectionData.stationURL
 	copied.specialProtocols = make([]byte, len(rvConnectionData.specialProtocols))
@@ -331,6 +336,10 @@ func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 // Equals checks if the passed Structure contains the same data as the current instance
 func (rvConnectionData *RVConnectionData) Equals(structure StructureInterface) bool {
 	other := structure.(*RVConnectionData)
+
+	if rvConnectionData.StructureVersion() == other.StructureVersion() {
+		return false
+	}
 
 	if rvConnectionData.stationURL != other.stationURL {
 		return false
@@ -1060,6 +1069,7 @@ func (resultRange *ResultRange) ExtractFromStream(stream *StreamIn) error {
 func (resultRange *ResultRange) Copy() StructureInterface {
 	copied := NewResultRange()
 
+	copied.SetStructureVersion(resultRange.StructureVersion())
 	copied.Offset = resultRange.Offset
 	copied.Length = resultRange.Length
 
@@ -1069,6 +1079,10 @@ func (resultRange *ResultRange) Copy() StructureInterface {
 // Equals checks if the passed Structure contains the same data as the current instance
 func (resultRange *ResultRange) Equals(structure StructureInterface) bool {
 	other := structure.(*ResultRange)
+
+	if resultRange.StructureVersion() == other.StructureVersion() {
+		return false
+	}
 
 	if resultRange.Offset != other.Offset {
 		return false

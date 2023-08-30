@@ -179,7 +179,7 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 
 	nexVersion := stream.Server.NEXVersion()
 
-	if nexVersion.Major >= 3 && nexVersion.Minor >= 5 {
+	if nexVersion.GreaterOrEqual("3.5.0") {
 		stream.WriteUInt8(structure.StructureVersion())
 		stream.WriteUInt32LE(uint32(len(content)))
 	}

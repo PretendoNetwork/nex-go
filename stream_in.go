@@ -246,7 +246,7 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 
 	nexVersion := stream.Server.NEXVersion()
 
-	if nexVersion.Major >= 3 && nexVersion.Minor >= 5 {
+	if nexVersion.GreaterOrEqual("3.5.0") {
 		version, err := stream.ReadUInt8()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read NEX Structure version. %s", err.Error())
