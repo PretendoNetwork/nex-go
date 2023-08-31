@@ -924,6 +924,27 @@ func (stream *StreamIn) ReadListStructure(structure StructureInterface) (interfa
 	return structureSlice.Interface(), nil
 }
 
+// ReadListDataHolder reads a list of NEX DataHolder types
+func (stream *StreamIn) ReadListDataHolder() ([]*DataHolder, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<DataHolder> length. %s", err.Error())
+	}
+
+	list := make([]*DataHolder, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadDataHolder()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<DataHolder> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
 // NewStreamIn returns a new NEX input stream
 func NewStreamIn(data []byte, server *Server) *StreamIn {
 	return &StreamIn{

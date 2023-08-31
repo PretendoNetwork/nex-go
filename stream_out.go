@@ -421,6 +421,17 @@ func (stream *StreamOut) WriteListStationURL(stationURLs []*StationURL) {
 	}
 }
 
+// WriteListDataHolder writes a NEX DataHolder type
+func (stream *StreamOut) WriteListDataHolder(dataholders []*DataHolder) {
+	length := len(dataholders)
+
+	stream.WriteUInt32LE(uint32(length))
+
+	for i := 0; i < length; i++ {
+		stream.WriteDataHolder(dataholders[i])
+	}
+}
+
 // WriteDataHolder writes a NEX DataHolder type
 func (stream *StreamOut) WriteDataHolder(dataholder *DataHolder) {
 	content := dataholder.Bytes(NewStreamOut(stream.Server))
