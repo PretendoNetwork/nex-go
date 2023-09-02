@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -22,6 +23,7 @@ import (
 type Server struct {
 	socket                      *net.UDPConn
 	clients                     map[string]*Client
+	clientMutex                 *sync.RWMutex
 	genericEventHandles         map[string][]func(PacketInterface)
 	prudpV0EventHandles         map[string][]func(*PacketV0)
 	prudpV1EventHandles         map[string][]func(*PacketV1)
@@ -103,12 +105,17 @@ func (server *Server) handleSocketMessage() error {
 
 	discriminator := addr.String()
 
-	if _, ok := server.clients[discriminator]; !ok {
-		newClient := NewClient(addr, server)
-		server.clients[discriminator] = newClient
-	}
+	server.clientMutex.RLock()
+	client, ok := server.clients[discriminator]
+	server.clientMutex.RUnlock()
 
-	client := server.clients[discriminator]
+	if !ok {
+		client = NewClient(addr, server)
+
+		server.clientMutex.Lock()
+		server.clients[discriminator] = client
+		server.clientMutex.Unlock()
+	}
 
 	data := buffer[0:length]
 
@@ -357,7 +364,9 @@ func (server *Server) Emit(event string, packet interface{}) {
 func (server *Server) ClientConnected(client *Client) bool {
 	discriminator := client.Address().String()
 
+	server.clientMutex.RLock()
 	_, connected := server.clients[discriminator]
+	server.clientMutex.RUnlock()
 
 	return connected
 }
@@ -390,7 +399,10 @@ func (server *Server) TimeoutKick(client *Client) {
 	server.Emit("Kick", packet)
 	client.SetConnected(false)
 	discriminator := client.Address().String()
+
+	server.clientMutex.Lock()
 	delete(server.clients, discriminator)
+	server.clientMutex.Unlock()
 }
 
 // GracefulKick removes an active client from the server
@@ -423,12 +435,20 @@ func (server *Server) GracefulKick(client *Client) {
 	server.Emit("Kick", packet)
 	client.SetConnected(false)
 	discriminator := client.Address().String()
+
+	server.clientMutex.Lock()
 	delete(server.clients, discriminator)
+	server.clientMutex.Unlock()
 }
 
 // GracefulKickAll removes all clients from the server
 func (server *Server) GracefulKickAll() {
+	// * https://stackoverflow.com/a/40456170
+	server.clientMutex.RLock()
+	defer server.clientMutex.RUnlock()
 	for _, client := range server.clients {
+		server.clientMutex.RUnlock()
+
 		var packet PacketInterface
 		var err error
 		if server.PRUDPVersion() == 0 {
@@ -442,6 +462,7 @@ func (server *Server) GracefulKickAll() {
 		if err != nil {
 			// TODO - Should this return the error too?
 			logger.Error(err.Error())
+			server.clientMutex.RLock()
 			continue
 		}
 
@@ -456,7 +477,12 @@ func (server *Server) GracefulKickAll() {
 		server.Emit("Kick", packet)
 		client.SetConnected(false)
 		discriminator := client.Address().String()
+
+		server.clientMutex.Lock()
 		delete(server.clients, discriminator)
+		server.clientMutex.Unlock()
+
+		server.clientMutex.RLock()
 	}
 }
 
@@ -766,22 +792,34 @@ func (server *Server) ConnectionIDCounter() *Counter {
 
 // FindClientFromPID finds a client by their PID
 func (server *Server) FindClientFromPID(pid uint32) *Client {
+	// * https://stackoverflow.com/a/40456170
+	server.clientMutex.RLock()
 	for _, client := range server.clients {
+		server.clientMutex.RUnlock()
 		if client.pid == pid {
 			return client
 		}
+		server.clientMutex.RLock()
 	}
+
+	server.clientMutex.RUnlock()
 
 	return nil
 }
 
 // FindClientFromConnectionID finds a client by their Connection ID
 func (server *Server) FindClientFromConnectionID(rvcid uint32) *Client {
+	// * https://stackoverflow.com/a/40456170
+	server.clientMutex.RLock()
 	for _, client := range server.clients {
+		server.clientMutex.RUnlock()
 		if client.connectionID == rvcid {
 			return client
 		}
+		server.clientMutex.RLock()
 	}
+
+	server.clientMutex.RUnlock()
 
 	return nil
 }
@@ -857,6 +895,7 @@ func NewServer() *Server {
 		hppEventHandles:       make(map[string][]func(*HPPPacket)),
 		hppClientResponses:    make(map[*Client](chan []byte)),
 		clients:               make(map[string]*Client),
+		clientMutex:           &sync.RWMutex{},
 		prudpVersion:          1,
 		fragmentSize:          1300,
 		resendTimeout:         1.5,
