@@ -20,6 +20,12 @@ func (stream *StreamIn) Remaining() int {
 	return len(stream.Bytes()[stream.ByteOffset():])
 }
 
+// ReadRemaining reads a bool
+func (stream *StreamIn) ReadRemaining() []byte {
+	// TODO - Should we do a bounds check here? Or just allow empty slices?
+	return stream.ReadBytesNext(int64(stream.Remaining()))
+}
+
 // ReadBool reads a bool
 func (stream *StreamIn) ReadBool() (bool, error) {
 	if stream.Remaining() < 1 {
