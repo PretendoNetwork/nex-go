@@ -15,15 +15,13 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
-	"sync"
 	"time"
 )
 
 // Server represents a PRUDP server
 type Server struct {
 	socket                      *net.UDPConn
-	clients                     map[string]*Client
-	clientMutex                 *sync.RWMutex
+	clients                     *MutexMap[string, *Client]
 	genericEventHandles         map[string][]func(PacketInterface)
 	prudpV0EventHandles         map[string][]func(*PacketV0)
 	prudpV1EventHandles         map[string][]func(*PacketV1)
@@ -105,16 +103,12 @@ func (server *Server) handleSocketMessage() error {
 
 	discriminator := addr.String()
 
-	server.clientMutex.RLock()
-	client, ok := server.clients[discriminator]
-	server.clientMutex.RUnlock()
+	client, ok := server.clients.Get(discriminator)
 
 	if !ok {
 		client = NewClient(addr, server)
 
-		server.clientMutex.Lock()
-		server.clients[discriminator] = client
-		server.clientMutex.Unlock()
+		server.clients.Set(discriminator, client)
 	}
 
 	data := buffer[0:length]
@@ -364,9 +358,7 @@ func (server *Server) Emit(event string, packet interface{}) {
 func (server *Server) ClientConnected(client *Client) bool {
 	discriminator := client.Address().String()
 
-	server.clientMutex.RLock()
-	_, connected := server.clients[discriminator]
-	server.clientMutex.RUnlock()
+	_, connected := server.clients.Get(discriminator)
 
 	return connected
 }
@@ -400,9 +392,7 @@ func (server *Server) TimeoutKick(client *Client) {
 	client.SetConnected(false)
 	discriminator := client.Address().String()
 
-	server.clientMutex.Lock()
-	delete(server.clients, discriminator)
-	server.clientMutex.Unlock()
+	server.clients.Delete(discriminator)
 }
 
 // GracefulKick removes an active client from the server
@@ -436,18 +426,17 @@ func (server *Server) GracefulKick(client *Client) {
 	client.SetConnected(false)
 	discriminator := client.Address().String()
 
-	server.clientMutex.Lock()
-	delete(server.clients, discriminator)
-	server.clientMutex.Unlock()
+	server.clients.Delete(discriminator)
 }
 
 // GracefulKickAll removes all clients from the server
 func (server *Server) GracefulKickAll() {
 	// * https://stackoverflow.com/a/40456170
-	server.clientMutex.RLock()
-	defer server.clientMutex.RUnlock()
-	for _, client := range server.clients {
-		server.clientMutex.RUnlock()
+	server.clients.RLock()
+	defer server.clients.RUnlock()
+	// TODO - MAKE A BETTER API FOR RANGING OVER THIS DATA INSIDE MutexMap!
+	for _, client := range server.clients.real {
+		server.clients.RUnlock()
 
 		var packet PacketInterface
 		var err error
@@ -462,7 +451,7 @@ func (server *Server) GracefulKickAll() {
 		if err != nil {
 			// TODO - Should this return the error too?
 			logger.Error(err.Error())
-			server.clientMutex.RLock()
+			server.clients.RLock()
 			continue
 		}
 
@@ -478,11 +467,9 @@ func (server *Server) GracefulKickAll() {
 		client.SetConnected(false)
 		discriminator := client.Address().String()
 
-		server.clientMutex.Lock()
-		delete(server.clients, discriminator)
-		server.clientMutex.Unlock()
+		server.clients.Delete(discriminator)
 
-		server.clientMutex.RLock()
+		server.clients.RLock()
 	}
 }
 
@@ -793,16 +780,17 @@ func (server *Server) ConnectionIDCounter() *Counter {
 // FindClientFromPID finds a client by their PID
 func (server *Server) FindClientFromPID(pid uint32) *Client {
 	// * https://stackoverflow.com/a/40456170
-	server.clientMutex.RLock()
-	for _, client := range server.clients {
-		server.clientMutex.RUnlock()
+	// TODO - MAKE A BETTER API FOR RANGING OVER THIS DATA INSIDE MutexMap!
+	server.clients.RLock()
+	for _, client := range server.clients.real {
+		server.clients.RUnlock()
 		if client.pid == pid {
 			return client
 		}
-		server.clientMutex.RLock()
+		server.clients.RLock()
 	}
 
-	server.clientMutex.RUnlock()
+	server.clients.RUnlock()
 
 	return nil
 }
@@ -810,16 +798,17 @@ func (server *Server) FindClientFromPID(pid uint32) *Client {
 // FindClientFromConnectionID finds a client by their Connection ID
 func (server *Server) FindClientFromConnectionID(rvcid uint32) *Client {
 	// * https://stackoverflow.com/a/40456170
-	server.clientMutex.RLock()
-	for _, client := range server.clients {
-		server.clientMutex.RUnlock()
+	// TODO - MAKE A BETTER API FOR RANGING OVER THIS DATA INSIDE MutexMap!
+	server.clients.RLock()
+	for _, client := range server.clients.real {
+		server.clients.RUnlock()
 		if client.connectionID == rvcid {
 			return client
 		}
-		server.clientMutex.RLock()
+		server.clients.RLock()
 	}
 
-	server.clientMutex.RUnlock()
+	server.clients.RUnlock()
 
 	return nil
 }
@@ -894,8 +883,7 @@ func NewServer() *Server {
 		prudpV1EventHandles:   make(map[string][]func(*PacketV1)),
 		hppEventHandles:       make(map[string][]func(*HPPPacket)),
 		hppClientResponses:    make(map[*Client](chan []byte)),
-		clients:               make(map[string]*Client),
-		clientMutex:           &sync.RWMutex{},
+		clients:               NewMutexMap[string, *Client](),
 		prudpVersion:          1,
 		fragmentSize:          1300,
 		resendTimeout:         1.5,
