@@ -28,6 +28,7 @@ type PacketInterface interface {
 	FragmentID() uint8
 	SetPayload(payload []byte)
 	Payload() []byte
+	DecryptPayload() error
 	RMCRequest() RMCRequest
 	Bytes() []byte
 }

@@ -28,12 +28,14 @@ type Client struct {
 	pingCheckTimer            *time.Timer
 	pingKickTimer             *time.Timer
 	connected                 bool
+	incomingPacketManager     *PacketManager
 }
 
 // Reset resets the Client to default values
 func (client *Client) Reset() error {
 	client.sequenceIDIn = NewCounter(0)
 	client.sequenceIDOut = NewCounter(0)
+	client.incomingPacketManager = NewPacketManager()
 
 	client.UpdateAccessKey(client.Server().AccessKey())
 	err := client.UpdateRC4Key([]byte("CD&ML"))
@@ -155,6 +157,7 @@ func (client *Client) SequenceIDCounterOut() *Counter {
 }
 
 // SequenceIDCounterIn returns the clients packet SequenceID counter for incoming packets
+// TODO - Rename this? This name kinda sucks now that it's being used for deferred packet handling
 func (client *Client) SequenceIDCounterIn() *Counter {
 	return client.sequenceIDIn
 }

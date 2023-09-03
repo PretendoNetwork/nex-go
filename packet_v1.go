@@ -199,26 +199,31 @@ func (packet *PacketV1) Decode() error {
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
 
 		packet.SetPayload(payloadCrypted)
-
-		if packet.Type() == DataPacket && !packet.HasFlag(FlagMultiAck) {
-			ciphered := make([]byte, payloadSize)
-
-			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
-
-			request := NewRMCRequest()
-			err := request.FromBytes(ciphered)
-			if err != nil {
-				return fmt.Errorf("Failed to read PRUDPv1 RMC request. %s", err.Error())
-			}
-
-			packet.rmcRequest = request
-		}
 	}
 
 	calculatedSignature := packet.calculateSignature(packet.Data()[2:14], packet.Sender().ServerConnectionSignature(), options, packet.Payload())
 
 	if !bytes.Equal(calculatedSignature, packet.Signature()) {
 		logger.Error("PRUDPv1 calculated signature did not match")
+	}
+
+	return nil
+}
+
+// DecryptPayload decrypts the packets payload and sets the RMC request data
+func (packet *PacketV1) DecryptPayload() error {
+	if packet.Type() == DataPacket && !packet.HasFlag(FlagMultiAck) {
+		ciphered := make([]byte, len(packet.Payload()))
+
+		packet.Sender().Decipher().XORKeyStream(ciphered, packet.Payload())
+
+		request := NewRMCRequest()
+		err := request.FromBytes(ciphered)
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv1 RMC request. %s", err.Error())
+		}
+
+		packet.rmcRequest = request
 	}
 
 	return nil

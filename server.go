@@ -130,6 +130,33 @@ func (server *Server) handleSocketMessage() error {
 	client.IncreasePingTimeoutTime(server.PingTimeout())
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
+		// * Bail early
+		// TODO - Track this in a server->client packet manager, and do retransmission on our end
+		return nil
+	}
+
+	// TODO - Make a better API in client to access incomingPacketManager?
+	client.incomingPacketManager.Push(packet)
+
+	// TODO - Make this API smarter. Only track missing packets?
+	// TODO - Only loop to process out of order packets when correct next packet is found?
+	if next := client.incomingPacketManager.Next(); next != nil {
+		// TODO - Should we explicitly check for errors here and log instead of passing the error up?
+		return server.processPacket(next)
+	}
+
+	return nil
+}
+
+func (server *Server) processPacket(packet PacketInterface) error {
+	err := packet.DecryptPayload()
+	if err != nil {
+		return err
+	}
+
+	client := packet.Sender()
+
+	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
 		return nil
 	}
 
@@ -160,6 +187,10 @@ func (server *Server) handleSocketMessage() error {
 
 		client.SetConnected(true)
 		client.StartTimeoutTimer()
+		// TODO - Don't make this part suck ass?
+		// * Manually incrementing because the original manager gets destroyed in the reset
+		// * but we need to still track the SYN packet was sent
+		client.incomingPacketManager.currentSequenceID.Increment()
 		server.Emit("Syn", packet)
 	case ConnectPacket:
 		packet.Sender().SetClientConnectionSignature(packet.ConnectionSignature())

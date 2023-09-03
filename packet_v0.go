@@ -117,19 +117,6 @@ func (packet *PacketV0) Decode() error {
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
 
 		packet.SetPayload(payloadCrypted)
-
-		if packet.Type() == DataPacket {
-			ciphered := make([]byte, payloadSize)
-			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
-
-			request := NewRMCRequest()
-			err := request.FromBytes(ciphered)
-			if err != nil {
-				return errors.New("[PRUDPv0] Error parsing RMC request: " + err.Error())
-			}
-
-			packet.rmcRequest = request
-		}
 	}
 
 	if len(packet.Data()[stream.ByteOffset():]) < int(checksumSize) {
@@ -149,6 +136,25 @@ func (packet *PacketV0) Decode() error {
 
 	if calculatedChecksum != packet.Checksum() {
 		logger.Error("PRUDPv0 packet calculated checksum did not match")
+	}
+
+	return nil
+}
+
+// DecryptPayload decrypts the packets payload and sets the RMC request data
+func (packet *PacketV0) DecryptPayload() error {
+	if packet.Type() == DataPacket && !packet.HasFlag(FlagAck) {
+		ciphered := make([]byte, len(packet.Payload()))
+
+		packet.Sender().Decipher().XORKeyStream(ciphered, packet.Payload())
+
+		request := NewRMCRequest()
+		err := request.FromBytes(ciphered)
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv0 RMC request. %s", err.Error())
+		}
+
+		packet.rmcRequest = request
 	}
 
 	return nil
