@@ -208,7 +208,6 @@ func (server *Server) processPacket(packet PacketInterface) error {
 		server.Emit("Data", packet)
 	case DisconnectPacket:
 		server.Emit("Disconnect", packet)
-		client.StopTimeoutTimer()
 		server.GracefulKick(client)
 	case PingPacket:
 		//server.SendPing(client)
@@ -464,6 +463,7 @@ func (server *Server) GracefulKick(client *Client) {
 
 	server.Emit("Kick", packet)
 	client.SetConnected(false)
+	client.StopTimeoutTimer()
 	discriminator := client.Address().String()
 
 	server.clients.Delete(discriminator)
