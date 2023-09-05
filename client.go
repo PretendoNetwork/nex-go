@@ -235,6 +235,18 @@ func (client *Client) StartTimeoutTimer() {
 	})
 }
 
+// StopTimeoutTimer stops the packet timeout timer
+func (client *Client) StopTimeoutTimer() {
+	//Stop the kick timer
+	if client.pingKickTimer != nil {
+		client.pingKickTimer.Stop()
+	}
+	//and the check timer
+	if client.pingCheckTimer != nil {
+		client.pingCheckTimer.Stop()
+	}
+}
+
 // NewClient returns a new PRUDP client
 func NewClient(address *net.UDPAddr, server *Server) *Client {
 	client := &Client{
