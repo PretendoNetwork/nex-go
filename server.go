@@ -899,7 +899,7 @@ func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 
 	packet.SetFragmentID(fragmentID)
 	packet.SetPayload(data)
-	packet.SetSequenceID(uint16(client.SequenceIDCounterOut().Increment()))
+	packet.SetSequenceID(uint16(client.SequenceIDOutManager().Next(packet)))
 
 	encodedPacket := packet.Bytes()
 

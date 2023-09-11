@@ -21,7 +21,7 @@ type Client struct {
 	clientConnectionSignature []byte
 	sessionKey                []byte
 	sequenceIDIn              *Counter
-	sequenceIDOut             *Counter
+	sequenceIDOutManager      *SequenceIDManager
 	pid                       uint32
 	stationURLs               []*StationURL
 	connectionID              uint32
@@ -34,7 +34,7 @@ type Client struct {
 // Reset resets the Client to default values
 func (client *Client) Reset() error {
 	client.sequenceIDIn = NewCounter(0)
-	client.sequenceIDOut = NewCounter(0)
+	client.sequenceIDOutManager = NewSequenceIDManager() // TODO - Pass the server into here to get data for multiple substreams and the unreliable starting ID
 	client.incomingPacketManager = NewPacketManager()
 
 	client.UpdateAccessKey(client.Server().AccessKey())
@@ -151,9 +151,9 @@ func (client *Client) ClientConnectionSignature() []byte {
 	return client.clientConnectionSignature
 }
 
-// SequenceIDCounterOut returns the clients packet SequenceID counter for out-going packets
-func (client *Client) SequenceIDCounterOut() *Counter {
-	return client.sequenceIDOut
+// SequenceIDOutManager returns the clients packet SequenceID manager for out-going packets
+func (client *Client) SequenceIDOutManager() *SequenceIDManager {
+	return client.sequenceIDOutManager
 }
 
 // SequenceIDCounterIn returns the clients packet SequenceID counter for incoming packets
