@@ -31,7 +31,6 @@ type Server struct {
 	hppEventHandles             map[string][]func(*HPPPacket)
 	hppClientResponses          map[*Client](chan []byte)
 	passwordFromPIDHandler      func(pid uint32) (string, uint32)
-	useNewMultiACK              bool
 	accessKey                   string
 	prudpVersion                int
 	prudpProtocolMinorVersion   int
@@ -237,7 +236,6 @@ func (server *Server) processPacket(packet PacketInterface) error {
 
 func (server *Server) handleAcknowledgement(packet PacketInterface) {
 	if packet.Version() == 0 {
-		// * PRUDPv0 does not have aggregate acknowledgement
 		packet.Sender().outgoingResendManager.Remove(packet.SequenceID())
 	} else {
 		// TODO - Validate the aggregate packet is valid and can be processed
@@ -246,7 +244,7 @@ func (server *Server) handleAcknowledgement(packet PacketInterface) {
 		var baseSequenceID uint16
 
 		// TODO - We should probably handle these errors lol
-		if server.useNewMultiACK {
+		if server.PRUDPProtocolMinorVersion() >= 2 {
 			_, _ = stream.ReadUInt8() // * Substream ID. NEX always uses 0
 			additionalIDsCount, _ := stream.ReadUInt8()
 			baseSequenceID, _ = stream.ReadUInt16LE()
@@ -704,16 +702,6 @@ func (server *Server) SetSocket(socket *net.UDPConn) {
 	server.socket = socket
 }
 
-// UseNewMultiACK checks if the server uses the new FLAG_MULTI_ACK encoding
-func (server *Server) UseNewMultiACK() bool {
-	return server.useNewMultiACK
-}
-
-// SetUseNewMultiACK sets whether the server uses the new FLAG_MULTI_ACK encoding
-func (server *Server) SetUseNewMultiACK(useNewMultiACK bool) {
-	server.useNewMultiACK = useNewMultiACK
-}
-
 // PRUDPVersion returns the server PRUDP version
 func (server *Server) PRUDPVersion() int {
 	return server.prudpVersion
@@ -1056,7 +1044,6 @@ func NewServer() *Server {
 		hppEventHandles:          make(map[string][]func(*HPPPacket)),
 		hppClientResponses:       make(map[*Client](chan []byte)),
 		clients:                  NewMutexMap[string, *Client](),
-		useNewMultiACK:           false,
 		prudpVersion:             1,
 		fragmentSize:             1300,
 		resendTimeout:            time.Second * 2,
