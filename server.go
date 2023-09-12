@@ -17,6 +17,8 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
 
 // Server represents a PRUDP server
@@ -29,12 +31,14 @@ type Server struct {
 	hppEventHandles             map[string][]func(*HPPPacket)
 	hppClientResponses          map[*Client](chan []byte)
 	passwordFromPIDHandler      func(pid uint32) (string, uint32)
+	useNewMultiACK              bool
 	accessKey                   string
 	prudpVersion                int
 	prudpProtocolMinorVersion   int
 	supportedFunctions          int
 	fragmentSize                int16
-	resendTimeout               float32
+	resendTimeout               time.Duration
+	resendMaxIterations         int
 	pingTimeout                 int
 	kerberosPassword            string
 	kerberosKeySize             int
@@ -138,8 +142,8 @@ func (server *Server) handleSocketMessage() error {
 	client.IncreasePingTimeoutTime(server.PingTimeout())
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
-		// * Bail early
-		// TODO - Track this in a server->client packet manager, and do retransmission on our end
+		// TODO - Should this return an error?
+		server.handleAcknowledgement(packet)
 		return nil
 	}
 
@@ -225,6 +229,51 @@ func (server *Server) processPacket(packet PacketInterface) error {
 	server.Emit("Packet", packet)
 
 	return nil
+}
+
+func (server *Server) handleAcknowledgement(packet PacketInterface) {
+	if packet.Version() == 0 {
+		// * PRUDPv0 does not have aggregate acknowledgement
+		packet.Sender().outgoingResendManager.Remove(packet.SequenceID())
+	} else {
+		// TODO - Validate the aggregate packet is valid and can be processed
+		sequenceIDs := make([]uint16, 0)
+		stream := NewStreamIn(packet.Payload(), server)
+		var baseSequenceID uint16
+
+		// TODO - We should probably handle these errors lol
+		if server.useNewMultiACK {
+			_, _ = stream.ReadUInt8() // * Substream ID. NEX always uses 0
+			additionalIDsCount, _ := stream.ReadUInt8()
+			baseSequenceID, _ = stream.ReadUInt16LE()
+
+			for i := 0; i < int(additionalIDsCount); i++ {
+				additionalID, _ := stream.ReadUInt16LE()
+				sequenceIDs = append(sequenceIDs, additionalID)
+			}
+		} else {
+			baseSequenceID = packet.SequenceID()
+
+			for remaining := stream.Remaining(); remaining != 0; {
+				additionalID, _ := stream.ReadUInt16LE()
+				sequenceIDs = append(sequenceIDs, additionalID)
+				remaining = stream.Remaining()
+			}
+		}
+
+		// * MutexMap.Each locks the mutex, can't remove while reading
+		// * Have to just loop again
+		packet.Sender().outgoingResendManager.pending.Each(func(sequenceID uint16, pending *PendingPacket) {
+			if sequenceID <= baseSequenceID && !slices.Contains(sequenceIDs, sequenceID) {
+				sequenceIDs = append(sequenceIDs, sequenceID)
+			}
+		})
+
+		// * Actually remove the packets from the pool
+		for _, sequenceID := range sequenceIDs {
+			packet.Sender().outgoingResendManager.Remove(sequenceID)
+		}
+	}
 }
 
 // HPPListen starts a NEX HPP server on a given address
@@ -439,6 +488,7 @@ func (server *Server) TimeoutKick(client *Client) {
 	client.SetConnected(false)
 	discriminator := client.Address().String()
 
+	client.outgoingResendManager.Clear()
 	server.clients.Delete(discriminator)
 }
 
@@ -474,6 +524,7 @@ func (server *Server) GracefulKick(client *Client) {
 	client.StopTimeoutTimer()
 	discriminator := client.Address().String()
 
+	client.outgoingResendManager.Clear()
 	server.clients.Delete(discriminator)
 }
 
@@ -515,6 +566,7 @@ func (server *Server) GracefulKickAll() {
 		client.SetConnected(false)
 		discriminator := client.Address().String()
 
+		client.outgoingResendManager.Clear()
 		server.clients.Delete(discriminator)
 
 		server.clients.RLock()
@@ -646,6 +698,16 @@ func (server *Server) Socket() *net.UDPConn {
 // SetSocket sets the underlying UDP socket
 func (server *Server) SetSocket(socket *net.UDPConn) {
 	server.socket = socket
+}
+
+// UseNewMultiACK checks if the server uses the new FLAG_MULTI_ACK encoding
+func (server *Server) UseNewMultiACK() bool {
+	return server.useNewMultiACK
+}
+
+// SetUseNewMultiACK sets whether the server uses the new FLAG_MULTI_ACK encoding
+func (server *Server) SetUseNewMultiACK(useNewMultiACK bool) {
+	server.useNewMultiACK = useNewMultiACK
 }
 
 // PRUDPVersion returns the server PRUDP version
@@ -820,6 +882,16 @@ func (server *Server) SetFragmentSize(fragmentSize int16) {
 	server.fragmentSize = fragmentSize
 }
 
+// SetResendTimeout sets the time that a packet should wait before resending to the client
+func (server *Server) SetResendTimeout(resendTimeout time.Duration) {
+	server.resendTimeout = resendTimeout
+}
+
+// SetFragmentSize sets the max number of times a packet can try to resend before assuming the client is dead
+func (server *Server) SetResendMaxIterations(resendMaxIterations int) {
+	server.resendMaxIterations = resendMaxIterations
+}
+
 // ConnectionIDCounter gets the server connection ID counter
 func (server *Server) ConnectionIDCounter() *Counter {
 	return server.connectionIDCounter
@@ -902,16 +974,42 @@ func (server *Server) Send(packet PacketInterface) {
 
 // SendFragment sends a packet fragment to the client
 func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
-	data := packet.Payload()
 	client := packet.Sender()
+	payload := packet.Payload()
+
+	if packet.Type() == DataPacket {
+		if packet.Version() == 0 && packet.HasFlag(FlagAck) {
+			// * v0 ACK payloads empty, ensure this
+			payload = []byte{}
+		} else if !packet.HasFlag(FlagMultiAck) {
+			if payload != nil || len(payload) > 0 {
+				payloadSize := len(payload)
+
+				encrypted := make([]byte, payloadSize)
+				packet.Sender().Cipher().XORKeyStream(encrypted, payload)
+
+				payload = encrypted
+			}
+		}
+
+		// * Only add the HAS_SIZE flag if the payload exists
+		if !packet.HasFlag(FlagHasSize) && len(payload) > 0 {
+			packet.AddFlag(FlagHasSize)
+		}
+	}
 
 	packet.SetFragmentID(fragmentID)
-	packet.SetPayload(data)
+
+	packet.SetPayload(payload)
 	packet.SetSequenceID(uint16(client.SequenceIDOutManager().Next(packet)))
 
 	encodedPacket := packet.Bytes()
 
 	server.SendRaw(client.Address(), encodedPacket)
+
+	if (packet.HasFlag(FlagReliable) || packet.Type() == SynPacket) && packet.HasFlag(FlagNeedsAck) {
+		packet.Sender().outgoingResendManager.Add(packet)
+	}
 }
 
 // SendRaw writes raw packet data to the client socket
@@ -948,19 +1046,21 @@ func (server *Server) SetEmulatedPacketDropPercent(forRecv bool, percent int) {
 // NewServer returns a new NEX server
 func NewServer() *Server {
 	server := &Server{
-		genericEventHandles:   make(map[string][]func(PacketInterface)),
-		prudpV0EventHandles:   make(map[string][]func(*PacketV0)),
-		prudpV1EventHandles:   make(map[string][]func(*PacketV1)),
-		hppEventHandles:       make(map[string][]func(*HPPPacket)),
-		hppClientResponses:    make(map[*Client](chan []byte)),
-		clients:               NewMutexMap[string, *Client](),
-		prudpVersion:          1,
-		fragmentSize:          1300,
-		resendTimeout:         1.5,
-		pingTimeout:           5,
-		kerberosKeySize:       32,
-		kerberosKeyDerivation: 0,
-		connectionIDCounter:   NewCounter(10),
+		genericEventHandles:      make(map[string][]func(PacketInterface)),
+		prudpV0EventHandles:      make(map[string][]func(*PacketV0)),
+		prudpV1EventHandles:      make(map[string][]func(*PacketV1)),
+		hppEventHandles:          make(map[string][]func(*HPPPacket)),
+		hppClientResponses:       make(map[*Client](chan []byte)),
+		clients:                  NewMutexMap[string, *Client](),
+		useNewMultiACK:           false,
+		prudpVersion:             1,
+		fragmentSize:             1300,
+		resendTimeout:            time.Second * 2,
+		resendMaxIterations:      5,
+		pingTimeout:              5,
+		kerberosKeySize:          32,
+		kerberosKeyDerivation:    0,
+		connectionIDCounter:      NewCounter(10),
 		emuSendPacketDropPercent: 0,
 		emuRecvPacketDropPercent: 0,
 	}

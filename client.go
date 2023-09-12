@@ -29,21 +29,34 @@ type Client struct {
 	pingKickTimer             *time.Timer
 	connected                 bool
 	incomingPacketManager     *PacketManager
+	outgoingResendManager     *PacketResendManager
 }
 
 // Reset resets the Client to default values
 func (client *Client) Reset() error {
+	server := client.Server()
+
 	client.sequenceIDIn = NewCounter(0)
 	client.sequenceIDOutManager = NewSequenceIDManager() // TODO - Pass the server into here to get data for multiple substreams and the unreliable starting ID
 	client.incomingPacketManager = NewPacketManager()
 
-	client.UpdateAccessKey(client.Server().AccessKey())
+	if client.outgoingResendManager != nil {
+		// * PacketResendManager makes use of time.Ticker structs.
+		// * These create new channels and goroutines which won't
+		// * close even if the objects are deleted. To free up
+		// * resources, time.Ticker MUST be stopped before reassigning
+		client.outgoingResendManager.Clear()
+	}
+
+	client.outgoingResendManager = NewPacketResendManager(server.resendTimeout, server.resendMaxIterations)
+
+	client.UpdateAccessKey(server.AccessKey())
 	err := client.UpdateRC4Key([]byte("CD&ML"))
 	if err != nil {
 		return fmt.Errorf("Failed to update client RC4 key. %s", err.Error())
 	}
 
-	if client.Server().PRUDPVersion() == 0 {
+	if server.PRUDPVersion() == 0 {
 		client.SetServerConnectionSignature(make([]byte, 4))
 		client.SetClientConnectionSignature(make([]byte, 4))
 	} else {

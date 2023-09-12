@@ -42,6 +42,17 @@ func (m *MutexMap[K, V]) Size() int {
 	return len(m.real)
 }
 
+// Each runs a function for every item in the map
+// the function takes in the items key and value
+func (m *MutexMap[K, V]) Each(callback func(key K, value V)) {
+	m.RLock()
+	defer m.RUnlock()
+
+	for key, value := range m.real {
+		callback(key, value)
+	}
+}
+
 // NewMutexMap returns a new instance of MutexMap with the provided key/value types
 func NewMutexMap[K comparable, V any]() *MutexMap[K, V] {
 	return &MutexMap[K, V]{
