@@ -235,7 +235,7 @@ func (server *Server) processPacket(packet PacketInterface) error {
 }
 
 func (server *Server) handleAcknowledgement(packet PacketInterface) {
-	if packet.Version() == 0 {
+	if packet.Version() == 0 || (packet.HasFlag(FlagAck) && !packet.HasFlag(FlagMultiAck)) {
 		packet.Sender().outgoingResendManager.Remove(packet.SequenceID())
 	} else {
 		// TODO - Validate the aggregate packet is valid and can be processed
