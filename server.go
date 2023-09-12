@@ -887,7 +887,7 @@ func (server *Server) SetResendTimeout(resendTimeout time.Duration) {
 	server.resendTimeout = resendTimeout
 }
 
-// SetFragmentSize sets the max number of times a packet can try to resend before assuming the client is dead
+// SetResendMaxIterations sets the max number of times a packet can try to resend before assuming the client is dead
 func (server *Server) SetResendMaxIterations(resendMaxIterations int) {
 	server.resendMaxIterations = resendMaxIterations
 }
