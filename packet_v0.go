@@ -162,28 +162,6 @@ func (packet *PacketV0) DecryptPayload() error {
 
 // Bytes encodes the packet and returns a byte array
 func (packet *PacketV0) Bytes() []byte {
-	//if packet.Type() == DataPacket {
-	//
-	//	if packet.HasFlag(FlagAck) {
-	//		packet.SetPayload([]byte{})
-	//	} else {
-	//		payload := packet.Payload()
-	//
-	//		if payload != nil || len(payload) > 0 {
-	//			payloadSize := len(payload)
-	//
-	//			encrypted := make([]byte, payloadSize)
-	//			packet.Sender().Cipher().XORKeyStream(encrypted, payload)
-	//
-	//			packet.SetPayload(encrypted)
-	//		}
-	//	}
-	//
-	//	if !packet.HasFlag(FlagHasSize) {
-	//		packet.AddFlag(FlagHasSize)
-	//	}
-	//}
-
 	var typeFlags uint16 = packet.Type() | packet.Flags()<<4
 
 	stream := NewStreamOut(packet.Sender().Server())
