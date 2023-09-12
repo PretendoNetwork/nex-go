@@ -222,6 +222,7 @@ func (server *Server) processPacket(packet PacketInterface) error {
 	case DataPacket:
 		server.Emit("Data", packet)
 	case DisconnectPacket:
+		fmt.Println("Got a DisconnectPacket")
 		server.Emit("Disconnect", packet)
 		server.GracefulKick(client)
 	case PingPacket:
@@ -1046,7 +1047,7 @@ func NewServer() *Server {
 		clients:                  NewMutexMap[string, *Client](),
 		prudpVersion:             1,
 		fragmentSize:             1300,
-		resendTimeout:            time.Second * 2,
+		resendTimeout:            time.Second,
 		resendMaxIterations:      5,
 		pingTimeout:              5,
 		kerberosKeySize:          32,
