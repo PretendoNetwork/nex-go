@@ -891,6 +891,7 @@ func (server *Server) SendRaw(conn *net.UDPAddr, data []byte) {
 		// Emulate packet drop for debugging
 		return
 	}
+
 	_, err := server.Socket().WriteToUDP(data, conn)
 	if err != nil {
 		// TODO - Should this return the error too?
