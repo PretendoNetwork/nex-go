@@ -906,7 +906,7 @@ func (server *Server) shouldDropPacket(isRecv bool) bool {
 	}
 }
 
-// SetEmulatedPacketDropPercent sets the percentage of emulated sent and received dropped packets, set to 0 to disable.
+// SetEmulatedPacketDropPercent sets the percentage of emulated sent and received dropped packets
 func (server *Server) SetEmulatedPacketDropPercent(forRecv bool, percent int) {
 	if forRecv {
 		server.emuRecvPacketDropPercent = percent
