@@ -55,6 +55,7 @@ type Server struct {
 	natTraversalProtocolVersion *NEXVersion
 	emuSendPacketDropPercent    int
 	emuRecvPacketDropPercent    int
+	port                        int
 }
 
 // Listen starts a NEX server on a given address
@@ -65,6 +66,9 @@ func (server *Server) Listen(address string) {
 	if err != nil {
 		panic(err)
 	}
+
+	// * For debugging the resend manager
+	server.port = udpAddress.Port
 
 	socket, err := net.ListenUDP(protocol, udpAddress)
 	if err != nil {
