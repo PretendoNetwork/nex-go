@@ -11,6 +11,7 @@ package nex
 import (
 	"crypto/rand"
 	"fmt"
+	mrand "math/rand"
 	"net"
 	"net/http"
 	"runtime"
@@ -48,6 +49,8 @@ type Server struct {
 	messagingProtocolVersion    *NEXVersion
 	utilityProtocolVersion      *NEXVersion
 	natTraversalProtocolVersion *NEXVersion
+	emuSendPacketDropPercent    int
+	emuRecvPacketDropPercent    int
 }
 
 // Listen starts a NEX server on a given address
@@ -99,6 +102,11 @@ func (server *Server) handleSocketMessage() error {
 	length, addr, err := socket.ReadFromUDP(buffer[0:])
 	if err != nil {
 		return err
+	}
+
+	if server.shouldDropPacket(true) {
+		// Emulate packet drop for debugging
+		return nil
 	}
 
 	discriminator := addr.String()
@@ -908,10 +916,32 @@ func (server *Server) SendFragment(packet PacketInterface, fragmentID uint8) {
 
 // SendRaw writes raw packet data to the client socket
 func (server *Server) SendRaw(conn *net.UDPAddr, data []byte) {
+	if server.shouldDropPacket(false) {
+		// Emulate packet drop for debugging
+		return
+	}
+
 	_, err := server.Socket().WriteToUDP(data, conn)
 	if err != nil {
 		// TODO - Should this return the error too?
 		logger.Error(err.Error())
+	}
+}
+
+func (server *Server) shouldDropPacket(isRecv bool) bool {
+	if isRecv {
+		return server.emuRecvPacketDropPercent != 0 && mrand.Intn(100) < server.emuRecvPacketDropPercent
+	} else {
+		return server.emuSendPacketDropPercent != 0 && mrand.Intn(100) < server.emuSendPacketDropPercent
+	}
+}
+
+// SetEmulatedPacketDropPercent sets the percentage of emulated sent and received dropped packets
+func (server *Server) SetEmulatedPacketDropPercent(forRecv bool, percent int) {
+	if forRecv {
+		server.emuRecvPacketDropPercent = percent
+	} else {
+		server.emuSendPacketDropPercent = percent
 	}
 }
 
@@ -931,6 +961,8 @@ func NewServer() *Server {
 		kerberosKeySize:       32,
 		kerberosKeyDerivation: 0,
 		connectionIDCounter:   NewCounter(10),
+		emuSendPacketDropPercent: 0,
+		emuRecvPacketDropPercent: 0,
 	}
 
 	server.SetDefaultNEXVersion(NewNEXVersion(0, 0, 0))
