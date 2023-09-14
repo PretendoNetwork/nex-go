@@ -162,8 +162,14 @@ func (server *Server) handleSocketMessage() error {
 	}
 
 	switch packet.Type() {
-	case DataPacket:
-
+	case PingPacket:
+		err := server.processPacket(packet)
+		if err != nil {
+			// TODO - Should this return the error too?
+			logger.Error(err.Error())
+			return nil
+		}
+	default:
 		// TODO - Make a better API in client to access incomingPacketManager?
 		client.incomingPacketManager.Push(packet)
 
@@ -180,17 +186,6 @@ func (server *Server) handleSocketMessage() error {
 			}
 
 			next = client.incomingPacketManager.Next()
-		}
-	default:
-		if packet.Type() != PingPacket {
-			client.incomingPacketManager.Increment()
-		}
-		
-		err := server.processPacket(packet)
-		if err != nil {
-			// TODO - Should this return the error too?
-			logger.Error(err.Error())
-			return nil
 		}
 	}
 
@@ -1063,7 +1058,7 @@ func NewServer() *Server {
 		prudpVersion:             1,
 		fragmentSize:             1300,
 		resendTimeout:            time.Second,
-		resendMaxIterations:      15,
+		resendMaxIterations:      5,
 		pingTimeout:              5,
 		kerberosKeySize:          32,
 		kerberosKeyDerivation:    0,

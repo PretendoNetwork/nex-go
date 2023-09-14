@@ -27,10 +27,6 @@ func (p *PacketManager) Push(packet PacketInterface) {
 	p.packets = append(p.packets, packet)
 }
 
-func (p *PacketManager) Increment() {
-	p.currentSequenceID.Increment()
-}
-
 // RemoveByIndex removes a packet from the pool using it's index in the slice
 func (p *PacketManager) RemoveByIndex(i int) {
 	// * https://stackoverflow.com/a/37335777
