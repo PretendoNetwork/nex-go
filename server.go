@@ -150,22 +150,43 @@ func (server *Server) handleSocketMessage() error {
 		return nil
 	}
 
-	// TODO - Make a better API in client to access incomingPacketManager?
-	client.incomingPacketManager.Push(packet)
+	if packet.HasFlag(FlagNeedsAck) {
+		if packet.Type() != ConnectPacket || (packet.Type() == ConnectPacket && len(packet.Payload()) <= 0) {
+			go server.AcknowledgePacket(packet, nil)
+		}
 
-	// TODO - Make this API smarter. Only track missing packets and not all packets?
-	// * Keep processing packets so long as the next one is in the pool,
-	// * this way if several packets came in out of order they all get
-	// * processed at once the moment the correct next packet comes in
-	for next := client.incomingPacketManager.Next(); next != nil; {
-		err := server.processPacket(next)
+		if packet.Type() == DisconnectPacket {
+			go server.AcknowledgePacket(packet, nil)
+			go server.AcknowledgePacket(packet, nil)
+		}
+	}
+
+	switch packet.Type() {
+	case PingPacket:
+		err := server.processPacket(packet)
 		if err != nil {
 			// TODO - Should this return the error too?
 			logger.Error(err.Error())
 			return nil
 		}
+	default:
+		// TODO - Make a better API in client to access incomingPacketManager?
+		client.incomingPacketManager.Push(packet)
 
-		next = client.incomingPacketManager.Next()
+		// TODO - Make this API smarter. Only track missing packets and not all packets?
+		// * Keep processing packets so long as the next one is in the pool,
+		// * this way if several packets came in out of order they all get
+		// * processed at once the moment the correct next packet comes in
+		for next := client.incomingPacketManager.Next(); next != nil; {
+			err := server.processPacket(next)
+			if err != nil {
+				// TODO - Should this return the error too?
+				logger.Error(err.Error())
+				return nil
+			}
+
+			next = client.incomingPacketManager.Next()
+		}
 	}
 
 	return nil
@@ -181,17 +202,6 @@ func (server *Server) processPacket(packet PacketInterface) error {
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
 		return nil
-	}
-
-	if packet.HasFlag(FlagNeedsAck) {
-		if packet.Type() != ConnectPacket || (packet.Type() == ConnectPacket && len(packet.Payload()) <= 0) {
-			go server.AcknowledgePacket(packet, nil)
-		}
-
-		if packet.Type() == DisconnectPacket {
-			go server.AcknowledgePacket(packet, nil)
-			go server.AcknowledgePacket(packet, nil)
-		}
 	}
 
 	switch packet.Type() {
