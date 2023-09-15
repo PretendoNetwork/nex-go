@@ -43,8 +43,7 @@ func (m *MutexMap[K, V]) Size() int {
 }
 
 // Each runs a callback function for every item in the map
-// the callback function takes in the items key and value
-// the map should not be modified inside the callback function
+// The map should not be modified inside the callback function
 func (m *MutexMap[K, V]) Each(callback func(key K, value V)) {
 	m.RLock()
 	defer m.RUnlock()
