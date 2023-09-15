@@ -84,8 +84,8 @@ func (p *PacketResendManager) Remove(sequenceID uint16) {
 
 // Clear removes all packets from pool and stops their timers
 func (p *PacketResendManager) Clear() {
-	p.pending.Each(func(key uint16, value *PendingPacket) {
-		p.Remove(value.packet.SequenceID())
+	p.pending.Clear(func(key uint16, value *PendingPacket) {
+		value.StopTimeoutTimer()
 	})
 }
 
