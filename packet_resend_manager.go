@@ -7,6 +7,7 @@ import (
 // PendingPacket represents a packet which the server has sent but not received an ACK for
 // it handles it's own retransmission on a per-packet timer
 type PendingPacket struct {
+	ticking       bool
 	ticker        *time.Ticker
 	quit          chan struct{}
 	packet        PacketInterface
@@ -42,13 +43,17 @@ func (p *PendingPacket) BeginTimeoutTimer() {
 
 // StopTimeoutTimer stops the packet retransmission timer
 func (p *PendingPacket) StopTimeoutTimer() {
-	close(p.quit)
-	p.ticker.Stop()
+	if p.ticking {
+		close(p.quit)
+		p.ticker.Stop()
+		p.ticking = false
+	}
 }
 
 // NewPendingPacket returns a new PendingPacket
 func NewPendingPacket(packet PacketInterface, timeoutTime time.Duration, maxIterations int) *PendingPacket {
 	p := &PendingPacket{
+		ticking: 	   true,
 		ticker:        time.NewTicker(timeoutTime),
 		quit:          make(chan struct{}),
 		packet:        packet,
