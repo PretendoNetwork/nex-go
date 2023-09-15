@@ -10,8 +10,8 @@ type MutexMap[K comparable, V any] struct {
 
 // Set sets a key to a given value
 func (m *MutexMap[K, V]) Set(key K, value V) {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	m.real[key] = value
 }
@@ -28,8 +28,8 @@ func (m *MutexMap[K, V]) Get(key K) (V, bool) {
 
 // Delete removes a key from the internal map
 func (m *MutexMap[K, V]) Delete(key K) {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	delete(m.real, key)
 }
