@@ -12,6 +12,8 @@ type PendingPacket struct {
 	quit          chan struct{}
 	packet        PacketInterface
 	iterations    *Counter
+	timeout       time.Duration
+	timeoutInc    time.Duration
 	maxIterations int
 }
 
@@ -33,6 +35,11 @@ func (p *PendingPacket) BeginTimeoutTimer() {
 					p.StopTimeoutTimer()
 					return
 				} else {
+					if p.timeoutInc != 0 {
+						p.timeout += p.timeoutInc
+						p.ticker.Reset(p.timeout)
+					}
+
 					// * Resend the packet
 					server.SendRaw(client.Address(), p.packet.Bytes())
 				}
@@ -51,13 +58,15 @@ func (p *PendingPacket) StopTimeoutTimer() {
 }
 
 // NewPendingPacket returns a new PendingPacket
-func NewPendingPacket(packet PacketInterface, timeoutTime time.Duration, maxIterations int) *PendingPacket {
+func NewPendingPacket(packet PacketInterface, timeoutTime time.Duration, timeoutIncrement time.Duration, maxIterations int) *PendingPacket {
 	p := &PendingPacket{
-		ticking: 	   true,
+		ticking:       true,
 		ticker:        time.NewTicker(timeoutTime),
 		quit:          make(chan struct{}),
 		packet:        packet,
 		iterations:    NewCounter(0),
+		timeout:       timeoutTime,
+		timeoutInc:    timeoutIncrement,
 		maxIterations: maxIterations,
 	}
 
@@ -68,12 +77,13 @@ func NewPendingPacket(packet PacketInterface, timeoutTime time.Duration, maxIter
 type PacketResendManager struct {
 	pending       *MutexMap[uint16, *PendingPacket]
 	timeoutTime   time.Duration
+	timeoutInc    time.Duration
 	maxIterations int
 }
 
 // Add creates a PendingPacket, adds it to the pool, and begins it's timeout timer
 func (p *PacketResendManager) Add(packet PacketInterface) {
-	cached := NewPendingPacket(packet, p.timeoutTime, p.maxIterations)
+	cached := NewPendingPacket(packet, p.timeoutTime, p.timeoutInc, p.maxIterations)
 	p.pending.Set(packet.SequenceID(), cached)
 
 	cached.BeginTimeoutTimer()
@@ -95,10 +105,11 @@ func (p *PacketResendManager) Clear() {
 }
 
 // NewPacketResendManager returns a new PacketResendManager
-func NewPacketResendManager(timeoutTime time.Duration, maxIterations int) *PacketResendManager {
+func NewPacketResendManager(timeoutTime time.Duration, timeoutIncrement time.Duration, maxIterations int) *PacketResendManager {
 	return &PacketResendManager{
 		pending:       NewMutexMap[uint16, *PendingPacket](),
 		timeoutTime:   timeoutTime,
+		timeoutInc:    timeoutIncrement,
 		maxIterations: maxIterations,
 	}
 }
