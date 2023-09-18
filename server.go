@@ -37,7 +37,7 @@ type Server struct {
 	supportedFunctions          int
 	fragmentSize                int16
 	resendTimeout               time.Duration
-	resendTimeoutIncrement		time.Duration
+	resendTimeoutIncrement      time.Duration
 	resendMaxIterations         int
 	pingTimeout                 int
 	kerberosPassword            string
