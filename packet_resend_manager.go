@@ -37,8 +37,9 @@ func (p *PendingPacket) BeginTimeoutTimer() {
 				} else {
 					if p.timeoutInc != 0 {
 						p.timeout += p.timeoutInc
-						p.ticker = time.NewTicker(p.timeout)
+						p.ticker.Reset(p.timeout)
 					}
+
 					// * Resend the packet
 					server.SendRaw(client.Address(), p.packet.Bytes())
 				}
@@ -59,7 +60,7 @@ func (p *PendingPacket) StopTimeoutTimer() {
 // NewPendingPacket returns a new PendingPacket
 func NewPendingPacket(packet PacketInterface, timeoutTime time.Duration, timeoutIncrement time.Duration, maxIterations int) *PendingPacket {
 	p := &PendingPacket{
-		ticking: 	   true,
+		ticking:       true,
 		ticker:        time.NewTicker(timeoutTime),
 		quit:          make(chan struct{}),
 		packet:        packet,
