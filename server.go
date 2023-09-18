@@ -37,6 +37,7 @@ type Server struct {
 	supportedFunctions          int
 	fragmentSize                int16
 	resendTimeout               time.Duration
+	resendTimeoutIncrement		time.Duration
 	resendMaxIterations         int
 	pingTimeout                 int
 	kerberosPassword            string
@@ -890,6 +891,11 @@ func (server *Server) SetResendTimeout(resendTimeout time.Duration) {
 	server.resendTimeout = resendTimeout
 }
 
+// SetResendTimeoutIncrement sets how much to increment the resendTimeout every time a packet is resent to the client 
+func (server *Server) SetResendTimeoutIncrement(resendTimeoutIncrement time.Duration) {
+	server.resendTimeoutIncrement = resendTimeoutIncrement
+}
+
 // SetResendMaxIterations sets the max number of times a packet can try to resend before assuming the client is dead
 func (server *Server) SetResendMaxIterations(resendMaxIterations int) {
 	server.resendMaxIterations = resendMaxIterations
@@ -1058,6 +1064,7 @@ func NewServer() *Server {
 		prudpVersion:             1,
 		fragmentSize:             1300,
 		resendTimeout:            time.Second,
+		resendTimeoutIncrement:   0,
 		resendMaxIterations:      5,
 		pingTimeout:              5,
 		kerberosKeySize:          32,

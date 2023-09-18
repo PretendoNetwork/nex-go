@@ -48,7 +48,7 @@ func (client *Client) Reset() error {
 		client.outgoingResendManager.Clear()
 	}
 
-	client.outgoingResendManager = NewPacketResendManager(server.resendTimeout, server.resendMaxIterations)
+	client.outgoingResendManager = NewPacketResendManager(server.resendTimeout, server.resendTimeoutIncrement, server.resendMaxIterations)
 
 	client.UpdateAccessKey(server.AccessKey())
 	err := client.UpdateRC4Key([]byte("CD&ML"))
