@@ -233,7 +233,6 @@ func (server *Server) processPacket(packet PacketInterface) error {
 	case DataPacket:
 		server.Emit("Data", packet)
 	case DisconnectPacket:
-		fmt.Println("Got a DisconnectPacket")
 		server.Emit("Disconnect", packet)
 		server.GracefulKick(client)
 	case PingPacket:
