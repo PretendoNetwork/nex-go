@@ -23,7 +23,6 @@ func (p *PendingPacket) BeginTimeoutTimer() {
 		for {
 			select {
 			case <-p.quit:
-				//fmt.Println("Stopped")
 				return
 			case <-p.ticker.C:
 				client := p.packet.Sender()

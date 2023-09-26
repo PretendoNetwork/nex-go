@@ -55,7 +55,6 @@ type Server struct {
 	natTraversalProtocolVersion *NEXVersion
 	emuSendPacketDropPercent    int
 	emuRecvPacketDropPercent    int
-	port                        int
 }
 
 // Listen starts a NEX server on a given address
@@ -66,9 +65,6 @@ func (server *Server) Listen(address string) {
 	if err != nil {
 		panic(err)
 	}
-
-	// * For debugging the resend manager
-	server.port = udpAddress.Port
 
 	socket, err := net.ListenUDP(protocol, udpAddress)
 	if err != nil {
@@ -890,7 +886,7 @@ func (server *Server) SetResendTimeout(resendTimeout time.Duration) {
 	server.resendTimeout = resendTimeout
 }
 
-// SetResendTimeoutIncrement sets how much to increment the resendTimeout every time a packet is resent to the client 
+// SetResendTimeoutIncrement sets how much to increment the resendTimeout every time a packet is resent to the client
 func (server *Server) SetResendTimeoutIncrement(resendTimeoutIncrement time.Duration) {
 	server.resendTimeoutIncrement = resendTimeoutIncrement
 }
