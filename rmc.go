@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+// TODO - We should probably combine RMCRequest and RMCResponse in a single RMCMessage for simpler packet payload setting/reading that supports both request and response payloads
+
 // RMCRequest represets a RMC request
 type RMCRequest struct {
 	protocolID uint8

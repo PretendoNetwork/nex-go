@@ -21,27 +21,42 @@ type Client struct {
 	clientConnectionSignature []byte
 	sessionKey                []byte
 	sequenceIDIn              *Counter
-	sequenceIDOut             *Counter
+	sequenceIDOutManager      *SequenceIDManager
 	pid                       uint32
 	stationURLs               []*StationURL
 	connectionID              uint32
 	pingCheckTimer            *time.Timer
 	pingKickTimer             *time.Timer
 	connected                 bool
+	incomingPacketManager     *PacketManager
+	outgoingResendManager     *PacketResendManager
 }
 
 // Reset resets the Client to default values
 func (client *Client) Reset() error {
-	client.sequenceIDIn = NewCounter(0)
-	client.sequenceIDOut = NewCounter(0)
+	server := client.Server()
 
-	client.UpdateAccessKey(client.Server().AccessKey())
+	client.sequenceIDIn = NewCounter(0)
+	client.sequenceIDOutManager = NewSequenceIDManager() // TODO - Pass the server into here to get data for multiple substreams and the unreliable starting ID
+	client.incomingPacketManager = NewPacketManager()
+
+	if client.outgoingResendManager != nil {
+		// * PacketResendManager makes use of time.Ticker structs.
+		// * These create new channels and goroutines which won't
+		// * close even if the objects are deleted. To free up
+		// * resources, time.Ticker MUST be stopped before reassigning
+		client.outgoingResendManager.Clear()
+	}
+
+	client.outgoingResendManager = NewPacketResendManager(server.resendTimeout, server.resendTimeoutIncrement, server.resendMaxIterations)
+
+	client.UpdateAccessKey(server.AccessKey())
 	err := client.UpdateRC4Key([]byte("CD&ML"))
 	if err != nil {
 		return fmt.Errorf("Failed to update client RC4 key. %s", err.Error())
 	}
 
-	if client.Server().PRUDPVersion() == 0 {
+	if server.PRUDPVersion() == 0 {
 		client.SetServerConnectionSignature(make([]byte, 4))
 		client.SetClientConnectionSignature(make([]byte, 4))
 	} else {
@@ -149,9 +164,9 @@ func (client *Client) ClientConnectionSignature() []byte {
 	return client.clientConnectionSignature
 }
 
-// SequenceIDCounterOut returns the clients packet SequenceID counter for out-going packets
-func (client *Client) SequenceIDCounterOut() *Counter {
-	return client.sequenceIDOut
+// SequenceIDOutManager returns the clients packet SequenceID manager for out-going packets
+func (client *Client) SequenceIDOutManager() *SequenceIDManager {
+	return client.sequenceIDOutManager
 }
 
 // SequenceIDCounterIn returns the clients packet SequenceID counter for incoming packets
@@ -231,6 +246,18 @@ func (client *Client) StartTimeoutTimer() {
 			client.server.TimeoutKick(client)
 		})
 	})
+}
+
+// StopTimeoutTimer stops the packet timeout timer
+func (client *Client) StopTimeoutTimer() {
+	//Stop the kick timer
+	if client.pingKickTimer != nil {
+		client.pingKickTimer.Stop()
+	}
+	//and the check timer
+	if client.pingCheckTimer != nil {
+		client.pingCheckTimer.Stop()
+	}
 }
 
 // NewClient returns a new PRUDP client

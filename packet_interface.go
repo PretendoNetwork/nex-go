@@ -2,6 +2,7 @@ package nex
 
 // PacketInterface implements all Packet methods
 type PacketInterface interface {
+	Data() []byte
 	Sender() *Client
 	SetVersion(version uint8)
 	Version() uint8
@@ -28,6 +29,7 @@ type PacketInterface interface {
 	FragmentID() uint8
 	SetPayload(payload []byte)
 	Payload() []byte
+	DecryptPayload() error
 	RMCRequest() RMCRequest
 	Bytes() []byte
 }

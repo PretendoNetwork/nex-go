@@ -117,19 +117,6 @@ func (packet *PacketV0) Decode() error {
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
 
 		packet.SetPayload(payloadCrypted)
-
-		if packet.Type() == DataPacket {
-			ciphered := make([]byte, payloadSize)
-			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
-
-			request := NewRMCRequest()
-			err := request.FromBytes(ciphered)
-			if err != nil {
-				return errors.New("[PRUDPv0] Error parsing RMC request: " + err.Error())
-			}
-
-			packet.rmcRequest = request
-		}
 	}
 
 	if len(packet.Data()[stream.ByteOffset():]) < int(checksumSize) {
@@ -154,30 +141,27 @@ func (packet *PacketV0) Decode() error {
 	return nil
 }
 
-// Bytes encodes the packet and returns a byte array
-func (packet *PacketV0) Bytes() []byte {
-	if packet.Type() == DataPacket {
+// DecryptPayload decrypts the packets payload and sets the RMC request data
+func (packet *PacketV0) DecryptPayload() error {
+	if packet.Type() == DataPacket && !packet.HasFlag(FlagAck) {
+		ciphered := make([]byte, len(packet.Payload()))
 
-		if packet.HasFlag(FlagAck) {
-			packet.SetPayload([]byte{})
-		} else {
-			payload := packet.Payload()
+		packet.Sender().Decipher().XORKeyStream(ciphered, packet.Payload())
 
-			if payload != nil || len(payload) > 0 {
-				payloadSize := len(payload)
-
-				encrypted := make([]byte, payloadSize)
-				packet.Sender().Cipher().XORKeyStream(encrypted, payload)
-
-				packet.SetPayload(encrypted)
-			}
+		request := NewRMCRequest()
+		err := request.FromBytes(ciphered)
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv0 RMC request. %s", err.Error())
 		}
 
-		if !packet.HasFlag(FlagHasSize) {
-			packet.AddFlag(FlagHasSize)
-		}
+		packet.rmcRequest = request
 	}
 
+	return nil
+}
+
+// Bytes encodes the packet and returns a byte array
+func (packet *PacketV0) Bytes() []byte {
 	var typeFlags uint16 = packet.Type() | packet.Flags()<<4
 
 	stream := NewStreamOut(packet.Sender().Server())

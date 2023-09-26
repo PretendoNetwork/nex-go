@@ -15,9 +15,20 @@ type StreamIn struct {
 	Server *Server
 }
 
+// Remaining returns the amount of data left to be read in the buffer
+func (stream *StreamIn) Remaining() int {
+	return len(stream.Bytes()[stream.ByteOffset():])
+}
+
+// ReadRemaining reads all the data left to be read in the buffer
+func (stream *StreamIn) ReadRemaining() []byte {
+	// TODO - Should we do a bounds check here? Or just allow empty slices?
+	return stream.ReadBytesNext(int64(stream.Remaining()))
+}
+
 // ReadBool reads a bool
 func (stream *StreamIn) ReadBool() (bool, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 1 {
+	if stream.Remaining() < 1 {
 		return false, errors.New("Not enough data to read bool")
 	}
 
@@ -26,7 +37,7 @@ func (stream *StreamIn) ReadBool() (bool, error) {
 
 // ReadUInt8 reads a uint8
 func (stream *StreamIn) ReadUInt8() (uint8, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 1 {
+	if stream.Remaining() < 1 {
 		return 0, errors.New("Not enough data to read uint8")
 	}
 
@@ -35,7 +46,7 @@ func (stream *StreamIn) ReadUInt8() (uint8, error) {
 
 // ReadInt8 reads a uint8
 func (stream *StreamIn) ReadInt8() (int8, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 1 {
+	if stream.Remaining() < 1 {
 		return 0, errors.New("Not enough data to read int8")
 	}
 
@@ -44,7 +55,7 @@ func (stream *StreamIn) ReadInt8() (int8, error) {
 
 // ReadUInt16LE reads a Little-Endian encoded uint16
 func (stream *StreamIn) ReadUInt16LE() (uint16, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+	if stream.Remaining() < 2 {
 		return 0, errors.New("Not enough data to read uint16")
 	}
 
@@ -53,7 +64,7 @@ func (stream *StreamIn) ReadUInt16LE() (uint16, error) {
 
 // ReadUInt16BE reads a Big-Endian encoded uint16
 func (stream *StreamIn) ReadUInt16BE() (uint16, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+	if stream.Remaining() < 2 {
 		return 0, errors.New("Not enough data to read uint16")
 	}
 
@@ -62,7 +73,7 @@ func (stream *StreamIn) ReadUInt16BE() (uint16, error) {
 
 // ReadInt16LE reads a Little-Endian encoded int16
 func (stream *StreamIn) ReadInt16LE() (int16, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+	if stream.Remaining() < 2 {
 		return 0, errors.New("Not enough data to read int16")
 	}
 
@@ -71,7 +82,7 @@ func (stream *StreamIn) ReadInt16LE() (int16, error) {
 
 // ReadInt16BE reads a Big-Endian encoded int16
 func (stream *StreamIn) ReadInt16BE() (int16, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 2 {
+	if stream.Remaining() < 2 {
 		return 0, errors.New("Not enough data to read int16")
 	}
 
@@ -80,7 +91,7 @@ func (stream *StreamIn) ReadInt16BE() (int16, error) {
 
 // ReadUInt32LE reads a Little-Endian encoded uint32
 func (stream *StreamIn) ReadUInt32LE() (uint32, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+	if stream.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read uint32")
 	}
 
@@ -89,7 +100,7 @@ func (stream *StreamIn) ReadUInt32LE() (uint32, error) {
 
 // ReadUInt32BE reads a Big-Endian encoded uint32
 func (stream *StreamIn) ReadUInt32BE() (uint32, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+	if stream.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read uint32")
 	}
 
@@ -98,7 +109,7 @@ func (stream *StreamIn) ReadUInt32BE() (uint32, error) {
 
 // ReadInt32LE reads a Little-Endian encoded int32
 func (stream *StreamIn) ReadInt32LE() (int32, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+	if stream.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read int32")
 	}
 
@@ -107,7 +118,7 @@ func (stream *StreamIn) ReadInt32LE() (int32, error) {
 
 // ReadInt32BE reads a Big-Endian encoded int32
 func (stream *StreamIn) ReadInt32BE() (int32, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+	if stream.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read int32")
 	}
 
@@ -116,7 +127,7 @@ func (stream *StreamIn) ReadInt32BE() (int32, error) {
 
 // ReadUInt64LE reads a Little-Endian encoded uint64
 func (stream *StreamIn) ReadUInt64LE() (uint64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+	if stream.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read uint64")
 	}
 
@@ -125,7 +136,7 @@ func (stream *StreamIn) ReadUInt64LE() (uint64, error) {
 
 // ReadUInt64BE reads a Big-Endian encoded uint64
 func (stream *StreamIn) ReadUInt64BE() (uint64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+	if stream.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read uint64")
 	}
 
@@ -134,7 +145,7 @@ func (stream *StreamIn) ReadUInt64BE() (uint64, error) {
 
 // ReadInt64LE reads a Little-Endian encoded int64
 func (stream *StreamIn) ReadInt64LE() (int64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+	if stream.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read int64")
 	}
 
@@ -143,7 +154,7 @@ func (stream *StreamIn) ReadInt64LE() (int64, error) {
 
 // ReadInt64BE reads a Big-Endian encoded int64
 func (stream *StreamIn) ReadInt64BE() (int64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+	if stream.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read int64")
 	}
 
@@ -152,7 +163,7 @@ func (stream *StreamIn) ReadInt64BE() (int64, error) {
 
 // ReadFloat32LE reads a Little-Endian encoded float32
 func (stream *StreamIn) ReadFloat32LE() (float32, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+	if stream.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read float32")
 	}
 
@@ -161,7 +172,7 @@ func (stream *StreamIn) ReadFloat32LE() (float32, error) {
 
 // ReadFloat32BE reads a Big-Endian encoded float32
 func (stream *StreamIn) ReadFloat32BE() (float32, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 4 {
+	if stream.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read float32")
 	}
 
@@ -170,7 +181,7 @@ func (stream *StreamIn) ReadFloat32BE() (float32, error) {
 
 // ReadFloat64LE reads a Little-Endian encoded float64
 func (stream *StreamIn) ReadFloat64LE() (float64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+	if stream.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read float64")
 	}
 
@@ -179,7 +190,7 @@ func (stream *StreamIn) ReadFloat64LE() (float64, error) {
 
 // ReadFloat64BE reads a Big-Endian encoded float64
 func (stream *StreamIn) ReadFloat64BE() (float64, error) {
-	if len(stream.Bytes()[stream.ByteOffset():]) < 8 {
+	if stream.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read float64")
 	}
 
@@ -193,7 +204,7 @@ func (stream *StreamIn) ReadString() (string, error) {
 		return "", fmt.Errorf("Failed to read NEX string length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+	if stream.Remaining() < int(length) {
 		return "", errors.New("NEX string length longer than data size")
 	}
 
@@ -210,7 +221,7 @@ func (stream *StreamIn) ReadBuffer() ([]byte, error) {
 		return []byte{}, fmt.Errorf("Failed to read NEX buffer length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+	if stream.Remaining() < int(length) {
 		return []byte{}, errors.New("NEX buffer length longer than data size")
 	}
 
@@ -226,7 +237,7 @@ func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
 		return []byte{}, fmt.Errorf("Failed to read NEX qBuffer length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+	if stream.Remaining() < int(length) {
 		return []byte{}, errors.New("NEX qBuffer length longer than data size")
 	}
 
@@ -257,7 +268,7 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 			return nil, fmt.Errorf("Failed to read NEX Structure content length. %s", err.Error())
 		}
 
-		if len(stream.Bytes()[stream.ByteOffset():]) < int(structureLength) {
+		if stream.Remaining() < int(structureLength) {
 			return nil, errors.New("NEX Structure content length longer than data size")
 		}
 
@@ -373,7 +384,7 @@ func (stream *StreamIn) ReadListUInt8() ([]uint8, error) {
 		return nil, fmt.Errorf("Failed to read List<uint8> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+	if stream.Remaining() < int(length) {
 		return nil, errors.New("NEX List<uint8> length longer than data size")
 	}
 
@@ -398,7 +409,7 @@ func (stream *StreamIn) ReadListInt8() ([]int8, error) {
 		return nil, fmt.Errorf("Failed to read List<int8> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length) {
+	if stream.Remaining() < int(length) {
 		return nil, errors.New("NEX List<int8> length longer than data size")
 	}
 
@@ -423,7 +434,7 @@ func (stream *StreamIn) ReadListUInt16LE() ([]uint16, error) {
 		return nil, fmt.Errorf("Failed to read List<uint16> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+	if stream.Remaining() < int(length*2) {
 		return nil, errors.New("NEX List<uint16> length longer than data size")
 	}
 
@@ -448,7 +459,7 @@ func (stream *StreamIn) ReadListUInt16BE() ([]uint16, error) {
 		return nil, fmt.Errorf("Failed to read List<uint16> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+	if stream.Remaining() < int(length*2) {
 		return nil, errors.New("NEX List<uint16> length longer than data size")
 	}
 
@@ -473,7 +484,7 @@ func (stream *StreamIn) ReadListInt16LE() ([]int16, error) {
 		return nil, fmt.Errorf("Failed to read List<int16> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+	if stream.Remaining() < int(length*2) {
 		return nil, errors.New("NEX List<int16> length longer than data size")
 	}
 
@@ -498,7 +509,7 @@ func (stream *StreamIn) ReadListInt16BE() ([]int16, error) {
 		return nil, fmt.Errorf("Failed to read List<int16> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*2) {
+	if stream.Remaining() < int(length*2) {
 		return nil, errors.New("NEX List<int16> length longer than data size")
 	}
 
@@ -523,7 +534,7 @@ func (stream *StreamIn) ReadListUInt32LE() ([]uint32, error) {
 		return nil, fmt.Errorf("Failed to read List<uint32> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<uint32> length longer than data size")
 	}
 
@@ -548,7 +559,7 @@ func (stream *StreamIn) ReadListUInt32BE() ([]uint32, error) {
 		return nil, fmt.Errorf("Failed to read List<uint32> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<uint32> length longer than data size")
 	}
 
@@ -573,7 +584,7 @@ func (stream *StreamIn) ReadListInt32LE() ([]int32, error) {
 		return nil, fmt.Errorf("Failed to read List<int32> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<int32> length longer than data size")
 	}
 
@@ -598,7 +609,7 @@ func (stream *StreamIn) ReadListInt32BE() ([]int32, error) {
 		return nil, fmt.Errorf("Failed to read List<int32> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<int32> length longer than data size")
 	}
 
@@ -623,7 +634,7 @@ func (stream *StreamIn) ReadListUInt64LE() ([]uint64, error) {
 		return nil, fmt.Errorf("Failed to read List<uint64> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+	if stream.Remaining() < int(length*8) {
 		return nil, errors.New("NEX List<uint64> length longer than data size")
 	}
 
@@ -648,7 +659,7 @@ func (stream *StreamIn) ReadListUInt64BE() ([]uint64, error) {
 		return nil, fmt.Errorf("Failed to read List<uint64> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+	if stream.Remaining() < int(length*8) {
 		return nil, errors.New("NEX List<uint64> length longer than data size")
 	}
 
@@ -673,7 +684,7 @@ func (stream *StreamIn) ReadListInt64LE() ([]int64, error) {
 		return nil, fmt.Errorf("Failed to read List<int64> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+	if stream.Remaining() < int(length*8) {
 		return nil, errors.New("NEX List<int64> length longer than data size")
 	}
 
@@ -698,7 +709,7 @@ func (stream *StreamIn) ReadListInt64BE() ([]int64, error) {
 		return nil, fmt.Errorf("Failed to read List<int64> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*8) {
+	if stream.Remaining() < int(length*8) {
 		return nil, errors.New("NEX List<int64> length longer than data size")
 	}
 
@@ -723,7 +734,7 @@ func (stream *StreamIn) ReadListFloat32LE() ([]float32, error) {
 		return nil, fmt.Errorf("Failed to read List<float32> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<float32> length longer than data size")
 	}
 
@@ -748,7 +759,7 @@ func (stream *StreamIn) ReadListFloat32BE() ([]float32, error) {
 		return nil, fmt.Errorf("Failed to read List<float32> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<float32> length longer than data size")
 	}
 
@@ -773,7 +784,7 @@ func (stream *StreamIn) ReadListFloat64LE() ([]float64, error) {
 		return nil, fmt.Errorf("Failed to read List<float64> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<float64> length longer than data size")
 	}
 
@@ -798,7 +809,7 @@ func (stream *StreamIn) ReadListFloat64BE() ([]float64, error) {
 		return nil, fmt.Errorf("Failed to read List<float64> length. %s", err.Error())
 	}
 
-	if len(stream.Bytes()[stream.ByteOffset():]) < int(length*4) {
+	if stream.Remaining() < int(length*4) {
 		return nil, errors.New("NEX List<float64> length longer than data size")
 	}
 

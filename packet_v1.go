@@ -199,20 +199,6 @@ func (packet *PacketV1) Decode() error {
 		payloadCrypted := stream.ReadBytesNext(int64(payloadSize))
 
 		packet.SetPayload(payloadCrypted)
-
-		if packet.Type() == DataPacket && !packet.HasFlag(FlagMultiAck) {
-			ciphered := make([]byte, payloadSize)
-
-			packet.Sender().Decipher().XORKeyStream(ciphered, payloadCrypted)
-
-			request := NewRMCRequest()
-			err := request.FromBytes(ciphered)
-			if err != nil {
-				return fmt.Errorf("Failed to read PRUDPv1 RMC request. %s", err.Error())
-			}
-
-			packet.rmcRequest = request
-		}
 	}
 
 	calculatedSignature := packet.calculateSignature(packet.Data()[2:14], packet.Sender().ServerConnectionSignature(), options, packet.Payload())
@@ -224,27 +210,27 @@ func (packet *PacketV1) Decode() error {
 	return nil
 }
 
-// Bytes encodes the packet and returns a byte array
-func (packet *PacketV1) Bytes() []byte {
-	if packet.Type() == DataPacket {
-		if !packet.HasFlag(FlagMultiAck) {
-			payload := packet.Payload()
+// DecryptPayload decrypts the packets payload and sets the RMC request data
+func (packet *PacketV1) DecryptPayload() error {
+	if packet.Type() == DataPacket && !packet.HasFlag(FlagMultiAck) {
+		ciphered := make([]byte, len(packet.Payload()))
 
-			if payload != nil || len(payload) > 0 {
-				payloadSize := len(payload)
+		packet.Sender().Decipher().XORKeyStream(ciphered, packet.Payload())
 
-				encrypted := make([]byte, payloadSize)
-				packet.Sender().Cipher().XORKeyStream(encrypted, payload)
-
-				packet.SetPayload(encrypted)
-			}
+		request := NewRMCRequest()
+		err := request.FromBytes(ciphered)
+		if err != nil {
+			return fmt.Errorf("Failed to read PRUDPv1 RMC request. %s", err.Error())
 		}
 
-		if !packet.HasFlag(FlagHasSize) {
-			packet.AddFlag(FlagHasSize)
-		}
+		packet.rmcRequest = request
 	}
 
+	return nil
+}
+
+// Bytes encodes the packet and returns a byte array
+func (packet *PacketV1) Bytes() []byte {
 	var typeFlags uint16 = packet.Type() | packet.Flags()<<4
 
 	stream := NewStreamOut(packet.Sender().Server())
