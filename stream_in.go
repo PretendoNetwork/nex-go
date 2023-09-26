@@ -15,12 +15,12 @@ type StreamIn struct {
 	Server *Server
 }
 
-// Remaining reads a bool
+// Remaining returns the amount of data left to be read in the buffer
 func (stream *StreamIn) Remaining() int {
 	return len(stream.Bytes()[stream.ByteOffset():])
 }
 
-// ReadRemaining reads a bool
+// ReadRemaining reads all the data left to be read in the buffer
 func (stream *StreamIn) ReadRemaining() []byte {
 	// TODO - Should we do a bounds check here? Or just allow empty slices?
 	return stream.ReadBytesNext(int64(stream.Remaining()))
