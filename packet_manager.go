@@ -1,13 +1,19 @@
 package nex
 
+import "sync"
+
 // PacketManager implements an API for pushing/popping packets in the correct order
 type PacketManager struct {
 	currentSequenceID *Counter
 	packets           []PacketInterface
+	*sync.RWMutex
 }
 
 // Next gets the next packet in the sequence. Returns nil if the next packet has not been sent yet
 func (p *PacketManager) Next() PacketInterface {
+	p.Lock()
+	defer p.Unlock()
+
 	var packet PacketInterface
 
 	for i := 0; i < len(p.packets); i++ {
@@ -24,6 +30,9 @@ func (p *PacketManager) Next() PacketInterface {
 
 // Push adds a packet to the pool to choose from in Next
 func (p *PacketManager) Push(packet PacketInterface) {
+	p.Lock()
+	defer p.Unlock()
+
 	p.packets = append(p.packets, packet)
 }
 
@@ -37,6 +46,7 @@ func (p *PacketManager) RemoveByIndex(i int) {
 // NewPacketManager returns a new PacketManager
 func NewPacketManager() *PacketManager {
 	return &PacketManager{
+		RWMutex: &sync.RWMutex{},
 		currentSequenceID: NewCounter(0),
 		packets:           make([]PacketInterface, 0),
 	}
