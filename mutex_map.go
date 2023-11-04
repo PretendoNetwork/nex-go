@@ -34,6 +34,17 @@ func (m *MutexMap[K, V]) Delete(key K) {
 	delete(m.real, key)
 }
 
+// RunAndDelete runs a callback and removes the key afterwards
+func (m *MutexMap[K, V]) RunAndDelete(key K, callback func(key K, value V)) {
+	m.Lock()
+	defer m.Unlock()
+	
+	if value, ok := m.real[key]; ok {
+		callback(key, value)
+		delete(m.real, key)
+	}
+}
+
 // Size returns the length of the internal map
 func (m *MutexMap[K, V]) Size() int {
 	m.RLock()

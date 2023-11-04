@@ -90,10 +90,9 @@ func (p *PacketResendManager) Add(packet PacketInterface) {
 
 // Remove removes a packet from pool and stops it's timer
 func (p *PacketResendManager) Remove(sequenceID uint16) {
-	if cached, ok := p.pending.Get(sequenceID); ok {
-		cached.StopTimeoutTimer()
-		p.pending.Delete(sequenceID)
-	}
+	p.pending.RunAndDelete(sequenceID, func(key uint16, value *PendingPacket){
+		value.StopTimeoutTimer()
+	})
 }
 
 // Clear removes all packets from pool and stops their timers
