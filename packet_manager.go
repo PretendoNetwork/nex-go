@@ -6,13 +6,13 @@ import "sync"
 type PacketManager struct {
 	currentSequenceID *Counter
 	packets           []PacketInterface
-	*sync.RWMutex
+	mutex             *sync.RWMutex
 }
 
 // Next gets the next packet in the sequence. Returns nil if the next packet has not been sent yet
 func (p *PacketManager) Next() PacketInterface {
-	p.Lock()
-	defer p.Unlock()
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
 	var packet PacketInterface
 
@@ -30,8 +30,8 @@ func (p *PacketManager) Next() PacketInterface {
 
 // Push adds a packet to the pool to choose from in Next
 func (p *PacketManager) Push(packet PacketInterface) {
-	p.Lock()
-	defer p.Unlock()
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
 	p.packets = append(p.packets, packet)
 }
@@ -46,7 +46,7 @@ func (p *PacketManager) RemoveByIndex(i int) {
 // NewPacketManager returns a new PacketManager
 func NewPacketManager() *PacketManager {
 	return &PacketManager{
-		RWMutex: &sync.RWMutex{},
+		mutex:             &sync.RWMutex{},
 		currentSequenceID: NewCounter(0),
 		packets:           make([]PacketInterface, 0),
 	}
