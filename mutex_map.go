@@ -26,6 +26,15 @@ func (m *MutexMap[K, V]) Get(key K) (V, bool) {
 	return value, ok
 }
 
+// Has checks if a key exists in the map
+func (m *MutexMap[K, V]) Has(key K) bool {
+	m.RLock()
+	defer m.RUnlock()
+
+	_, ok := m.real[key]
+	return ok
+}
+
 // Delete removes a key from the internal map
 func (m *MutexMap[K, V]) Delete(key K) {
 	m.Lock()
@@ -38,7 +47,7 @@ func (m *MutexMap[K, V]) Delete(key K) {
 func (m *MutexMap[K, V]) RunAndDelete(key K, callback func(key K, value V)) {
 	m.Lock()
 	defer m.Unlock()
-	
+
 	if value, ok := m.real[key]; ok {
 		callback(key, value)
 		delete(m.real, key)

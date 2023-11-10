@@ -163,7 +163,6 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 	if dataType == nil {
 		// TODO - Should we really log this here, or just pass the error to the caller?
 		message := fmt.Sprintf("UNKNOWN DATAHOLDER TYPE: %s", dataHolder.typeName)
-		logger.Critical(message)
 		return errors.New(message)
 	}
 
@@ -299,13 +298,11 @@ func (rvConnectionData *RVConnectionData) SetTime(time *DateTime) {
 
 // Bytes encodes the RVConnectionData and returns a byte array
 func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
-	nexVersion := stream.Server.NEXVersion()
-
 	stream.WriteString(rvConnectionData.stationURL)
 	stream.WriteListUInt8(rvConnectionData.specialProtocols)
 	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
 
-	if nexVersion.GreaterOrEqual("3.5.0") {
+	if stream.Server.LibraryVersion().GreaterOrEqual("3.5.0") {
 		rvConnectionData.SetStructureVersion(1)
 		stream.WriteDateTime(rvConnectionData.time)
 	}
@@ -958,17 +955,17 @@ func NewStationURL(str string) *StationURL {
 
 // Result is sent in methods which query large objects
 type Result struct {
-	code uint32
+	Code uint32
 }
 
 // IsSuccess returns true if the Result is a success
 func (result *Result) IsSuccess() bool {
-	return int(result.code)&errorMask == 0
+	return int(result.Code)&errorMask == 0
 }
 
 // IsError returns true if the Result is a error
 func (result *Result) IsError() bool {
-	return int(result.code)&errorMask != 0
+	return int(result.Code)&errorMask != 0
 }
 
 // ExtractFromStream extracts a Result structure from a stream
@@ -978,26 +975,26 @@ func (result *Result) ExtractFromStream(stream *StreamIn) error {
 		return fmt.Errorf("Failed to read Result code. %s", err.Error())
 	}
 
-	result.code = code
+	result.Code = code
 
 	return nil
 }
 
 // Bytes encodes the Result and returns a byte array
 func (result *Result) Bytes(stream *StreamOut) []byte {
-	stream.WriteUInt32LE(result.code)
+	stream.WriteUInt32LE(result.Code)
 
 	return stream.Bytes()
 }
 
 // Copy returns a new copied instance of Result
 func (result *Result) Copy() *Result {
-	return NewResult(result.code)
+	return NewResult(result.Code)
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
 func (result *Result) Equals(other *Result) bool {
-	return result.code == other.code
+	return result.Code == other.Code
 }
 
 // String returns a string representation of the struct
@@ -1015,9 +1012,9 @@ func (result *Result) FormatToString(indentationLevel int) string {
 	b.WriteString("Result{\n")
 
 	if result.IsSuccess() {
-		b.WriteString(fmt.Sprintf("%scode: %d (success)\n", indentationValues, result.code))
+		b.WriteString(fmt.Sprintf("%scode: %d (success)\n", indentationValues, result.Code))
 	} else {
-		b.WriteString(fmt.Sprintf("%scode: %d (error)\n", indentationValues, result.code))
+		b.WriteString(fmt.Sprintf("%scode: %d (error)\n", indentationValues, result.Code))
 	}
 
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))

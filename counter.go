@@ -1,24 +1,25 @@
 package nex
 
-// Counter represents an incremental counter
-type Counter struct {
-	value uint32
+import (
+	"golang.org/x/exp/constraints"
+)
+
+type numeric interface {
+	constraints.Integer | constraints.Float | constraints.Complex
 }
 
-// Value returns the counters current value
-func (counter Counter) Value() uint32 {
-	return counter.value
+// Counter represents an incremental counter of a specific numeric type
+type Counter[T numeric] struct {
+	Value T
 }
 
-// Increment increments the counter by 1 and returns the value
-func (counter *Counter) Increment() uint32 {
-	counter.value++
-	return counter.Value()
+// Next increments the counter by 1 and returns the new value
+func (c *Counter[T]) Next() T {
+	c.Value++
+	return c.Value
 }
 
 // NewCounter returns a new Counter, with a starting number
-func NewCounter(start uint32) *Counter {
-	counter := &Counter{value: start}
-
-	return counter
+func NewCounter[T numeric](start T) *Counter[T] {
+	return &Counter[T]{Value: start}
 }

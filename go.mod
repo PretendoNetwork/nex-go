@@ -1,6 +1,6 @@
 module github.com/PretendoNetwork/nex-go
 
-go 1.18
+go 1.21
 
 require (
 	github.com/PretendoNetwork/plogger-go v1.0.4

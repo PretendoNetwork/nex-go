@@ -9,7 +9,7 @@ import (
 // StreamOut is an abstraction of github.com/superwhiskers/crunch with nex type support
 type StreamOut struct {
 	*crunch.Buffer
-	Server *Server
+	Server ServerInterface
 }
 
 // WriteBool writes a bool
@@ -166,7 +166,7 @@ func (stream *StreamOut) WriteQBuffer(data []byte) {
 
 // WriteResult writes a NEX Result type
 func (stream *StreamOut) WriteResult(result *Result) {
-	stream.WriteUInt32LE(result.code)
+	stream.WriteUInt32LE(result.Code)
 }
 
 // WriteStructure writes a nex Structure type
@@ -177,9 +177,7 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 
 	content := structure.Bytes(NewStreamOut(stream.Server))
 
-	nexVersion := stream.Server.NEXVersion()
-
-	if nexVersion.GreaterOrEqual("3.5.0") {
+	if stream.Server.LibraryVersion().GreaterOrEqual("3.5.0") {
 		stream.WriteUInt8(structure.StructureVersion())
 		stream.WriteUInt32LE(uint32(len(content)))
 	}
@@ -480,7 +478,7 @@ func (stream *StreamOut) WriteMap(mapType interface{}) {
 }
 
 // NewStreamOut returns a new nex output stream
-func NewStreamOut(server *Server) *StreamOut {
+func NewStreamOut(server ServerInterface) *StreamOut {
 	return &StreamOut{
 		Buffer: crunch.NewBuffer(),
 		Server: server,

@@ -17,7 +17,7 @@ const (
 	PingPacket uint16 = 0x4
 )
 
-var validTypes = map[uint16]bool{
+var validPacketTypes = map[uint16]bool{
 	SynPacket:        true,
 	ConnectPacket:    true,
 	DataPacket:       true,

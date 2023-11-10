@@ -1,10 +1,11 @@
 package nex
 
-func sum(slice []byte) int {
-	total := 0
-	for _, value := range slice {
-		total += int(value)
-	}
+import "golang.org/x/exp/constraints"
 
-	return total
+func sum[T, O constraints.Integer](data []T) O {
+	var result O
+	for _, b := range data {
+		result += O(b)
+	}
+	return result
 }

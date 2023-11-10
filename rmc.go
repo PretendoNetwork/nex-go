@@ -5,223 +5,182 @@ import (
 	"fmt"
 )
 
-// TODO - We should probably combine RMCRequest and RMCResponse in a single RMCMessage for simpler packet payload setting/reading that supports both request and response payloads
-
-// RMCRequest represets a RMC request
-type RMCRequest struct {
-	protocolID uint8
-	customID   uint16
-	callID     uint32
-	methodID   uint32
-	parameters []byte
+// RMCMessage represents a message in the RMC (Remote Method Call) protocol
+type RMCMessage struct {
+	IsRequest  bool   // * Indicates if the message is a request message (true) or response message (false)
+	IsSuccess  bool   // * Indicates if the message is a success message (true) for a response message
+	ProtocolID uint16 // * Protocol ID of the message
+	CallID     uint32 // * Call ID associated with the message
+	MethodID   uint32 // * Method ID in the requested protocol
+	ErrorCode  uint32 // * Error code for a response message
+	Parameters []byte // * Input for the method
 }
 
-// ProtocolID sets the RMC request protocolID
-func (request *RMCRequest) ProtocolID() uint8 {
-	return request.protocolID
-}
-
-// CustomID returns the RMC request custom ID
-func (request *RMCRequest) CustomID() uint16 {
-	return request.customID
-}
-
-// CallID sets the RMC request callID
-func (request *RMCRequest) CallID() uint32 {
-	return request.callID
-}
-
-// MethodID sets the RMC request methodID
-func (request *RMCRequest) MethodID() uint32 {
-	return request.methodID
-}
-
-// Parameters sets the RMC request parameters
-func (request *RMCRequest) Parameters() []byte {
-	return request.parameters
-}
-
-// SetCustomID sets the RMC request custom ID
-func (request *RMCRequest) SetCustomID(customID uint16) {
-	request.customID = customID
-}
-
-// SetProtocolID sets the RMC request protocol ID
-func (request *RMCRequest) SetProtocolID(protocolID uint8) {
-	request.protocolID = protocolID
-}
-
-// SetCallID sets the RMC request call ID
-func (request *RMCRequest) SetCallID(callID uint32) {
-	request.callID = callID
-}
-
-// SetMethodID sets the RMC request method ID
-func (request *RMCRequest) SetMethodID(methodID uint32) {
-	request.methodID = methodID
-}
-
-// SetParameters sets the RMC request parameters
-func (request *RMCRequest) SetParameters(parameters []byte) {
-	request.parameters = parameters
-}
-
-// NewRMCRequest returns a new blank RMCRequest
-func NewRMCRequest() RMCRequest {
-	return RMCRequest{}
-}
-
-// FromBytes converts a byte slice into a RMCRequest
-func (request *RMCRequest) FromBytes(data []byte) error {
-	if len(data) < 13 {
-		return errors.New("[RMC] Data size less than minimum")
-	}
-
+// FromBytes decodes an RMCMessage from the given byte slice.
+func (rmc *RMCMessage) FromBytes(data []byte) error {
 	stream := NewStreamIn(data, nil)
 
-	size, err := stream.ReadUInt32LE()
+	length, err := stream.ReadUInt32LE()
 	if err != nil {
-		return fmt.Errorf("Failed to read RMC Request size. %s", err.Error())
+		return fmt.Errorf("Failed to read RMC Message size. %s", err.Error())
 	}
 
-	if int(size) != (len(data) - 4) {
-		return errors.New("RMC Request size does not match length of buffer")
+	if stream.Remaining() != int(length) {
+		return errors.New("RMC Message has unexpected size")
 	}
 
 	protocolID, err := stream.ReadUInt8()
 	if err != nil {
-		return fmt.Errorf("Failed to read RMC Request protocol ID. %s", err.Error())
+		return fmt.Errorf("Failed to read RMC Message protocol ID. %s", err.Error())
 	}
 
-	request.SetProtocolID(protocolID ^ 0x80)
+	rmc.ProtocolID = uint16(protocolID & ^byte(0x80))
 
-	if request.ProtocolID() == 0x7f {
-		customID, err := stream.ReadUInt16LE()
+	if rmc.ProtocolID == 0x7F {
+		rmc.ProtocolID, err = stream.ReadUInt16LE()
 		if err != nil {
-			return fmt.Errorf("Failed to read RMC Request custom protocol ID. %s", err.Error())
+			return fmt.Errorf("Failed to read RMC Message extended protocol ID. %s", err.Error())
+		}
+	}
+
+	if protocolID&0x80 != 0 {
+		rmc.IsRequest = true
+		rmc.CallID, err = stream.ReadUInt32LE()
+		if err != nil {
+			return fmt.Errorf("Failed to read RMC Message (request) call ID. %s", err.Error())
 		}
 
-		request.SetCustomID(customID)
+		rmc.MethodID, err = stream.ReadUInt32LE()
+		if err != nil {
+			return fmt.Errorf("Failed to read RMC Message (request) method ID. %s", err.Error())
+		}
+
+		rmc.Parameters = stream.ReadRemaining()
+		if err != nil {
+			return fmt.Errorf("Failed to read RMC Message (request) parameters. %s", err.Error())
+		}
+	} else {
+		rmc.IsRequest = false
+		rmc.IsSuccess, err = stream.ReadBool()
+		if err != nil {
+			return fmt.Errorf("Failed to read RMC Message (response) error check. %s", err.Error())
+		}
+
+		if rmc.IsSuccess {
+			rmc.CallID, err = stream.ReadUInt32LE()
+			if err != nil {
+				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
+			}
+
+			rmc.MethodID, err = stream.ReadUInt32LE()
+			if err != nil {
+				return fmt.Errorf("Failed to read RMC Message (response) method ID. %s", err.Error())
+			}
+
+			rmc.MethodID = rmc.MethodID & ^uint32(0x8000)
+			if err != nil {
+				return fmt.Errorf("Failed to read RMC Message (response) method ID. %s", err.Error())
+			}
+
+			rmc.Parameters = stream.ReadRemaining()
+			if err != nil {
+				return fmt.Errorf("Failed to read RMC Message (response) parameters. %s", err.Error())
+			}
+
+		} else {
+			rmc.ErrorCode, err = stream.ReadUInt32LE()
+			if err != nil {
+				return fmt.Errorf("Failed to read RMC Message (response) error code. %s", err.Error())
+			}
+
+			rmc.CallID, err = stream.ReadUInt32LE()
+			if err != nil {
+				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
+			}
+
+		}
 	}
-
-	callID, err := stream.ReadUInt32LE()
-	if err != nil {
-		return fmt.Errorf("Failed to read RMC Request call ID. %s", err.Error())
-	}
-
-	request.SetCallID(callID)
-
-	methodID, err := stream.ReadUInt32LE()
-	if err != nil {
-		return fmt.Errorf("Failed to read RMC Request method ID. %s", err.Error())
-	}
-
-	request.SetMethodID(methodID)
-	request.SetParameters(data[stream.ByteOffset():])
 
 	return nil
 }
 
-// Bytes converts a RMCRequest struct into a usable byte array
-func (request *RMCRequest) Bytes() []byte {
-	body := NewStreamOut(nil)
+// Bytes serializes the RMCMessage to a byte slice.
+func (rmc *RMCMessage) Bytes() []byte {
+	stream := NewStreamOut(nil)
 
-	body.WriteUInt8(request.protocolID | 0x80)
-	if request.protocolID == 0x7f {
-		body.WriteUInt16LE(request.customID)
+	// * RMC requests have their protocol IDs ORed with 0x80
+	var protocolIDFlag uint16 = 0x80
+	if !rmc.IsRequest {
+		protocolIDFlag = 0
 	}
 
-	body.WriteUInt32LE(request.callID)
-	body.WriteUInt32LE(request.methodID)
-
-	if request.parameters != nil && len(request.parameters) > 0 {
-		body.Grow(int64(len(request.parameters)))
-		body.WriteBytesNext(request.parameters)
+	if rmc.ProtocolID < 0x80 {
+		stream.WriteUInt8(uint8(rmc.ProtocolID | protocolIDFlag))
+	} else {
+		stream.WriteUInt8(uint8(0x7F | protocolIDFlag))
+		stream.WriteUInt16LE(rmc.ProtocolID)
 	}
 
-	data := NewStreamOut(nil)
+	if rmc.IsRequest {
+		stream.WriteUInt32LE(rmc.CallID)
+		stream.WriteUInt32LE(rmc.MethodID)
+		stream.Grow(int64(len(rmc.Parameters)))
+		stream.WriteBytesNext(rmc.Parameters)
+	} else {
+		if rmc.IsSuccess {
+			stream.WriteBool(true)
+			stream.WriteUInt32LE(rmc.CallID)
+			stream.WriteUInt32LE(rmc.MethodID | 0x8000)
+			stream.Grow(int64(len(rmc.Parameters)))
+			stream.WriteBytesNext(rmc.Parameters)
+		} else {
+			stream.WriteBool(false)
+			stream.WriteUInt32LE(uint32(rmc.ErrorCode))
+			stream.WriteUInt32LE(rmc.CallID)
+		}
+	}
 
-	data.WriteBuffer(body.Bytes())
+	serialized := stream.Bytes()
 
-	return data.Bytes()
+	message := NewStreamOut(nil)
+
+	message.WriteUInt32LE(uint32(len(serialized)))
+	message.Grow(int64(len(serialized)))
+	message.WriteBytesNext(serialized)
+
+	return message.Bytes()
 }
 
-// RMCResponse represents a RMC response
-type RMCResponse struct {
-	protocolID uint8
-	customID   uint16
-	success    uint8
-	callID     uint32
-	methodID   uint32
-	data       []byte
-	errorCode  uint32
+// NewRMCMessage returns a new generic RMC Message
+func NewRMCMessage() *RMCMessage {
+	return &RMCMessage{}
 }
 
-// CustomID returns the RMC response customID
-func (response *RMCResponse) CustomID() uint16 {
-	return response.customID
+// NewRMCRequest returns a new blank RMCRequest
+func NewRMCRequest() RMCMessage {
+	return RMCMessage{IsRequest: true}
 }
 
-// SetCustomID sets the RMC response customID
-func (response *RMCResponse) SetCustomID(customID uint16) {
-	response.customID = customID
+// NewRMCSuccess returns a new RMC Message configured as a success response
+func NewRMCSuccess(parameters []byte) *RMCMessage {
+	message := NewRMCMessage()
+	message.IsRequest = false
+	message.IsSuccess = true
+	message.Parameters = parameters
+
+	return message
 }
 
-// SetSuccess sets the RMCResponse payload to an instance of RMCSuccess
-func (response *RMCResponse) SetSuccess(methodID uint32, data []byte) {
-	response.success = 1
-	response.methodID = methodID
-	response.data = data
-}
-
-// SetError sets the RMCResponse payload to an instance of RMCError
-func (response *RMCResponse) SetError(errorCode uint32) {
+// NewRMCError returns a new RMC Message configured as a error response
+func NewRMCError(errorCode uint32) *RMCMessage {
 	if int(errorCode)&errorMask == 0 {
 		errorCode = uint32(int(errorCode) | errorMask)
 	}
 
-	response.success = 0
-	response.errorCode = errorCode
-}
+	message := NewRMCMessage()
+	message.IsRequest = false
+	message.IsSuccess = false
+	message.ErrorCode = errorCode
 
-// Bytes converts a RMCResponse struct into a usable byte array
-func (response *RMCResponse) Bytes() []byte {
-	body := NewStreamOut(nil)
-
-	if response.protocolID > 0 {
-		body.WriteUInt8(response.protocolID)
-		if response.protocolID == 0x7f {
-			body.WriteUInt16LE(response.customID)
-		}
-	}
-	body.WriteUInt8(response.success)
-
-	if response.success == 1 {
-		body.WriteUInt32LE(response.callID)
-		body.WriteUInt32LE(response.methodID | 0x8000)
-
-		if response.data != nil && len(response.data) > 0 {
-			body.Grow(int64(len(response.data)))
-			body.WriteBytesNext(response.data)
-		}
-	} else {
-		body.WriteUInt32LE(response.errorCode)
-		body.WriteUInt32LE(response.callID)
-	}
-
-	data := NewStreamOut(nil)
-
-	data.WriteBuffer(body.Bytes())
-
-	return data.Bytes()
-}
-
-// NewRMCResponse returns a new RMCResponse
-func NewRMCResponse(protocolID uint8, callID uint32) RMCResponse {
-	response := RMCResponse{
-		protocolID: protocolID,
-		callID:     callID,
-	}
-
-	return response
+	return message
 }

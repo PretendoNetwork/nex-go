@@ -9,10 +9,10 @@ import (
 	crunch "github.com/superwhiskers/crunch/v3"
 )
 
-// StreamIn is an input stream abstraction of github.com/superwhiskers/crunch with nex type support
+// StreamIn is an input stream abstraction of github.com/superwhiskers/crunch/v3 with nex type support
 type StreamIn struct {
 	*crunch.Buffer
-	Server *Server
+	Server ServerInterface
 }
 
 // Remaining returns the amount of data left to be read in the buffer
@@ -255,9 +255,7 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 		}
 	}
 
-	nexVersion := stream.Server.NEXVersion()
-
-	if nexVersion.GreaterOrEqual("3.5.0") {
+	if stream.Server.LibraryVersion().GreaterOrEqual("3.5.0") {
 		version, err := stream.ReadUInt8()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read NEX Structure version. %s", err.Error())
@@ -957,7 +955,7 @@ func (stream *StreamIn) ReadListDataHolder() ([]*DataHolder, error) {
 }
 
 // NewStreamIn returns a new NEX input stream
-func NewStreamIn(data []byte, server *Server) *StreamIn {
+func NewStreamIn(data []byte, server ServerInterface) *StreamIn {
 	return &StreamIn{
 		Buffer: crunch.NewBuffer(data),
 		Server: server,
