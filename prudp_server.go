@@ -17,6 +17,7 @@ type PRUDPServer struct {
 	PRUDPVersion                int
 	IsQuazalMode                bool
 	IsSecureServer              bool
+	SupportedFunctions          uint32
 	accessKey                   string
 	kerberosPassword            []byte
 	kerberosTicketVersion       int
@@ -243,6 +244,13 @@ func (s *PRUDPServer) handleSyn(packet PRUDPPacketInterface) {
 	ack.setConnectionSignature(connectionSignature)
 	ack.setSignature(ack.calculateSignature([]byte{}, []byte{}))
 
+	if ack, ok := ack.(*PRUDPPacketV1); ok {
+		// * Negotiate with the client what we support
+		ack.maximumSubstreamID = packet.(*PRUDPPacketV1).maximumSubstreamID // * No change needed, we can just support what the client wants
+		ack.minorVersion = packet.(*PRUDPPacketV1).minorVersion             // * No change needed, we can just support what the client wants
+		ack.supportedFunctions = s.SupportedFunctions & packet.(*PRUDPPacketV1).supportedFunctions
+	}
+
 	s.emit("syn", ack)
 
 	s.sendRaw(client.address, ack.Bytes())
@@ -275,7 +283,10 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 	ack.SetSequenceID(1)
 
 	if ack, ok := ack.(*PRUDPPacketV1); ok {
-		// * Just tell the client we support exactly what it wants
+		// * At this stage the client and server have already
+		// * negotiated what they each can support, so configure
+		// * the client now and just send the client back the
+		// * negotiated configuration
 		ack.maximumSubstreamID = packet.(*PRUDPPacketV1).maximumSubstreamID
 		ack.minorVersion = packet.(*PRUDPPacketV1).minorVersion
 		ack.supportedFunctions = packet.(*PRUDPPacketV1).supportedFunctions
