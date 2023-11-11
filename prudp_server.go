@@ -33,6 +33,7 @@ type PRUDPServer struct {
 	eventHandlers               map[string][]func(PacketInterface)
 	connectionIDCounter         *Counter[uint32]
 	pingTimeout                 time.Duration
+	PasswordFromPID             func(pid uint32) (string, uint32)
 }
 
 // OnReliableData adds an event handler which is fired when a new reliable DATA packet is received
