@@ -18,10 +18,10 @@ type PRUDPClient struct {
 	outgoingPingSequenceIDCounter       *Counter[uint16]
 	heartbeatTimer                      *time.Timer
 	pingKickTimer                       *time.Timer
-	sourceStreamType                    uint8
-	sourcePort                          uint8
-	destinationStreamType               uint8
-	destinationPort                     uint8
+	SourceStreamType                    uint8
+	SourcePort                          uint8
+	DestinationStreamType               uint8
+	DestinationPort                     uint8
 	minorVersion                        uint32 // * Not currently used for anything, but maybe useful later?
 	supportedFunctions                  uint32 // * Not currently used for anything, but maybe useful later?
 }
@@ -38,10 +38,10 @@ func (c *PRUDPClient) reset() {
 	c.reliableSubstreams = make([]*ReliablePacketSubstreamManager, 0)
 	c.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](0)
 	c.outgoingPingSequenceIDCounter = NewCounter[uint16](0)
-	c.sourceStreamType = 0
-	c.sourcePort = 0
-	c.destinationStreamType = 0
-	c.destinationPort = 0
+	c.SourceStreamType = 0
+	c.SourcePort = 0
+	c.DestinationStreamType = 0
+	c.DestinationPort = 0
 }
 
 // Cleanup cleans up any resources the client may be using

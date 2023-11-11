@@ -228,10 +228,10 @@ func (s *PRUDPServer) handleSyn(packet PRUDPPacketInterface) {
 
 	client.reset()
 	client.clientConnectionSignature = connectionSignature
-	client.sourceStreamType = packet.SourceStreamType()
-	client.sourcePort = packet.SourcePort()
-	client.destinationStreamType = packet.DestinationStreamType()
-	client.destinationPort = packet.DestinationPort()
+	client.SourceStreamType = packet.SourceStreamType()
+	client.SourcePort = packet.SourcePort()
+	client.DestinationStreamType = packet.DestinationStreamType()
+	client.DestinationPort = packet.DestinationPort()
 
 	ack.SetType(SynPacket)
 	ack.AddFlag(FlagAck)
@@ -469,10 +469,10 @@ func (s *PRUDPServer) sendPing(client *PRUDPClient) {
 
 	ping.SetType(PingPacket)
 	ping.AddFlag(FlagNeedsAck)
-	ping.SetSourceStreamType(client.destinationStreamType)
-	ping.SetSourcePort(client.destinationPort)
-	ping.SetDestinationStreamType(client.sourceStreamType)
-	ping.SetDestinationPort(client.sourcePort)
+	ping.SetSourceStreamType(client.DestinationStreamType)
+	ping.SetSourcePort(client.DestinationPort)
+	ping.SetDestinationStreamType(client.SourceStreamType)
+	ping.SetDestinationPort(client.SourcePort)
 	ping.SetSubstreamID(0)
 
 	s.sendPacket(ping)
