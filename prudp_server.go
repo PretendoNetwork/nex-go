@@ -15,6 +15,7 @@ type PRUDPServer struct {
 	udpSocket                   *net.UDPConn
 	clients                     *MutexMap[string, *PRUDPClient]
 	PRUDPVersion                int
+	protocolMinorVersion uint32
 	IsQuazalMode                bool
 	IsSecureServer              bool
 	SupportedFunctions          uint32
@@ -693,6 +694,16 @@ func (s *PRUDPServer) NATTraversalProtocolVersion() *LibraryVersion {
 // ConnectionIDCounter returns the servers CID counter
 func (s *PRUDPServer) ConnectionIDCounter() *Counter[uint32] {
 	return s.connectionIDCounter
+}
+
+// SetNATTraversalProtocolVersion sets the servers NAT Traversal protocol version
+func (s *PRUDPServer) SetProtocolMinorVersion(protocolMinorVersion uint32) {
+	s.protocolMinorVersion = protocolMinorVersion
+}
+
+// ProtocolMinorVersion returns the servers PRUDP protocol minor version
+func (s *PRUDPServer) ProtocolMinorVersion() uint32 {
+	return s.protocolMinorVersion
 }
 
 // NewPRUDPServer will return a new PRUDP server

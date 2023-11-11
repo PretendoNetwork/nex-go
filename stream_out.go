@@ -177,7 +177,7 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 
 	content := structure.Bytes(NewStreamOut(stream.Server))
 
-	if stream.Server.LibraryVersion().GreaterOrEqual("3.5.0") {
+	if stream.Server.ProtocolMinorVersion() >= 3 {
 		stream.WriteUInt8(structure.StructureVersion())
 		stream.WriteUInt32LE(uint32(len(content)))
 	}

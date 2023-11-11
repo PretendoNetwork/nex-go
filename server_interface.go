@@ -4,6 +4,8 @@ package nex
 type ServerInterface interface {
 	AccessKey() string
 	SetAccessKey(accessKey string)
+	SetProtocolMinorVersion(protocolMinorVersion uint32)
+	ProtocolMinorVersion() uint32
 	LibraryVersion() *LibraryVersion
 	DataStoreProtocolVersion() *LibraryVersion
 	MatchMakingProtocolVersion() *LibraryVersion
