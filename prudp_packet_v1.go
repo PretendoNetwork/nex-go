@@ -26,7 +26,7 @@ func (p *PRUDPPacketV1) Version() int {
 	return 1
 }
 
-// Decode parses the packets data
+// decode parses the packets data
 func (p *PRUDPPacketV1) decode() error {
 	if p.readStream.Remaining() < 2 {
 		return errors.New("Failed to read PRUDPv1 magic. Not have enough data")

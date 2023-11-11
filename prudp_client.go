@@ -26,7 +26,7 @@ type PRUDPClient struct {
 	supportedFunctions                  uint32 // * Not currently used for anything, but maybe useful later?
 }
 
-// Reset sets the client back to it's default state
+// reset sets the client back to it's default state
 func (c *PRUDPClient) reset() {
 	for _, substream := range c.reliableSubstreams {
 		substream.ResendScheduler.Stop()
@@ -44,10 +44,10 @@ func (c *PRUDPClient) reset() {
 	c.DestinationPort = 0
 }
 
-// Cleanup cleans up any resources the client may be using
+// cleanup cleans up any resources the client may be using
 //
-// This is similar to Client.Reset(), with the key difference
-// being that Cleanup does not care about the state the client
+// This is similar to Client.reset(), with the key difference
+// being that cleanup does not care about the state the client
 // is currently in, or will be in, after execution. It only
 // frees resources that are not easily garbage collected
 func (c *PRUDPClient) cleanup() {
@@ -79,7 +79,7 @@ func (c *PRUDPClient) SetPID(pid uint32) {
 	c.pid = pid
 }
 
-// SetSessionKey sets the clients session key used for reliable RC4 ciphers
+// setSessionKey sets the clients session key used for reliable RC4 ciphers
 func (c *PRUDPClient) setSessionKey(sessionKey []byte) {
 	c.sessionKey = sessionKey
 
@@ -103,12 +103,12 @@ func (c *PRUDPClient) setSessionKey(sessionKey []byte) {
 	}
 }
 
-// ReliableSubstream returns the clients reliable substream ID
+// reliableSubstream returns the clients reliable substream ID
 func (c *PRUDPClient) reliableSubstream(substreamID uint8) *ReliablePacketSubstreamManager {
 	return c.reliableSubstreams[substreamID]
 }
 
-// CreateReliableSubstreams creates the list of substreams used for reliable PRUDP packets
+// createReliableSubstreams creates the list of substreams used for reliable PRUDP packets
 func (c *PRUDPClient) createReliableSubstreams(maxSubstreamID uint8) {
 	substreams := maxSubstreamID + 1
 
