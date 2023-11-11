@@ -277,17 +277,11 @@ func (p *PRUDPPacketV1) calculateConnectionSignature(addr net.Addr) ([]byte, err
 		return nil, fmt.Errorf("Unsupported network type: %T", addr)
 	}
 
-	// * The real client seems to not care about this. The original
-	// * server just used rand.Read here. This is done to implement
-	// * compatibility with NintendoClients, as this is how it
-	// * calculates PRUDPv1 connection signatures
-	key := []byte{0x26, 0xc3, 0x1f, 0x38, 0x1e, 0x46, 0xd6, 0xeb, 0x38, 0xe1, 0xaf, 0x6a, 0xb7, 0x0d, 0x11}
-
 	portBytes := make([]byte, 2)
 	binary.BigEndian.PutUint16(portBytes, uint16(port))
 
 	data := append(ip, portBytes...)
-	hash := hmac.New(md5.New, key)
+	hash := hmac.New(md5.New, p.sender.server.PRUDPv1ConnectionSignatureKey)
 	hash.Write(data)
 
 	return hash.Sum(nil), nil

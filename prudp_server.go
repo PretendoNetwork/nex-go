@@ -2,6 +2,7 @@ package nex
 
 import (
 	"bytes"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"net"
@@ -12,30 +13,31 @@ import (
 
 // PRUDPServer represents a bare-bones PRUDP server
 type PRUDPServer struct {
-	udpSocket                   *net.UDPConn
-	clients                     *MutexMap[string, *PRUDPClient]
-	PRUDPVersion                int
-	protocolMinorVersion uint32
-	IsQuazalMode                bool
-	IsSecureServer              bool
-	SupportedFunctions          uint32
-	accessKey                   string
-	kerberosPassword            []byte
-	kerberosTicketVersion       int
-	kerberosKeySize             int
-	FragmentSize                int
-	version                     *LibraryVersion
-	datastoreProtocolVersion    *LibraryVersion
-	matchMakingProtocolVersion  *LibraryVersion
-	rankingProtocolVersion      *LibraryVersion
-	ranking2ProtocolVersion     *LibraryVersion
-	messagingProtocolVersion    *LibraryVersion
-	utilityProtocolVersion      *LibraryVersion
-	natTraversalProtocolVersion *LibraryVersion
-	eventHandlers               map[string][]func(PacketInterface)
-	connectionIDCounter         *Counter[uint32]
-	pingTimeout                 time.Duration
-	PasswordFromPID             func(pid uint32) (string, uint32)
+	udpSocket                     *net.UDPConn
+	clients                       *MutexMap[string, *PRUDPClient]
+	PRUDPVersion                  int
+	protocolMinorVersion          uint32
+	IsQuazalMode                  bool
+	IsSecureServer                bool
+	SupportedFunctions            uint32
+	accessKey                     string
+	kerberosPassword              []byte
+	kerberosTicketVersion         int
+	kerberosKeySize               int
+	FragmentSize                  int
+	version                       *LibraryVersion
+	datastoreProtocolVersion      *LibraryVersion
+	matchMakingProtocolVersion    *LibraryVersion
+	rankingProtocolVersion        *LibraryVersion
+	ranking2ProtocolVersion       *LibraryVersion
+	messagingProtocolVersion      *LibraryVersion
+	utilityProtocolVersion        *LibraryVersion
+	natTraversalProtocolVersion   *LibraryVersion
+	eventHandlers                 map[string][]func(PacketInterface)
+	connectionIDCounter           *Counter[uint32]
+	pingTimeout                   time.Duration
+	PasswordFromPID               func(pid uint32) (string, uint32)
+	PRUDPv1ConnectionSignatureKey []byte
 }
 
 // OnReliableData adds an event handler which is fired when a new reliable DATA packet is received
@@ -61,6 +63,15 @@ func (s *PRUDPServer) emit(name string, packet PRUDPPacketInterface) {
 
 // Listen starts a PRUDP server on a given port
 func (s *PRUDPServer) Listen(port int) {
+	// * Ensure the server has a key for PRUDPv1 connection signatures
+	if len(s.PRUDPv1ConnectionSignatureKey) != 16 {
+		s.PRUDPv1ConnectionSignatureKey = make([]byte, 16)
+		_, err := rand.Read(s.PRUDPv1ConnectionSignatureKey)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	udpAddress, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		panic(err)
@@ -696,7 +707,7 @@ func (s *PRUDPServer) ConnectionIDCounter() *Counter[uint32] {
 	return s.connectionIDCounter
 }
 
-// SetNATTraversalProtocolVersion sets the servers NAT Traversal protocol version
+// SetNATTraversalProtocolVersion sets the servers PRUDP protocol minor version
 func (s *PRUDPServer) SetProtocolMinorVersion(protocolMinorVersion uint32) {
 	s.protocolMinorVersion = protocolMinorVersion
 }
