@@ -124,15 +124,19 @@ func (rmc *RMCMessage) Bytes() []byte {
 	if rmc.IsRequest {
 		stream.WriteUInt32LE(rmc.CallID)
 		stream.WriteUInt32LE(rmc.MethodID)
-		stream.Grow(int64(len(rmc.Parameters)))
-		stream.WriteBytesNext(rmc.Parameters)
+		if rmc.Parameters != nil && len(rmc.Parameters) > 0 {
+			stream.Grow(int64(len(rmc.Parameters)))
+			stream.WriteBytesNext(rmc.Parameters)
+		}
 	} else {
 		if rmc.IsSuccess {
 			stream.WriteBool(true)
 			stream.WriteUInt32LE(rmc.CallID)
 			stream.WriteUInt32LE(rmc.MethodID | 0x8000)
-			stream.Grow(int64(len(rmc.Parameters)))
-			stream.WriteBytesNext(rmc.Parameters)
+			if rmc.Parameters != nil && len(rmc.Parameters) > 0 {
+				stream.Grow(int64(len(rmc.Parameters)))
+				stream.WriteBytesNext(rmc.Parameters)
+			}
 		} else {
 			stream.WriteBool(false)
 			stream.WriteUInt32LE(uint32(rmc.ErrorCode))
