@@ -709,7 +709,7 @@ func (s *PRUDPServer) ConnectionIDCounter() *Counter[uint32] {
 	return s.connectionIDCounter
 }
 
-// SetNATTraversalProtocolVersion sets the servers PRUDP protocol minor version
+// SetProtocolMinorVersion sets the servers PRUDP protocol minor version
 func (s *PRUDPServer) SetProtocolMinorVersion(protocolMinorVersion uint32) {
 	s.protocolMinorVersion = protocolMinorVersion
 }
