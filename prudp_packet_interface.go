@@ -7,6 +7,7 @@ type PRUDPPacketInterface interface {
 	Version() int
 	Bytes() []byte
 	Sender() ClientInterface
+	Flags() uint16
 	HasFlag(flag uint16) bool
 	AddFlag(flag uint16)
 	SetType(packetType uint16)
@@ -19,6 +20,7 @@ type PRUDPPacketInterface interface {
 	DestinationStreamType() uint8
 	SetDestinationPort(destinationPort uint8)
 	DestinationPort() uint8
+	SessionID() uint8
 	SetSessionID(sessionID uint8)
 	SubstreamID() uint8
 	SetSubstreamID(substreamID uint8)

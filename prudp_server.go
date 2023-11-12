@@ -564,53 +564,76 @@ func (s *PRUDPServer) Send(packet PacketInterface) {
 func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	client := packet.Sender().(*PRUDPClient)
 
-	if !packet.HasFlag(FlagAck) && !packet.HasFlag(FlagMultiAck) {
-		if packet.HasFlag(FlagReliable) {
-			substream := client.reliableSubstream(packet.SubstreamID())
-			packet.SetSequenceID(substream.NextOutgoingSequenceID())
-		} else if packet.Type() == DataPacket {
-			packet.SetSequenceID(client.nextOutgoingUnreliableSequenceID())
-		} else if packet.Type() == PingPacket {
-			packet.SetSequenceID(client.nextOutgoingPingSequenceID())
+	// TODO - Add packet.Copy()
+	var packetCopy PRUDPPacketInterface
+	if packet.Version() == 1 {
+		packetCopy, _ = NewPRUDPPacketV1(client, nil)
+	} else {
+		packetCopy, _ = NewPRUDPPacketV0(client, nil)
+	}
+
+	packetCopy.SetSourceStreamType(packet.SourceStreamType())
+	packetCopy.SetSourcePort(packet.SourcePort())
+
+	packetCopy.SetDestinationStreamType(packet.DestinationStreamType())
+	packetCopy.SetDestinationPort(packet.DestinationPort())
+
+	packetCopy.SetType(packet.Type())
+	packetCopy.AddFlag(packet.Flags())
+	packetCopy.SetSessionID(packet.SessionID())
+	packetCopy.SetSubstreamID(packet.SubstreamID())
+	packetCopy.SetSequenceID(packet.SequenceID())
+	packetCopy.SetPayload(packet.Payload())
+	packetCopy.setConnectionSignature(packet.getConnectionSignature())
+	packetCopy.setFragmentID(packet.getFragmentID())
+
+	if !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
+		if packetCopy.HasFlag(FlagReliable) {
+			substream := client.reliableSubstream(packetCopy.SubstreamID())
+			packetCopy.SetSequenceID(substream.NextOutgoingSequenceID())
+		} else if packetCopy.Type() == DataPacket {
+			packetCopy.SetSequenceID(client.nextOutgoingUnreliableSequenceID())
+		} else if packetCopy.Type() == PingPacket {
+			packetCopy.SetSequenceID(client.nextOutgoingPingSequenceID())
 		} else {
-			packet.SetSequenceID(0)
+			packetCopy.SetSequenceID(0)
 		}
 	}
 
-	if packet.Type() == DataPacket && !packet.HasFlag(FlagAck) && !packet.HasFlag(FlagMultiAck) {
-		if packet.HasFlag(FlagReliable) {
-			substream := client.reliableSubstream(packet.SubstreamID())
-			packet.SetPayload(substream.Encrypt(packet.Payload()))
+	if packetCopy.Type() == DataPacket && !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
+		if packetCopy.HasFlag(FlagReliable) {
+			substream := client.reliableSubstream(packetCopy.SubstreamID())
+			packetCopy.SetPayload(substream.Encrypt(packetCopy.Payload()))
 		}
 		// TODO - Unreliable crypto
 	}
 
-	packet.setSignature(packet.calculateSignature(client.sessionKey, client.serverConnectionSignature))
+	packetCopy.setSignature(packetCopy.calculateSignature(client.sessionKey, client.serverConnectionSignature))
 
-	if packet.HasFlag(FlagReliable) && packet.HasFlag(FlagNeedsAck) {
-		substream := client.reliableSubstream(packet.SubstreamID())
-		substream.ResendScheduler.AddPacket(packet)
+	if packetCopy.HasFlag(FlagReliable) && packetCopy.HasFlag(FlagNeedsAck) {
+		substream := client.reliableSubstream(packetCopy.SubstreamID())
+		substream.ResendScheduler.AddPacket(packetCopy)
 	}
 
-	if packet.Type() == DataPacket && packet.RMCMessage() != nil {
+	if packetCopy.Type() == DataPacket && packetCopy.RMCMessage() != nil {
 		if s.IsSecureServer {
 			fmt.Println("[SECR] ======= SENDING =======")
-			fmt.Println("[SECR] ProtocolID:", packet.RMCMessage().ProtocolID)
-			fmt.Println("[SECR] MethodID:", packet.RMCMessage().MethodID)
-			fmt.Println("[SECR] FragmentID:", packet.getFragmentID())
-			fmt.Println("[SECR] SequenceID:", packet.SequenceID())
+			fmt.Println("[SECR] ProtocolID:", packetCopy.RMCMessage().ProtocolID)
+			fmt.Println("[SECR] MethodID:", packetCopy.RMCMessage().MethodID)
+			fmt.Println("[SECR] FragmentID:", packetCopy.getFragmentID())
+			fmt.Println("[SECR] SequenceID:", packetCopy.SequenceID())
 			fmt.Println("[SECR] =======================")
 		} else {
 			fmt.Println("[AUTH] ======= SENDING =======")
-			fmt.Println("[AUTH] ProtocolID:", packet.RMCMessage().ProtocolID)
-			fmt.Println("[AUTH] MethodID:", packet.RMCMessage().MethodID)
-			fmt.Println("[AUTH] FragmentID:", packet.getFragmentID())
-			fmt.Println("[AUTH] SequenceID:", packet.SequenceID())
+			fmt.Println("[AUTH] ProtocolID:", packetCopy.RMCMessage().ProtocolID)
+			fmt.Println("[AUTH] MethodID:", packetCopy.RMCMessage().MethodID)
+			fmt.Println("[AUTH] FragmentID:", packetCopy.getFragmentID())
+			fmt.Println("[AUTH] SequenceID:", packetCopy.SequenceID())
 			fmt.Println("[AUTH] =======================")
 		}
 	}
 
-	s.sendRaw(packet.Sender().Address(), packet.Bytes())
+	s.sendRaw(packetCopy.Sender().Address(), packetCopy.Bytes())
 }
 
 // sendRaw will send the given address the provided packet

@@ -119,7 +119,6 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 	if time.Since(pendingPacket.lastSendTime) >= rs.Interval {
 		if pendingPacket.packet.Sender().Server().(*PRUDPServer).IsSecureServer {
 			fmt.Println("[SECR] Resending packet", pendingPacket.packet.SequenceID())
-			fmt.Println("[SECR]", rs.packets.real)
 		} else {
 			fmt.Println("[AUTH] Resending packet", pendingPacket.packet.SequenceID())
 		}

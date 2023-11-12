@@ -25,6 +25,11 @@ func (p *PRUDPPacket) Sender() ClientInterface {
 	return p.sender
 }
 
+// Flags returns the packet flags
+func (p *PRUDPPacket) Flags() uint16 {
+	return p.flags
+}
+
 // HasFlag checks if the packet has the given flag
 func (p *PRUDPPacket) HasFlag(flag uint16) bool {
 	return p.flags&flag != 0
@@ -83,6 +88,11 @@ func (p *PRUDPPacket) SetDestinationPort(destinationPort uint8) {
 // DestinationPort returns the packet virtual destination port
 func (p *PRUDPPacket) DestinationPort() uint8 {
 	return p.destinationPort
+}
+
+// SessionID returns the packets session ID
+func (p *PRUDPPacket) SessionID() uint8 {
+	return p.sessionID
 }
 
 // SetSessionID sets the packets session ID
