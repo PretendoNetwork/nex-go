@@ -40,9 +40,9 @@ type PRUDPServer struct {
 	PRUDPv1ConnectionSignatureKey []byte
 }
 
-// OnReliableData adds an event handler which is fired when a new reliable DATA packet is received
-func (s *PRUDPServer) OnReliableData(handler func(PacketInterface)) {
-	s.on("reliable-data", handler)
+// OnData adds an event handler which is fired when a new DATA packet is received
+func (s *PRUDPServer) OnData(handler func(PacketInterface)) {
+	s.on("data", handler)
 }
 
 func (s *PRUDPServer) on(name string, handler func(PacketInterface)) {
@@ -473,7 +473,7 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 
 				packet.SetRMCMessage(message)
 
-				s.emit("reliable-data", packet)
+				s.emit("data", packet)
 			}
 		}
 	}

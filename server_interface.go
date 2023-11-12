@@ -16,5 +16,5 @@ type ServerInterface interface {
 	NATTraversalProtocolVersion() *LibraryVersion
 	SetDefaultLibraryVersion(version *LibraryVersion)
 	Send(packet PacketInterface)
-	OnReliableData(handler func(PacketInterface))
+	OnData(handler func(packet PacketInterface))
 }
