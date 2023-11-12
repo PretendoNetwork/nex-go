@@ -562,30 +562,12 @@ func (s *PRUDPServer) Send(packet PacketInterface) {
 }
 
 func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
-	client := packet.Sender().(*PRUDPClient)
-
-	// TODO - Add packet.Copy()
-	var packetCopy PRUDPPacketInterface
-	if packet.Version() == 1 {
-		packetCopy, _ = NewPRUDPPacketV1(client, nil)
-	} else {
-		packetCopy, _ = NewPRUDPPacketV0(client, nil)
-	}
-
-	packetCopy.SetSourceStreamType(packet.SourceStreamType())
-	packetCopy.SetSourcePort(packet.SourcePort())
-
-	packetCopy.SetDestinationStreamType(packet.DestinationStreamType())
-	packetCopy.SetDestinationPort(packet.DestinationPort())
-
-	packetCopy.SetType(packet.Type())
-	packetCopy.AddFlag(packet.Flags())
-	packetCopy.SetSessionID(packet.SessionID())
-	packetCopy.SetSubstreamID(packet.SubstreamID())
-	packetCopy.SetSequenceID(packet.SequenceID())
-	packetCopy.SetPayload(packet.Payload())
-	packetCopy.setConnectionSignature(packet.getConnectionSignature())
-	packetCopy.setFragmentID(packet.getFragmentID())
+	// * PRUDPServer.Send will send fragments as the same packet,
+	// * just with different fields. In order to prevent modifying
+	// * multiple packets at once, due to the same pointer being
+	// * reused, we must make a copy of the packet being sent
+	packetCopy := packet.Copy()
+	client := packetCopy.Sender().(*PRUDPClient)
 
 	if !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
 		if packetCopy.HasFlag(FlagReliable) {

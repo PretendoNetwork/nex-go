@@ -4,6 +4,7 @@ import "net"
 
 // PRUDPPacketInterface defines all the methods a PRUDP packet should have
 type PRUDPPacketInterface interface {
+	Copy() PRUDPPacketInterface
 	Version() int
 	Bytes() []byte
 	Sender() ClientInterface

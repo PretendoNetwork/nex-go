@@ -15,6 +15,44 @@ type PRUDPPacketV0 struct {
 	PRUDPPacket
 }
 
+// Copy copies the packet into a new PRUDPPacketV0
+//
+// Retains the same PRUDPClient pointer
+func (p *PRUDPPacketV0) Copy() PRUDPPacketInterface {
+	copied, _ := NewPRUDPPacketV0(p.sender, nil)
+
+	copied.sourceStreamType = p.sourceStreamType
+	copied.sourcePort = p.sourcePort
+	copied.destinationStreamType = p.destinationStreamType
+	copied.destinationPort = p.destinationPort
+	copied.packetType = p.packetType
+	copied.flags = p.flags
+	copied.sessionID = p.sessionID
+	copied.substreamID = p.substreamID
+
+	if p.signature != nil {
+		copied.signature = append([]byte(nil), p.signature...)
+	}
+
+	copied.sequenceID = p.sequenceID
+
+	if p.connectionSignature != nil {
+		copied.connectionSignature = append([]byte(nil), p.connectionSignature...)
+	}
+
+	copied.fragmentID = p.fragmentID
+
+	if p.payload != nil {
+		copied.payload = append([]byte(nil), p.payload...)
+	}
+
+	if p.message != nil {
+		copied.message = p.message.Copy()
+	}
+
+	return copied
+}
+
 // Version returns the packets PRUDP version
 func (p *PRUDPPacketV0) Version() int {
 	return 0

@@ -16,6 +16,23 @@ type RMCMessage struct {
 	Parameters []byte // * Input for the method
 }
 
+func (rmc *RMCMessage) Copy() *RMCMessage {
+	copied := NewRMCMessage()
+
+	copied.IsRequest = copied.IsRequest
+	copied.IsSuccess = copied.IsSuccess
+	copied.ProtocolID = copied.ProtocolID
+	copied.CallID = copied.CallID
+	copied.MethodID = copied.MethodID
+	copied.ErrorCode = copied.ErrorCode
+
+	if rmc.Parameters != nil {
+		copied.Parameters = append([]byte(nil), rmc.Parameters...)
+	}
+
+	return copied
+}
+
 // FromBytes decodes an RMCMessage from the given byte slice.
 func (rmc *RMCMessage) FromBytes(data []byte) error {
 	stream := NewStreamIn(data, nil)

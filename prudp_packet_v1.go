@@ -21,6 +21,51 @@ type PRUDPPacketV1 struct {
 	initialUnreliableSequenceID uint16
 }
 
+// Copy copies the packet into a new PRUDPPacketV1
+//
+// Retains the same PRUDPClient pointer
+func (p *PRUDPPacketV1) Copy() PRUDPPacketInterface {
+	copied, _ := NewPRUDPPacketV1(p.sender, nil)
+
+	copied.sourceStreamType = p.sourceStreamType
+	copied.sourcePort = p.sourcePort
+	copied.destinationStreamType = p.destinationStreamType
+	copied.destinationPort = p.destinationPort
+	copied.packetType = p.packetType
+	copied.flags = p.flags
+	copied.sessionID = p.sessionID
+	copied.substreamID = p.substreamID
+
+	if p.signature != nil {
+		copied.signature = append([]byte(nil), p.signature...)
+	}
+
+	copied.sequenceID = p.sequenceID
+
+	if p.connectionSignature != nil {
+		copied.connectionSignature = append([]byte(nil), p.connectionSignature...)
+	}
+
+	copied.fragmentID = p.fragmentID
+
+	if p.payload != nil {
+		copied.payload = append([]byte(nil), p.payload...)
+	}
+
+	if p.message != nil {
+		copied.message = p.message.Copy()
+	}
+
+	copied.optionsLength = p.optionsLength
+	copied.payloadLength = p.payloadLength
+	copied.minorVersion = p.minorVersion
+	copied.supportedFunctions = p.supportedFunctions
+	copied.maximumSubstreamID = p.maximumSubstreamID
+	copied.initialUnreliableSequenceID = p.initialUnreliableSequenceID
+
+	return copied
+}
+
 // Version returns the packets PRUDP version
 func (p *PRUDPPacketV1) Version() int {
 	return 1
