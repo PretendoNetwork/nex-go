@@ -24,6 +24,7 @@ type PRUDPClient struct {
 	DestinationPort                     uint8
 	minorVersion                        uint32 // * Not currently used for anything, but maybe useful later?
 	supportedFunctions                  uint32 // * Not currently used for anything, but maybe useful later?
+	ConnectionID                        uint32
 }
 
 // reset sets the client back to it's default state
