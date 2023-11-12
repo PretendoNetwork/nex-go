@@ -14,7 +14,7 @@ func startAuthenticationServer() {
 
 	authServer = nex.NewPRUDPServer()
 
-	authServer.OnReliableData(func(packet nex.PacketInterface) {
+	authServer.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
 			request := packet.RMCMessage()
 

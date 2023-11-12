@@ -48,7 +48,7 @@ func startSecureServer() {
 
 	secureServer = nex.NewPRUDPServer()
 
-	secureServer.OnReliableData(func(packet nex.PacketInterface) {
+	secureServer.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
 			request := packet.RMCMessage()
 
