@@ -735,6 +735,22 @@ func (s *PRUDPServer) FindClientByConnectionID(connectedID uint32) *PRUDPClient 
 	return client
 }
 
+// FindClientByPID returns the PRUDP client connected with the given PID
+func (s *PRUDPServer) FindClientByPID(pid uint32) *PRUDPClient {
+	var client *PRUDPClient
+
+	s.clients.Each(func(discriminator string, c *PRUDPClient) bool {
+		if c.pid == pid {
+			client = c
+			return true
+		}
+
+		return false
+	})
+
+	return client
+}
+
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
