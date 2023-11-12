@@ -214,10 +214,12 @@ func (s *PRUDPServer) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
 
 	// * MutexMap.Each locks the mutex, can't remove while reading.
 	// * Have to just loop again
-	substream.ResendScheduler.packets.Each(func(sequenceID uint16, pending *PendingPacket) {
+	substream.ResendScheduler.packets.Each(func(sequenceID uint16, pending *PendingPacket) bool {
 		if sequenceID <= baseSequenceID && !slices.Contains(sequenceIDs, sequenceID) {
 			sequenceIDs = append(sequenceIDs, sequenceID)
 		}
+
+		return false
 	})
 
 	// * Actually remove the packets from the pool
@@ -715,6 +717,22 @@ func (s *PRUDPServer) SetProtocolMinorVersion(protocolMinorVersion uint32) {
 // ProtocolMinorVersion returns the servers PRUDP protocol minor version
 func (s *PRUDPServer) ProtocolMinorVersion() uint32 {
 	return s.protocolMinorVersion
+}
+
+// FindClientByConnectionID returns the PRUDP client connected with the given connection ID
+func (s *PRUDPServer) FindClientByConnectionID(connectedID uint32) *PRUDPClient {
+	var client *PRUDPClient
+
+	s.clients.Each(func(discriminator string, c *PRUDPClient) bool {
+		if c.ConnectionID == connectedID {
+			client = c
+			return true
+		}
+
+		return false
+	})
+
+	return client
 }
 
 // NewPRUDPServer will return a new PRUDP server

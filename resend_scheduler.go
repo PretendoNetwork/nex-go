@@ -41,10 +41,12 @@ type ResendScheduler struct {
 func (rs *ResendScheduler) Stop() {
 	stillPending := make([]uint16, rs.packets.Size())
 
-	rs.packets.Each(func(sequenceID uint16, packet *PendingPacket) {
+	rs.packets.Each(func(sequenceID uint16, packet *PendingPacket) bool {
 		if !packet.isAcknowledged {
 			stillPending = append(stillPending, sequenceID)
 		}
+
+		return false
 	})
 
 	for _, sequenceID := range stillPending {
