@@ -93,7 +93,7 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		// * The maximum resend count has been reached, consider the client dead.
 		pendingPacket.ticker.Stop()
 		rs.packets.Delete(packet.SequenceID())
-		client.cleanup()
+		client.cleanup() // * "removed" event is dispatched here
 		client.server.clients.Delete(client.address.String())
 		return
 	}

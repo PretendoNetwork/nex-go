@@ -59,6 +59,8 @@ func (c *PRUDPClient) cleanup() {
 
 	c.reliableSubstreams = make([]*ReliablePacketSubstreamManager, 0)
 	c.stopHeartbeatTimers()
+
+	c.server.emitRemoved(c)
 }
 
 // Server returns the server the client is connecting to
@@ -156,7 +158,7 @@ func (c *PRUDPClient) startHeartbeat() {
 		// * If the heartbeat still did not restart, assume the
 		// * client is dead and clean up
 		c.pingKickTimer = time.AfterFunc(server.pingTimeout, func() {
-			c.cleanup()
+			c.cleanup() // * "removed" event is dispatched here
 			c.server.clients.Delete(c.address.String())
 		})
 	})

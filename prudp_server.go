@@ -33,7 +33,8 @@ type PRUDPServer struct {
 	messagingProtocolVersion      *LibraryVersion
 	utilityProtocolVersion        *LibraryVersion
 	natTraversalProtocolVersion   *LibraryVersion
-	eventHandlers                 map[string][]func(PacketInterface)
+	prudpEventHandlers            map[string][]func(packet PacketInterface)
+	clientRemovedEventHandlers    []func(client *PRUDPClient)
 	connectionIDCounter           *Counter[uint32]
 	pingTimeout                   time.Duration
 	PasswordFromPID               func(pid uint32) (string, uint32)
@@ -41,23 +42,44 @@ type PRUDPServer struct {
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
-func (s *PRUDPServer) OnData(handler func(PacketInterface)) {
+func (s *PRUDPServer) OnData(handler func(packet PacketInterface)) {
 	s.on("data", handler)
 }
 
-func (s *PRUDPServer) on(name string, handler func(PacketInterface)) {
-	if _, ok := s.eventHandlers[name]; !ok {
-		s.eventHandlers[name] = make([]func(PacketInterface), 0)
+// OnDisconnect adds an event handler which is fired when a new DISCONNECT packet is received
+//
+// To handle a client being removed from the server, see OnClientRemoved which fires on more cases
+func (s *PRUDPServer) OnDisconnect(handler func(packet PacketInterface)) {
+	s.on("disconnect", handler)
+}
+
+// OnClientRemoved adds an event handler which is fired when a client is removed from the server
+//
+// Fires both on a natural disconnect and from a timeout
+func (s *PRUDPServer) OnClientRemoved(handler func(client *PRUDPClient)) {
+	// * "removed" events are a special case, so handle them separately
+	s.clientRemovedEventHandlers = append(s.clientRemovedEventHandlers, handler)
+}
+
+func (s *PRUDPServer) on(name string, handler func(packet PacketInterface)) {
+	if _, ok := s.prudpEventHandlers[name]; !ok {
+		s.prudpEventHandlers[name] = make([]func(packet PacketInterface), 0)
 	}
 
-	s.eventHandlers[name] = append(s.eventHandlers[name], handler)
+	s.prudpEventHandlers[name] = append(s.prudpEventHandlers[name], handler)
 }
 
 func (s *PRUDPServer) emit(name string, packet PRUDPPacketInterface) {
-	if handlers, ok := s.eventHandlers[name]; ok {
+	if handlers, ok := s.prudpEventHandlers[name]; ok {
 		for _, handler := range handlers {
 			go handler(packet)
 		}
+	}
+}
+
+func (s *PRUDPServer) emitRemoved(client *PRUDPClient) {
+	for _, handler := range s.clientRemovedEventHandlers {
+		go handler(client)
 	}
 }
 
@@ -359,7 +381,7 @@ func (s *PRUDPServer) handleDisconnect(packet PRUDPPacketInterface) {
 
 	client := packet.Sender().(*PRUDPClient)
 
-	client.cleanup()
+	client.cleanup() // * "removed" event is dispatched here
 	s.clients.Delete(client.address.String())
 
 	s.emit("disconnect", packet)
@@ -758,7 +780,7 @@ func NewPRUDPServer() *PRUDPServer {
 		IsQuazalMode:        false,
 		kerberosKeySize:     32,
 		FragmentSize:        1300,
-		eventHandlers:       make(map[string][]func(PacketInterface)),
+		prudpEventHandlers:  make(map[string][]func(PacketInterface)),
 		connectionIDCounter: NewCounter[uint32](10),
 		pingTimeout:         time.Second * 15,
 	}
