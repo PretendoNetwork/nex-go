@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -66,6 +67,12 @@ func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
 		interval: rs.Interval,
 	}
 
+	if packet.Sender().Server().(*PRUDPServer).IsSecureServer {
+		fmt.Println("[SECR] Adding packet", packet.SequenceID(), "to resend queue")
+	} else {
+		fmt.Println("[AUTH] Adding packet", packet.SequenceID(), "to resend queue")
+	}
+
 	rs.packets.Set(packet.SequenceID(), pendingPacket)
 
 	go pendingPacket.startResendTimer()
@@ -74,6 +81,12 @@ func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
 // AcknowledgePacket marks a pending packet as acknowledged. It will be ignored at the next resend attempt
 func (rs *ResendScheduler) AcknowledgePacket(sequenceID uint16) {
 	if pendingPacket, ok := rs.packets.Get(sequenceID); ok {
+		if pendingPacket.packet.Sender().Server().(*PRUDPServer).IsSecureServer {
+			fmt.Println("[SECR] Acknowledged", sequenceID)
+		} else {
+			fmt.Println("[AUTH] Acknowledged", sequenceID)
+		}
+
 		pendingPacket.isAcknowledged = true
 	}
 }
@@ -81,8 +94,7 @@ func (rs *ResendScheduler) AcknowledgePacket(sequenceID uint16) {
 func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 	if pendingPacket.isAcknowledged {
 		// * Prevent a race condition where resendPacket may be called
-		// * at the same time a packet is acknowledged. Packet will be
-		// * handled properly at the next tick
+		// * at the same time a packet is acknowledged
 		return
 	}
 
@@ -91,6 +103,12 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 
 	if pendingPacket.resendCount >= rs.MaxResendCount {
 		// * The maximum resend count has been reached, consider the client dead.
+		if pendingPacket.packet.Sender().Server().(*PRUDPServer).IsSecureServer {
+			fmt.Println("[SECR] Max resends hit for", pendingPacket.packet.SequenceID())
+		} else {
+			fmt.Println("[AUTH] Max resends hit for", pendingPacket.packet.SequenceID())
+		}
+
 		pendingPacket.ticker.Stop()
 		rs.packets.Delete(packet.SequenceID())
 		client.cleanup() // * "removed" event is dispatched here
@@ -99,6 +117,13 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 	}
 
 	if time.Since(pendingPacket.lastSendTime) >= rs.Interval {
+		if pendingPacket.packet.Sender().Server().(*PRUDPServer).IsSecureServer {
+			fmt.Println("[SECR] Resending packet", pendingPacket.packet.SequenceID())
+			fmt.Println("[SECR]", rs.packets.real)
+		} else {
+			fmt.Println("[AUTH] Resending packet", pendingPacket.packet.SequenceID())
+		}
+
 		// * Resend the packet to the client
 		server := client.server
 		data := packet.Bytes()

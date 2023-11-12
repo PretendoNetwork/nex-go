@@ -151,6 +151,12 @@ func (s *PRUDPServer) handleSocketMessage() error {
 
 	var packets []PRUDPPacketInterface
 
+	if s.IsSecureServer {
+		fmt.Printf("[SECR] Got packet data %x\n", packetData)
+	} else {
+		fmt.Printf("[AUTH] Got packet data %x\n", packetData)
+	}
+
 	// * Support any packet type the client sends and respond
 	// * with that same type. Also keep reading from the stream
 	// * until no more data is left, to account for multiple
@@ -162,7 +168,7 @@ func (s *PRUDPServer) handleSocketMessage() error {
 	}
 
 	for _, packet := range packets {
-		s.processPacket(packet)
+		go s.processPacket(packet)
 	}
 
 	return nil
@@ -194,6 +200,12 @@ func (s *PRUDPServer) handleAcknowledgment(packet PRUDPPacketInterface) {
 	if packet.HasFlag(FlagMultiAck) {
 		s.handleMultiAcknowledgment(packet)
 		return
+	}
+
+	if s.IsSecureServer {
+		fmt.Println("[SECR] Got ACK for SequenceID", packet.SequenceID())
+	} else {
+		fmt.Println("[AUTH] Got ACK for SequenceID", packet.SequenceID())
 	}
 
 	client := packet.Sender().(*PRUDPClient)
@@ -578,6 +590,24 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	if packet.HasFlag(FlagReliable) && packet.HasFlag(FlagNeedsAck) {
 		substream := client.reliableSubstream(packet.SubstreamID())
 		substream.ResendScheduler.AddPacket(packet)
+	}
+
+	if packet.Type() == DataPacket && packet.RMCMessage() != nil {
+		if s.IsSecureServer {
+			fmt.Println("[SECR] ======= SENDING =======")
+			fmt.Println("[SECR] ProtocolID:", packet.RMCMessage().ProtocolID)
+			fmt.Println("[SECR] MethodID:", packet.RMCMessage().MethodID)
+			fmt.Println("[SECR] FragmentID:", packet.getFragmentID())
+			fmt.Println("[SECR] SequenceID:", packet.SequenceID())
+			fmt.Println("[SECR] =======================")
+		} else {
+			fmt.Println("[AUTH] ======= SENDING =======")
+			fmt.Println("[AUTH] ProtocolID:", packet.RMCMessage().ProtocolID)
+			fmt.Println("[AUTH] MethodID:", packet.RMCMessage().MethodID)
+			fmt.Println("[AUTH] FragmentID:", packet.getFragmentID())
+			fmt.Println("[AUTH] SequenceID:", packet.SequenceID())
+			fmt.Println("[AUTH] =======================")
+		}
 	}
 
 	s.sendRaw(packet.Sender().Address(), packet.Bytes())
