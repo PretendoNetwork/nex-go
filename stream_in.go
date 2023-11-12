@@ -255,7 +255,15 @@ func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureIn
 		}
 	}
 
-	if stream.Server.ProtocolMinorVersion() >= 3 {
+	var useStructures bool
+	switch server := stream.Server.(type) {
+	case *PRUDPServer: // * Support QRV versions
+		useStructures = server.ProtocolMinorVersion() >= 3
+	default:
+		useStructures = server.LibraryVersion().GreaterOrEqual("3.5.0")
+	}
+
+	if useStructures {
 		version, err := stream.ReadUInt8()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to read NEX Structure version. %s", err.Error())

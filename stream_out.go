@@ -177,7 +177,15 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 
 	content := structure.Bytes(NewStreamOut(stream.Server))
 
-	if stream.Server.ProtocolMinorVersion() >= 3 {
+	var useStructures bool
+	switch server := stream.Server.(type) {
+	case *PRUDPServer: // * Support QRV versions
+		useStructures = server.ProtocolMinorVersion() >= 3
+	default:
+		useStructures = server.LibraryVersion().GreaterOrEqual("3.5.0")
+	}
+
+	if useStructures {
 		stream.WriteUInt8(structure.StructureVersion())
 		stream.WriteUInt32LE(uint32(len(content)))
 	}
