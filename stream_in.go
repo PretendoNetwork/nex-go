@@ -26,15 +26,6 @@ func (stream *StreamIn) ReadRemaining() []byte {
 	return stream.ReadBytesNext(int64(stream.Remaining()))
 }
 
-// ReadBool reads a bool
-func (stream *StreamIn) ReadBool() (bool, error) {
-	if stream.Remaining() < 1 {
-		return false, errors.New("Not enough data to read bool")
-	}
-
-	return stream.ReadByteNext() == 1, nil
-}
-
 // ReadUInt8 reads a uint8
 func (stream *StreamIn) ReadUInt8() (uint8, error) {
 	if stream.Remaining() < 1 {
@@ -195,6 +186,31 @@ func (stream *StreamIn) ReadFloat64BE() (float64, error) {
 	}
 
 	return stream.ReadF64BENext(1)[0], nil
+}
+
+// ReadBool reads a bool
+func (stream *StreamIn) ReadBool() (bool, error) {
+	if stream.Remaining() < 1 {
+		return false, errors.New("Not enough data to read bool")
+	}
+
+	return stream.ReadByteNext() == 1, nil
+}
+
+// ReadPID reads a PID. The size depends on the server type
+func (stream *StreamIn) ReadPID() (*PID, error) {
+	if _, ok := stream.Server.(*PRUDPServer); ok {
+		// * Assume all UDP servers use the legacy size
+		if stream.Remaining() < 4 {
+			return nil, errors.New("Not enough data to read legacy PID")
+		}
+
+		pid, _ := stream.ReadUInt32LE()
+
+		return NewPID(pid), nil
+	}
+
+	return nil, errors.New("Unknown PID size. Server type could not be determined")
 }
 
 // ReadString reads and returns a nex string type

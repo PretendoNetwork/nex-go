@@ -6,6 +6,6 @@ import "net"
 type ClientInterface interface {
 	Server() ServerInterface
 	Address() net.Addr
-	PID() uint32
-	SetPID(pid uint32)
+	PID() *PID
+	SetPID(pid *PID)
 }

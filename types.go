@@ -9,6 +9,43 @@ import (
 	"time"
 )
 
+// PID represents a unique number to identify a user
+//
+// The true size of this value depends on the client version.
+// Legacy clients (WiiU/3DS) use a uint32, whereas new clients (Nintendo Switch) use a uint64.
+// Value is always stored as the higher uint64, the consuming API should assert accordingly
+type PID struct {
+	pid uint64
+}
+
+// Value returns the numeric value of the PID as a uint64 regardless of client version
+func (p *PID) Value() uint64 {
+	return p.pid
+}
+
+// LegacyValue returns the numeric value of the PID as a uint32, for legacy clients
+func (p *PID) LegacyValue() uint32 {
+	return uint32(p.pid)
+}
+
+// NewPID returns a PID instance. The size of PID depends on the client version
+func NewPID[T uint32 | uint64](pid T) *PID {
+	switch v := any(pid).(type) {
+	case uint32:
+		return &PID{pid: uint64(v)}
+	case uint64:
+		return &PID{pid: v}
+	}
+
+	// * This will never happen because Go will
+	// * not compile any code where "pid" is not
+	// * a uint32/uint64, so it will ALWAYS get
+	// * caught by the above switch-case. This
+	// * return is only here because Go won't
+	// * compile without a default return
+	return nil
+}
+
 // StructureInterface implements all Structure methods
 type StructureInterface interface {
 	SetParentType(StructureInterface)
@@ -521,7 +558,7 @@ func NewDateTime(value uint64) *DateTime {
 }
 
 // StationURL contains the data for a NEX station URL.
-// Uses uint32 pointers to check for nil, 0 is valid
+// Uses pointers to check for nil, 0 is valid
 type StationURL struct {
 	local         bool // * Not part of the data structure. Used for easier lookups elsewhere
 	public        bool // * Not part of the data structure. Used for easier lookups elsewhere
@@ -532,7 +569,7 @@ type StationURL struct {
 	stream        *uint32
 	sid           *uint32
 	cid           *uint32
-	pid           *uint32
+	pid           *PID
 	transportType *uint32
 	rvcid         *uint32
 	natm          *uint32
@@ -601,8 +638,8 @@ func (stationURL *StationURL) SetCID(cid uint32) {
 }
 
 // SetPID sets the StationURL PID
-func (stationURL *StationURL) SetPID(pid uint32) {
-	stationURL.pid = &pid
+func (stationURL *StationURL) SetPID(pid *PID) {
+	stationURL.pid = pid
 }
 
 // SetType sets the StationURL transportType
@@ -701,12 +738,8 @@ func (stationURL *StationURL) CID() uint32 {
 }
 
 // PID returns the StationURL PID value
-func (stationURL *StationURL) PID() uint32 {
-	if stationURL.pid == nil {
-		return 0
-	} else {
-		return *stationURL.pid
-	}
+func (stationURL *StationURL) PID() *PID {
+	return stationURL.pid
 }
 
 // Type returns the StationURL type
@@ -817,7 +850,7 @@ func (stationURL *StationURL) FromString(str string) {
 			stationURL.SetCID(uint32(ui64))
 		case "PID":
 			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetPID(uint32(ui64))
+			stationURL.SetPID(NewPID(ui64))
 		case "type":
 			ui64, _ := strconv.ParseUint(value, 10, 32)
 			stationURL.SetType(uint32(ui64))
@@ -875,7 +908,7 @@ func (stationURL *StationURL) EncodeToString() string {
 	}
 
 	if stationURL.pid != nil {
-		fields = append(fields, "PID="+strconv.FormatUint(uint64(stationURL.PID()), 10))
+		fields = append(fields, "PID="+strconv.FormatUint(uint64(stationURL.PID().pid), 10))
 	}
 
 	if stationURL.transportType != nil {

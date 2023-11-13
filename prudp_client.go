@@ -9,7 +9,7 @@ import (
 type PRUDPClient struct {
 	address                             *net.UDPAddr
 	server                              *PRUDPServer
-	pid                                 uint32
+	pid                                 *PID
 	clientConnectionSignature           []byte
 	serverConnectionSignature           []byte
 	sessionKey                          []byte
@@ -74,12 +74,12 @@ func (c *PRUDPClient) Address() net.Addr {
 }
 
 // PID returns the clients NEX PID
-func (c *PRUDPClient) PID() uint32 {
+func (c *PRUDPClient) PID() *PID {
 	return c.pid
 }
 
 // SetPID sets the clients NEX PID
-func (c *PRUDPClient) SetPID(pid uint32) {
+func (c *PRUDPClient) SetPID(pid *PID) {
 	c.pid = pid
 }
 

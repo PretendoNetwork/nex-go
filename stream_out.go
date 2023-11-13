@@ -12,16 +12,6 @@ type StreamOut struct {
 	Server ServerInterface
 }
 
-// WriteBool writes a bool
-func (stream *StreamOut) WriteBool(b bool) {
-	var bVar uint8
-	if b {
-		bVar = 1
-	}
-	stream.Grow(1)
-	stream.WriteByteNext(byte(bVar))
-}
-
 // WriteUInt8 writes a uint8
 func (stream *StreamOut) WriteUInt8(u8 uint8) {
 	stream.Grow(1)
@@ -128,6 +118,24 @@ func (stream *StreamOut) WriteFloat64LE(f64 float64) {
 func (stream *StreamOut) WriteFloat64BE(f64 float64) {
 	stream.Grow(8)
 	stream.WriteF64BENext([]float64{f64})
+}
+
+// WriteBool writes a bool
+func (stream *StreamOut) WriteBool(b bool) {
+	var bVar uint8
+	if b {
+		bVar = 1
+	}
+	stream.Grow(1)
+	stream.WriteByteNext(byte(bVar))
+}
+
+// WritePID writes a NEX PID. The size depends on the server type
+func (stream *StreamOut) WritePID(pid *PID) {
+	if _, ok := stream.Server.(*PRUDPServer); ok {
+		// * Assume all UDP servers use the legacy size
+		stream.WriteUInt32LE(uint32(pid.pid))
+	}
 }
 
 // WriteString writes a NEX string type

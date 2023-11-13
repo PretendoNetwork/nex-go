@@ -405,17 +405,17 @@ func (s *PRUDPServer) handlePing(packet PRUDPPacketInterface) {
 	}
 }
 
-func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, uint32, uint32, error) {
+func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *PID, uint32, error) {
 	stream := NewStreamIn(payload, s)
 
 	ticketData, err := stream.ReadBuffer()
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	requestData, err := stream.ReadBuffer()
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	serverKey := DeriveKerberosKey(2, s.kerberosPassword)
@@ -423,7 +423,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, uint32, uint32
 	ticket := NewKerberosTicketInternalData()
 	err = ticket.Decrypt(NewStreamIn(ticketData, s), serverKey)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	ticketTime := ticket.Issued.Standard()
@@ -431,7 +431,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, uint32, uint32
 
 	timeLimit := ticketTime.Add(time.Minute * 2)
 	if serverTime.After(timeLimit) {
-		return nil, 0, 0, errors.New("Kerberos ticket expired")
+		return nil, nil, 0, errors.New("Kerberos ticket expired")
 	}
 
 	sessionKey := ticket.SessionKey
@@ -439,24 +439,24 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, uint32, uint32
 
 	decryptedRequestData, err := kerberos.Decrypt(requestData)
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	checkDataStream := NewStreamIn(decryptedRequestData, s)
 
-	userPID, err := checkDataStream.ReadUInt32LE()
+	userPID, err := checkDataStream.ReadPID()
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	_, err = checkDataStream.ReadUInt32LE() // * CID of secure server station url
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	responseCheck, err := checkDataStream.ReadUInt32LE()
 	if err != nil {
-		return nil, 0, 0, err
+		return nil, nil, 0, err
 	}
 
 	return sessionKey, userPID, responseCheck, nil
@@ -793,11 +793,11 @@ func (s *PRUDPServer) FindClientByConnectionID(connectedID uint32) *PRUDPClient 
 }
 
 // FindClientByPID returns the PRUDP client connected with the given PID
-func (s *PRUDPServer) FindClientByPID(pid uint32) *PRUDPClient {
+func (s *PRUDPServer) FindClientByPID(pid uint64) *PRUDPClient {
 	var client *PRUDPClient
 
 	s.clients.Each(func(discriminator string, c *PRUDPClient) bool {
-		if c.pid == pid {
+		if c.pid.pid == pid {
 			client = c
 			return true
 		}
