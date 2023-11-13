@@ -464,13 +464,8 @@ func (dt *DateTime) FromTimestamp(timestamp time.Time) *DateTime {
 	return dt.Make(year, month, day, hour, minute, second)
 }
 
-// Now converts the current Time timestamp to a NEX DateTime
+// Now returns a NEX DateTime value of the current UTC time
 func (dt *DateTime) Now() *DateTime {
-	return dt.FromTimestamp(time.Now())
-}
-
-// UTC returns a NEX DateTime value of the current UTC time
-func (dt *DateTime) UTC() *DateTime {
 	return dt.FromTimestamp(time.Now().UTC())
 }
 

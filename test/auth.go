@@ -68,7 +68,7 @@ func login(packet nex.PRUDPPacketInterface) {
 	pConnectionData.SetStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
 	pConnectionData.SetSpecialProtocols([]byte{})
 	pConnectionData.SetStationURLSpecialProtocols("")
-	pConnectionData.SetTime(nex.NewDateTime(0).UTC())
+	pConnectionData.SetTime(nex.NewDateTime(0).Now())
 
 	responseStream := nex.NewStreamOut(authServer)
 

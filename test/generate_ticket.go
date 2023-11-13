@@ -14,8 +14,7 @@ func generateTicket(userPID uint32, targetPID uint32) []byte {
 	rand.Read(sessionKey)
 
 	ticketInternalData := nex.NewKerberosTicketInternalData()
-	serverTime := nex.NewDateTime(0)
-	serverTime.UTC()
+	serverTime := nex.NewDateTime(0).Now()
 
 	ticketInternalData.Issued = serverTime
 	ticketInternalData.SourcePID = userPID
