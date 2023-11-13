@@ -446,14 +446,14 @@ type DateTime struct {
 }
 
 // Make initilizes a DateTime with the input data
-func (datetime *DateTime) Make(year, month, day, hour, minute, second int) uint64 {
-	datetime.value = uint64(second | (minute << 6) | (hour << 12) | (day << 17) | (month << 22) | (year << 26))
+func (dt *DateTime) Make(year, month, day, hour, minute, second int) *DateTime {
+	dt.value = uint64(second | (minute << 6) | (hour << 12) | (day << 17) | (month << 22) | (year << 26))
 
-	return datetime.value
+	return dt
 }
 
 // FromTimestamp converts a Time timestamp into a NEX DateTime
-func (datetime *DateTime) FromTimestamp(timestamp time.Time) uint64 {
+func (dt *DateTime) FromTimestamp(timestamp time.Time) *DateTime {
 	year := timestamp.Year()
 	month := int(timestamp.Month())
 	day := timestamp.Day()
@@ -461,92 +461,92 @@ func (datetime *DateTime) FromTimestamp(timestamp time.Time) uint64 {
 	minute := timestamp.Minute()
 	second := timestamp.Second()
 
-	return datetime.Make(year, month, day, hour, minute, second)
+	return dt.Make(year, month, day, hour, minute, second)
 }
 
 // Now converts the current Time timestamp to a NEX DateTime
-func (datetime *DateTime) Now() uint64 {
-	return datetime.FromTimestamp(time.Now())
+func (dt *DateTime) Now() *DateTime {
+	return dt.FromTimestamp(time.Now())
 }
 
 // UTC returns a NEX DateTime value of the current UTC time
-func (datetime *DateTime) UTC() uint64 {
-	return datetime.FromTimestamp(time.Now().UTC())
+func (dt *DateTime) UTC() *DateTime {
+	return dt.FromTimestamp(time.Now().UTC())
 }
 
 // Value returns the stored DateTime time
-func (datetime *DateTime) Value() uint64 {
-	return datetime.value
+func (dt *DateTime) Value() uint64 {
+	return dt.value
 }
 
 // Second returns the seconds value stored in the DateTime
-func (datetime *DateTime) Second() int {
-	return int(datetime.value & 63)
+func (dt *DateTime) Second() int {
+	return int(dt.value & 63)
 }
 
 // Minute returns the minutes value stored in the DateTime
-func (datetime *DateTime) Minute() int {
-	return int((datetime.value >> 6) & 63)
+func (dt *DateTime) Minute() int {
+	return int((dt.value >> 6) & 63)
 }
 
 // Hour returns the hours value stored in the DateTime
-func (datetime *DateTime) Hour() int {
-	return int((datetime.value >> 12) & 31)
+func (dt *DateTime) Hour() int {
+	return int((dt.value >> 12) & 31)
 }
 
 // Day returns the day value stored in the DateTime
-func (datetime *DateTime) Day() int {
-	return int((datetime.value >> 17) & 31)
+func (dt *DateTime) Day() int {
+	return int((dt.value >> 17) & 31)
 }
 
 // Month returns the month value stored in the DateTime
-func (datetime *DateTime) Month() time.Month {
-	return time.Month((datetime.value >> 22) & 15)
+func (dt *DateTime) Month() time.Month {
+	return time.Month((dt.value >> 22) & 15)
 }
 
 // Year returns the year value stored in the DateTime
-func (datetime *DateTime) Year() int {
-	return int(datetime.value >> 26)
+func (dt *DateTime) Year() int {
+	return int(dt.value >> 26)
 }
 
 // Standard returns the DateTime as a standard time.Time
-func (datetime *DateTime) Standard() time.Time {
+func (dt *DateTime) Standard() time.Time {
 	return time.Date(
-		datetime.Year(),
-		datetime.Month(),
-		datetime.Day(),
-		datetime.Hour(),
-		datetime.Minute(),
-		datetime.Second(),
+		dt.Year(),
+		dt.Month(),
+		dt.Day(),
+		dt.Hour(),
+		dt.Minute(),
+		dt.Second(),
 		0,
 		time.UTC,
 	)
 }
 
 // Copy returns a new copied instance of DateTime
-func (datetime *DateTime) Copy() *DateTime {
-	return NewDateTime(datetime.value)
+func (dt *DateTime) Copy() *DateTime {
+	return NewDateTime(dt.value)
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
-func (datetime *DateTime) Equals(other *DateTime) bool {
-	return datetime.value == other.value
+func (dt *DateTime) Equals(other *DateTime) bool {
+	return dt.value == other.value
 }
 
 // String returns a string representation of the struct
-func (datetime *DateTime) String() string {
-	return datetime.FormatToString(0)
+func (dt *DateTime) String() string {
+	return dt.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (datetime *DateTime) FormatToString(indentationLevel int) string {
+func (dt *DateTime) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
 	var b strings.Builder
 
 	b.WriteString("DateTime{\n")
-	b.WriteString(fmt.Sprintf("%svalue: %d (%s)\n", indentationValues, datetime.value, datetime.Standard().Format("2006-01-02 15:04:05")))
+	b.WriteString(fmt.Sprintf("%svalue: %d (%s)\n", indentationValues, dt.value, dt.Standard().Format("2006-01-02 15:04:05")))
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
