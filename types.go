@@ -28,6 +28,11 @@ func (p *PID) LegacyValue() uint32 {
 	return uint32(p.pid)
 }
 
+// Equals checks if the two structs are equal
+func (p *PID) Equals(other *PID) bool {
+	return p.pid == other.pid
+}
+
 // Copy returns a copy of the current PID
 func (p *PID) Copy() *PID {
 	return NewPID(p.pid)
