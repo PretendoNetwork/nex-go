@@ -130,10 +130,11 @@ func (stream *StreamOut) WriteBool(b bool) {
 	stream.WriteByteNext(byte(bVar))
 }
 
-// WritePID writes a NEX PID. The size depends on the server type
+// WritePID writes a NEX PID. The size depends on the server version
 func (stream *StreamOut) WritePID(pid *PID) {
-	if _, ok := stream.Server.(*PRUDPServer); ok {
-		// * Assume all UDP servers use the legacy size
+	if stream.Server.LibraryVersion().GreaterOrEqual("4.0.0") {
+		stream.WriteUInt64LE(pid.pid)
+	} else {
 		stream.WriteUInt32LE(uint32(pid.pid))
 	}
 }
