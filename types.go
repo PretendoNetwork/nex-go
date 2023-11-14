@@ -28,6 +28,37 @@ func (p *PID) LegacyValue() uint32 {
 	return uint32(p.pid)
 }
 
+// Copy returns a copy of the current PID
+func (p *PID) Copy() *PID {
+	return NewPID(p.pid)
+}
+
+// String returns a string representation of the struct
+func (p *PID) String() string {
+	return p.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (p *PID) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("PID{\n")
+
+	switch v := any(p.pid).(type) {
+	case uint32:
+		b.WriteString(fmt.Sprintf("%spid: %d (legacy)\n", indentationValues, v))
+	case uint64:
+		b.WriteString(fmt.Sprintf("%spid: %d (modern)\n", indentationValues, v))
+	}
+
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
 // NewPID returns a PID instance. The size of PID depends on the client version
 func NewPID[T uint32 | uint64](pid T) *PID {
 	switch v := any(pid).(type) {
