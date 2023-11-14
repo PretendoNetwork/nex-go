@@ -849,6 +849,27 @@ func (stream *StreamIn) ReadListFloat64BE() ([]float64, error) {
 	return list, nil
 }
 
+// ReadListPID reads a list of NEX PIDs
+func (stream *StreamIn) ReadListPID() ([]*PID, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<String> length. %s", err.Error())
+	}
+
+	list := make([]*PID, 0, length)
+
+	for i := 0; i < int(length); i++ {
+		value, err := stream.ReadPID()
+		if err != nil {
+			return nil, fmt.Errorf("Failed to read List<PID> value at index %d. %s", i, err.Error())
+		}
+
+		list = append(list, value)
+	}
+
+	return list, nil
+}
+
 // ReadListString reads a list of NEX String types
 func (stream *StreamIn) ReadListString() ([]string, error) {
 	length, err := stream.ReadUInt32LE()

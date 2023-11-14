@@ -380,6 +380,17 @@ func (stream *StreamOut) WriteListStructure(structures interface{}) {
 	}
 }
 
+// WriteListPID writes a list of NEX PIDs
+func (stream *StreamOut) WriteListPID(pids []*PID) {
+	length := len(pids)
+
+	stream.WriteUInt32LE(uint32(length))
+
+	for i := 0; i < length; i++ {
+		stream.WritePID(pids[i])
+	}
+}
+
 // WriteListString writes a list of NEX String types
 func (stream *StreamOut) WriteListString(strings []string) {
 	length := len(strings)
