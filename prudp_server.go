@@ -37,7 +37,7 @@ type PRUDPServer struct {
 	clientRemovedEventHandlers    []func(client *PRUDPClient)
 	connectionIDCounter           *Counter[uint32]
 	pingTimeout                   time.Duration
-	PasswordFromPID               func(pid uint32) (string, uint32)
+	PasswordFromPID               func(pid *PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey []byte
 }
 
@@ -418,7 +418,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *PID, uint32, 
 		return nil, nil, 0, err
 	}
 
-	serverKey := DeriveKerberosKey(2, s.kerberosPassword)
+	serverKey := DeriveKerberosKey(NewPID[uint64](2), s.kerberosPassword)
 
 	ticket := NewKerberosTicketInternalData()
 	err = ticket.Decrypt(NewStreamIn(ticketData, s), serverKey)

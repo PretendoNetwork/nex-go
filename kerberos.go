@@ -67,7 +67,7 @@ func NewKerberosEncryption(key []byte) *KerberosEncryption {
 // KerberosTicket represents a ticket granting a user access to a secure server
 type KerberosTicket struct {
 	SessionKey   []byte
-	TargetPID    uint32
+	TargetPID    *PID
 	InternalData []byte
 }
 
@@ -78,7 +78,7 @@ func (kt *KerberosTicket) Encrypt(key []byte, stream *StreamOut) ([]byte, error)
 	stream.Grow(int64(len(kt.SessionKey)))
 	stream.WriteBytesNext(kt.SessionKey)
 
-	stream.WriteUInt32LE(kt.TargetPID)
+	stream.WritePID(kt.TargetPID)
 	stream.WriteBuffer(kt.InternalData)
 
 	return encryption.Encrypt(stream.Bytes()), nil
@@ -92,14 +92,14 @@ func NewKerberosTicket() *KerberosTicket {
 // KerberosTicketInternalData holds the internal data for a kerberos ticket to be processed by the server
 type KerberosTicketInternalData struct {
 	Issued     *DateTime
-	SourcePID  uint32
+	SourcePID  *PID
 	SessionKey []byte
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
 func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]byte, error) {
 	stream.WriteDateTime(ti.Issued)
-	stream.WriteUInt32LE(ti.SourcePID)
+	stream.WritePID(ti.SourcePID)
 
 	stream.Grow(int64(len(ti.SessionKey)))
 	stream.WriteBytesNext(ti.SessionKey)
@@ -166,7 +166,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) erro
 		return fmt.Errorf("Failed to read Kerberos ticket internal data timestamp %s", err.Error())
 	}
 
-	userPID, err := stream.ReadUInt32LE()
+	userPID, err := stream.ReadPID()
 	if err != nil {
 		return fmt.Errorf("Failed to read Kerberos ticket internal data user PID %s", err.Error())
 	}
@@ -184,10 +184,10 @@ func NewKerberosTicketInternalData() *KerberosTicketInternalData {
 }
 
 // DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
-func DeriveKerberosKey(pid uint32, password []byte) []byte {
+func DeriveKerberosKey(pid *PID, password []byte) []byte {
 	key := password
 
-	for i := 0; i < 65000+int(pid)%1024; i++ {
+	for i := 0; i < 65000+int(pid.Value())%1024; i++ {
 		hash := md5.Sum(key)
 		key = hash[:]
 	}
