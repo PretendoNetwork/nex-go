@@ -180,5 +180,6 @@ func NewPRUDPClient(address *net.UDPAddr, server *PRUDPServer) *PRUDPClient {
 		address:                       address,
 		server:                        server,
 		outgoingPingSequenceIDCounter: NewCounter[uint16](0),
+		pid:                           NewPID[uint32](0),
 	}
 }
