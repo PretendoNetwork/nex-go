@@ -6,7 +6,7 @@ import (
 	"github.com/PretendoNetwork/nex-go"
 )
 
-func generateTicket(userPID uint32, targetPID uint32) []byte {
+func generateTicket(userPID *nex.PID, targetPID *nex.PID) []byte {
 	userKey := nex.DeriveKerberosKey(userPID, []byte("abcdefghijklmnop"))
 	targetKey := nex.DeriveKerberosKey(targetPID, []byte("password"))
 	sessionKey := make([]byte, authServer.KerberosKeySize())
