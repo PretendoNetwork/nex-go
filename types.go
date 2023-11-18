@@ -241,7 +241,7 @@ func (dataHolder *DataHolder) ExtractFromStream(stream *StreamIn) error {
 
 	newObjectInstance := dataType.Copy()
 
-	dataHolder.objectData, err = stream.ReadStructure(newObjectInstance)
+	dataHolder.objectData, err = StreamReadStructure(stream, newObjectInstance)
 	if err != nil {
 		return fmt.Errorf("Failed to read DataHolder object data. %s", err.Error())
 	}

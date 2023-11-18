@@ -3,7 +3,6 @@ package nex
 import (
 	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 
 	crunch "github.com/superwhiskers/crunch/v3"
@@ -267,49 +266,6 @@ func (stream *StreamIn) ReadQBuffer() ([]byte, error) {
 	return data, nil
 }
 
-// ReadStructure reads a nex Structure type
-func (stream *StreamIn) ReadStructure(structure StructureInterface) (StructureInterface, error) {
-	if structure.ParentType() != nil {
-		_, err := stream.ReadStructure(structure.ParentType())
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read structure parent. %s", err.Error())
-		}
-	}
-
-	var useStructures bool
-	switch server := stream.Server.(type) {
-	case *PRUDPServer: // * Support QRV versions
-		useStructures = server.ProtocolMinorVersion() >= 3
-	default:
-		useStructures = server.LibraryVersion().GreaterOrEqual("3.5.0")
-	}
-
-	if useStructures {
-		version, err := stream.ReadUInt8()
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read NEX Structure version. %s", err.Error())
-		}
-
-		structureLength, err := stream.ReadUInt32LE()
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read NEX Structure content length. %s", err.Error())
-		}
-
-		if stream.Remaining() < int(structureLength) {
-			return nil, errors.New("NEX Structure content length longer than data size")
-		}
-
-		structure.SetStructureVersion(version)
-	}
-
-	err := structure.ExtractFromStream(stream)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read structure from stream. %s", err.Error())
-	}
-
-	return structure, nil
-}
-
 // ReadVariant reads a Variant type. This type can hold 7 different types
 func (stream *StreamIn) ReadVariant() (*Variant, error) {
 	variant := NewVariant()
@@ -324,13 +280,10 @@ func (stream *StreamIn) ReadVariant() (*Variant, error) {
 
 // ReadMap reads a Map type with the given key and value types
 func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface{}) (map[interface{}]interface{}, error) {
-	/*
-		TODO: Make this not suck
-
-		Map types can have any type as the key and any type as the value
-		Due to strict typing we cannot just pass stream functions as these values and call them
-		At the moment this just reads what type you want from the interface{} function type
-	*/
+	// TODO - Make this not suck
+	// * Map types can have any type as the key and any type as the value
+	// * Due to strict typing we cannot just pass stream functions as these values and call them
+	// * At the moment this just reads what type you want from the interface{} function type
 
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
@@ -959,30 +912,6 @@ func (stream *StreamIn) ReadListStationURL() ([]*StationURL, error) {
 	return list, nil
 }
 
-// ReadListStructure reads and returns a list structure types
-func (stream *StreamIn) ReadListStructure(structure StructureInterface) (interface{}, error) {
-	length, err := stream.ReadUInt32LE()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read List<Structure> length. %s", err.Error())
-	}
-
-	structureType := reflect.TypeOf(structure)
-	structureSlice := reflect.MakeSlice(reflect.SliceOf(structureType), 0, int(length))
-
-	for i := 0; i < int(length); i++ {
-		newStructure := structure.Copy()
-
-		extractedStructure, err := stream.ReadStructure(newStructure)
-		if err != nil {
-			return nil, err
-		}
-
-		structureSlice = reflect.Append(structureSlice, reflect.ValueOf(extractedStructure))
-	}
-
-	return structureSlice.Interface(), nil
-}
-
 // ReadListDataHolder reads a list of NEX DataHolder types
 func (stream *StreamIn) ReadListDataHolder() ([]*DataHolder, error) {
 	length, err := stream.ReadUInt32LE()
@@ -1010,4 +939,75 @@ func NewStreamIn(data []byte, server ServerInterface) *StreamIn {
 		Buffer: crunch.NewBuffer(data),
 		Server: server,
 	}
+}
+
+// StreamReadStructure reads a Structure type from a StreamIn
+//
+// Implemented as a separate function to utilize generics
+func StreamReadStructure[T StructureInterface](stream *StreamIn, structure T) (T, error) {
+	if structure.ParentType() != nil {
+		//_, err := stream.ReadStructure(structure.ParentType())
+		_, err := StreamReadStructure(stream, structure.ParentType())
+		if err != nil {
+			return structure, fmt.Errorf("Failed to read structure parent. %s", err.Error())
+		}
+	}
+
+	var useStructureHeader bool
+	switch server := stream.Server.(type) {
+	case *PRUDPServer: // * Support QRV versions
+		useStructureHeader = server.ProtocolMinorVersion() >= 3
+	default:
+		useStructureHeader = server.LibraryVersion().GreaterOrEqual("3.5.0")
+	}
+
+	if useStructureHeader {
+		version, err := stream.ReadUInt8()
+		if err != nil {
+			return structure, fmt.Errorf("Failed to read NEX Structure version. %s", err.Error())
+		}
+
+		structureLength, err := stream.ReadUInt32LE()
+		if err != nil {
+			return structure, fmt.Errorf("Failed to read NEX Structure content length. %s", err.Error())
+		}
+
+		if stream.Remaining() < int(structureLength) {
+			return structure, errors.New("NEX Structure content length longer than data size")
+		}
+
+		structure.SetStructureVersion(version)
+	}
+
+	err := structure.ExtractFromStream(stream)
+	if err != nil {
+		return structure, fmt.Errorf("Failed to read structure from stream. %s", err.Error())
+	}
+
+	return structure, nil
+}
+
+// StreamReadListStructure reads and returns a list structure types from a StreamIn
+//
+// Implemented as a separate function to utilize generics
+func StreamReadListStructure[T StructureInterface](stream *StreamIn, structure T) ([]T, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read List<Structure> length. %s", err.Error())
+	}
+
+	structures := make([]T, 0, int(length))
+
+	for i := 0; i < int(length); i++ {
+		newStructure := structure.Copy()
+
+		extracted, err := StreamReadStructure[T](stream, newStructure.(T))
+		if err != nil {
+			return nil, err
+		}
+
+		structures = append(structures, extracted)
+	}
+
+	return structures, nil
 }
