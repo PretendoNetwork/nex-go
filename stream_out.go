@@ -461,36 +461,6 @@ func (stream *StreamOut) WriteVariant(variant *Variant) {
 	stream.WriteBytesNext(content)
 }
 
-/*
-// WriteMap writes a Map type with the given key and value types
-func (stream *StreamOut) WriteMap(mapType interface{}) {
-	// TODO:
-	// Find a better solution that doesn't use reflect
-
-	mapValue := reflect.ValueOf(mapType)
-	count := mapValue.Len()
-
-	stream.WriteUInt32LE(uint32(count))
-
-	mapIter := mapValue.MapRange()
-
-	for mapIter.Next() {
-		key := mapIter.Key().Interface()
-		value := mapIter.Value().Interface()
-
-		switch key := key.(type) {
-		case string:
-			stream.WriteString(key)
-		}
-
-		switch value := value.(type) {
-		case *Variant:
-			stream.WriteVariant(value)
-		}
-	}
-}
-*/
-
 // NewStreamOut returns a new nex output stream
 func NewStreamOut(server ServerInterface) *StreamOut {
 	return &StreamOut{
