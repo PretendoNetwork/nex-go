@@ -1,7 +1,7 @@
 package nex
 
 import (
-	"reflect"
+	"fmt"
 
 	crunch "github.com/superwhiskers/crunch/v3"
 )
@@ -365,22 +365,6 @@ func (stream *StreamOut) WriteListFloat64BE(list []float64) {
 	}
 }
 
-// WriteListStructure writes a list of NEX Structure types
-func (stream *StreamOut) WriteListStructure(structures interface{}) {
-	// TODO:
-	// Find a better solution that doesn't use reflect
-
-	slice := reflect.ValueOf(structures)
-	count := slice.Len()
-
-	stream.WriteUInt32LE(uint32(count))
-
-	for i := 0; i < count; i++ {
-		structure := slice.Index(i).Interface().(StructureInterface)
-		stream.WriteStructure(structure)
-	}
-}
-
 // WriteListPID writes a list of NEX PIDs
 func (stream *StreamOut) WriteListPID(pids []*PID) {
 	length := len(pids)
@@ -477,6 +461,7 @@ func (stream *StreamOut) WriteVariant(variant *Variant) {
 	stream.WriteBytesNext(content)
 }
 
+/*
 // WriteMap writes a Map type with the given key and value types
 func (stream *StreamOut) WriteMap(mapType interface{}) {
 	// TODO:
@@ -504,11 +489,57 @@ func (stream *StreamOut) WriteMap(mapType interface{}) {
 		}
 	}
 }
+*/
 
 // NewStreamOut returns a new nex output stream
 func NewStreamOut(server ServerInterface) *StreamOut {
 	return &StreamOut{
 		Buffer: crunch.NewBuffer(),
 		Server: server,
+	}
+}
+
+// StreamWriteListStructure writes a list of structure types to a StreamOut
+//
+// Implemented as a separate function to utilize generics
+func StreamWriteListStructure[T StructureInterface](stream *StreamOut, structures []T) {
+	count := len(structures)
+
+	stream.WriteUInt32LE(uint32(count))
+
+	for i := 0; i < count; i++ {
+		stream.WriteStructure(structures[i])
+	}
+}
+
+func mapTypeWriter[T any](stream *StreamOut, t T) {
+	// * Map types in NEX can have any type for the
+	// * key and value. So we need to just check the
+	// * type each time and call the right function
+	switch v := any(t).(type) {
+	case string:
+		stream.WriteString(v)
+	case *Variant:
+		stream.WriteVariant(v)
+	default:
+		// * Writer functions don't return errors so just log here.
+		// * The client will disconnect but the server won't die,
+		// * that way other clients stay connected, but we still
+		// * have a log of what the error was
+		fmt.Printf("Unsupported Map type trying to be written: %T\n", v)
+	}
+}
+
+// StreamWriteMap writes a Map type to a StreamOut
+//
+// Implemented as a separate function to utilize generics
+func StreamWriteMap[K comparable, V any](stream *StreamOut, m map[K]V) {
+	count := len(m)
+
+	stream.WriteUInt32LE(uint32(count))
+
+	for key, value := range m {
+		mapTypeWriter(stream, key)
+		mapTypeWriter(stream, value)
 	}
 }

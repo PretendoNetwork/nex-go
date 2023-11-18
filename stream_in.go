@@ -939,7 +939,7 @@ func StreamReadStructure[T StructureInterface](stream *StreamIn, structure T) (T
 	return structure, nil
 }
 
-// StreamReadListStructure reads and returns a list structure types from a StreamIn
+// StreamReadListStructure reads and returns a list of structure types from a StreamIn
 //
 // Implemented as a separate function to utilize generics
 func StreamReadListStructure[T StructureInterface](stream *StreamIn, structure T) ([]T, error) {
