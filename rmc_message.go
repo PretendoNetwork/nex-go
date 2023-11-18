@@ -19,12 +19,12 @@ type RMCMessage struct {
 func (rmc *RMCMessage) Copy() *RMCMessage {
 	copied := NewRMCMessage()
 
-	copied.IsRequest = copied.IsRequest
-	copied.IsSuccess = copied.IsSuccess
-	copied.ProtocolID = copied.ProtocolID
-	copied.CallID = copied.CallID
-	copied.MethodID = copied.MethodID
-	copied.ErrorCode = copied.ErrorCode
+	copied.IsRequest = rmc.IsRequest
+	copied.IsSuccess = rmc.IsSuccess
+	copied.ProtocolID = rmc.ProtocolID
+	copied.CallID = rmc.CallID
+	copied.MethodID = rmc.MethodID
+	copied.ErrorCode = rmc.ErrorCode
 
 	if rmc.Parameters != nil {
 		copied.Parameters = append([]byte(nil), rmc.Parameters...)
@@ -178,8 +178,8 @@ func NewRMCMessage() *RMCMessage {
 }
 
 // NewRMCRequest returns a new blank RMCRequest
-func NewRMCRequest() RMCMessage {
-	return RMCMessage{IsRequest: true}
+func NewRMCRequest() *RMCMessage {
+	return &RMCMessage{IsRequest: true}
 }
 
 // NewRMCSuccess returns a new RMC Message configured as a success response
