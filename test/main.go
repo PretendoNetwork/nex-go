@@ -9,6 +9,7 @@ func main() {
 
 	go startAuthenticationServer()
 	go startSecureServer()
+	go startHPPServer()
 
 	wg.Wait()
 }

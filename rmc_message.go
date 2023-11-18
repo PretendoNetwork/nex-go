@@ -9,6 +9,7 @@ import (
 type RMCMessage struct {
 	IsRequest  bool   // * Indicates if the message is a request message (true) or response message (false)
 	IsSuccess  bool   // * Indicates if the message is a success message (true) for a response message
+	IsHPP      bool   // * Indicates if the message is an HPP message
 	ProtocolID uint16 // * Protocol ID of the message
 	CallID     uint32 // * Call ID associated with the message
 	MethodID   uint32 // * Method ID in the requested protocol
@@ -131,11 +132,16 @@ func (rmc *RMCMessage) Bytes() []byte {
 		protocolIDFlag = 0
 	}
 
-	if rmc.ProtocolID < 0x80 {
+	// * HPP does not include the protocol ID on the response. We technically
+	// * don't have to support converting HPP requests to bytes but we'll
+	// * do it for accuracy.
+	if !rmc.IsHPP || (rmc.IsHPP && rmc.IsRequest) {
+		if rmc.ProtocolID < 0x80 {
 		stream.WriteUInt8(uint8(rmc.ProtocolID | protocolIDFlag))
-	} else {
-		stream.WriteUInt8(uint8(0x7F | protocolIDFlag))
-		stream.WriteUInt16LE(rmc.ProtocolID)
+		} else {
+			stream.WriteUInt8(uint8(0x7F | protocolIDFlag))
+			stream.WriteUInt16LE(rmc.ProtocolID)
+		}
 	}
 
 	if rmc.IsRequest {
