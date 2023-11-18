@@ -278,54 +278,6 @@ func (stream *StreamIn) ReadVariant() (*Variant, error) {
 	return variant, nil
 }
 
-// ReadMap reads a Map type with the given key and value types
-func (stream *StreamIn) ReadMap(keyFunction interface{}, valueFunction interface{}) (map[interface{}]interface{}, error) {
-	// TODO - Make this not suck
-	// * Map types can have any type as the key and any type as the value
-	// * Due to strict typing we cannot just pass stream functions as these values and call them
-	// * At the moment this just reads what type you want from the interface{} function type
-
-	length, err := stream.ReadUInt32LE()
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read Map length. %s", err.Error())
-	}
-
-	typeReader := func(function interface{}) (interface{}, error) {
-		var value interface{}
-		var err error
-
-		switch function.(type) {
-		case func() (string, error):
-			value, err = stream.ReadString()
-		case func() (*Variant, error):
-			value, err = stream.ReadVariant()
-		default:
-			value = nil
-			err = errors.New("Unsupported type in ReadMap")
-		}
-
-		return value, err
-	}
-
-	newMap := make(map[interface{}]interface{})
-
-	for i := 0; i < int(length); i++ {
-		key, err := typeReader(keyFunction)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read Map key. %s", err.Error())
-		}
-
-		value, err := typeReader(valueFunction)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to read Map value. %s", err.Error())
-		}
-
-		newMap[key] = value
-	}
-
-	return newMap, nil
-}
-
 // ReadDateTime reads a DateTime type
 func (stream *StreamIn) ReadDateTime() (*DateTime, error) {
 	value, err := stream.ReadUInt64LE()
@@ -1010,4 +962,32 @@ func StreamReadListStructure[T StructureInterface](stream *StreamIn, structure T
 	}
 
 	return structures, nil
+}
+
+// StreamReadMap reads a Map type with the given key and value types from a StreamIn
+//
+// Implemented as a separate function to utilize generics
+func StreamReadMap[K comparable, V any](stream *StreamIn, keyReader func() (K, error), valueReader func() (V, error)) (map[K]V, error) {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read Map length. %s", err.Error())
+	}
+
+	m := make(map[K]V)
+
+	for i := 0; i < int(length); i++ {
+		key, err := keyReader()
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := valueReader()
+		if err != nil {
+			return nil, err
+		}
+
+		m[key] = value
+	}
+
+	return m, nil
 }
