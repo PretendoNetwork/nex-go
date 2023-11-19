@@ -273,7 +273,10 @@ func (s *PRUDPServer) handleSyn(packet PRUDPPacketInterface) {
 		ack, _ = NewPRUDPPacketV1(client, nil)
 	}
 
-	connectionSignature, _ := packet.calculateConnectionSignature(client.address)
+	connectionSignature, err := packet.calculateConnectionSignature(client.address)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 
 	client.reset()
 	client.clientConnectionSignature = connectionSignature
@@ -317,7 +320,10 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 
 	client.serverConnectionSignature = packet.getConnectionSignature()
 
-	connectionSignature, _ := packet.calculateConnectionSignature(client.address)
+	connectionSignature, err := packet.calculateConnectionSignature(client.address)
+	if err != nil {
+		logger.Error(err.Error())
+	}
 
 	ack.SetType(ConnectPacket)
 	ack.AddFlag(FlagAck)
@@ -351,7 +357,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 	if s.IsSecureServer {
 		sessionKey, pid, checkValue, err := s.readKerberosTicket(packet.Payload())
 		if err != nil {
-			fmt.Println(err)
+			logger.Error(err.Error())
 		}
 
 		client.SetPID(pid)

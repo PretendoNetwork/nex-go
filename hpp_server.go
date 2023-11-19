@@ -71,6 +71,7 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", req.RemoteAddr)
 	if err != nil {
 		// * Should never happen?
+		logger.Error(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -80,28 +81,32 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 
 	hppPacket, err := NewHPPPacket(client, rmcRequestBytes)
 	if err != nil {
+		logger.Error(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = hppPacket.validateAccessKeySignature(accessKeySignature)
 	if err != nil {
+		logger.Error(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = hppPacket.validatePasswordSignature(passwordSignature)
 	if err != nil {
+		logger.Error(err.Error())
+
 		rmcMessage := hppPacket.RMCMessage()
 
 		// HPP returns PythonCore::ValidationError if password is missing or invalid
 		errorResponse := NewRMCError(Errors.PythonCore.ValidationError)
 		errorResponse.CallID = rmcMessage.CallID
 
-		_, _ = w.Write(errorResponse.Bytes())
-		// if err != nil {
-		// 	logger.Error(err.Error())
-		// }
+		_, err = w.Write(errorResponse.Bytes())
+		if err != nil {
+			logger.Error(err.Error())
+		}
 
 		return
 	}
@@ -110,13 +115,13 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 		go dataHandler(hppPacket)
 	}
 
-	<- hppPacket.processed
+	<-hppPacket.processed
 
 	if len(hppPacket.payload) > 0 {
-		_, _ = w.Write(hppPacket.payload)
-		// if err != nil {
-		// 	logger.Error(err.Error())
-		// }
+		_, err = w.Write(hppPacket.payload)
+		if err != nil {
+			logger.Error(err.Error())
+		}
 	}
 }
 
