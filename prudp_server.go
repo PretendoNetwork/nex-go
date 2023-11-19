@@ -151,12 +151,6 @@ func (s *PRUDPServer) handleSocketMessage() error {
 
 	var packets []PRUDPPacketInterface
 
-	if s.IsSecureServer {
-		fmt.Printf("[SECR] Got packet data %x\n", packetData)
-	} else {
-		fmt.Printf("[AUTH] Got packet data %x\n", packetData)
-	}
-
 	// * Support any packet type the client sends and respond
 	// * with that same type. Also keep reading from the stream
 	// * until no more data is left, to account for multiple
@@ -200,12 +194,6 @@ func (s *PRUDPServer) handleAcknowledgment(packet PRUDPPacketInterface) {
 	if packet.HasFlag(FlagMultiAck) {
 		s.handleMultiAcknowledgment(packet)
 		return
-	}
-
-	if s.IsSecureServer {
-		fmt.Println("[SECR] Got ACK for SequenceID", packet.SequenceID())
-	} else {
-		fmt.Println("[AUTH] Got ACK for SequenceID", packet.SequenceID())
 	}
 
 	client := packet.Sender().(*PRUDPClient)
@@ -601,24 +589,6 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	if packetCopy.HasFlag(FlagReliable) && packetCopy.HasFlag(FlagNeedsAck) {
 		substream := client.reliableSubstream(packetCopy.SubstreamID())
 		substream.ResendScheduler.AddPacket(packetCopy)
-	}
-
-	if packetCopy.Type() == DataPacket && packetCopy.RMCMessage() != nil {
-		if s.IsSecureServer {
-			fmt.Println("[SECR] ======= SENDING =======")
-			fmt.Println("[SECR] ProtocolID:", packetCopy.RMCMessage().ProtocolID)
-			fmt.Println("[SECR] MethodID:", packetCopy.RMCMessage().MethodID)
-			fmt.Println("[SECR] FragmentID:", packetCopy.getFragmentID())
-			fmt.Println("[SECR] SequenceID:", packetCopy.SequenceID())
-			fmt.Println("[SECR] =======================")
-		} else {
-			fmt.Println("[AUTH] ======= SENDING =======")
-			fmt.Println("[AUTH] ProtocolID:", packetCopy.RMCMessage().ProtocolID)
-			fmt.Println("[AUTH] MethodID:", packetCopy.RMCMessage().MethodID)
-			fmt.Println("[AUTH] FragmentID:", packetCopy.getFragmentID())
-			fmt.Println("[AUTH] SequenceID:", packetCopy.SequenceID())
-			fmt.Println("[AUTH] =======================")
-		}
 	}
 
 	s.sendRaw(packetCopy.Sender().Address(), packetCopy.Bytes())
