@@ -143,6 +143,27 @@ func (s *PRUDPServer) handleSocketMessage() error {
 		client = NewPRUDPClient(addr, s)
 		client.startHeartbeat()
 
+		// * Fail-safe. If the server reboots, then
+		// * s.clients has no record of old clients.
+		// * An existing client which has not killed
+		// * the connection on it's end MAY still send
+		// * DATA packets once the server is back
+		// * online, assuming it reboots fast enough.
+		// * Since the client did NOT redo the SYN
+		// * and CONNECT packets, it's reliable
+		// * substreams never got remade. This is put
+		// * in place to ensure there is always AT
+		// * LEAST one substream in place, so the client
+		// * can naturally error out due to the RC4
+		// * errors.
+		// *
+		// * NOTE: THE CLIENT MAY NOT HAVE THE REAL
+		// * CORRECT NUMBER OF SUBSTREAMS HERE. THIS
+		// * IS ONLY DONE TO PREVENT A SERVER CRASH,
+		// * NOT TO SAVE THE CLIENT. THE CLIENT IS
+		// * EXPECTED TO NATURALLY DIE HERE
+		client.createReliableSubstreams(0)
+
 		s.clients.Set(discriminator, client)
 	}
 

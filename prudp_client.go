@@ -109,11 +109,24 @@ func (c *PRUDPClient) setSessionKey(sessionKey []byte) {
 
 // reliableSubstream returns the clients reliable substream ID
 func (c *PRUDPClient) reliableSubstream(substreamID uint8) *ReliablePacketSubstreamManager {
-	return c.reliableSubstreams[substreamID]
+	// * Fail-safe. The client may not always have
+	// * the correct number of substreams. See the
+	// * comment in handleSocketMessage of PRUDPServer
+	// * for more details
+	if int(substreamID) >= len(c.reliableSubstreams) {
+		return c.reliableSubstreams[0]
+	} else {
+		return c.reliableSubstreams[substreamID]
+	}
 }
 
 // createReliableSubstreams creates the list of substreams used for reliable PRUDP packets
 func (c *PRUDPClient) createReliableSubstreams(maxSubstreamID uint8) {
+	// * Kill any existing substreams
+	for _, substream := range c.reliableSubstreams {
+		substream.ResendScheduler.Stop()
+	}
+
 	substreams := maxSubstreamID + 1
 
 	c.reliableSubstreams = make([]*ReliablePacketSubstreamManager, substreams)
