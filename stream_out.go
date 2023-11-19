@@ -1,8 +1,6 @@
 package nex
 
 import (
-	"fmt"
-
 	crunch "github.com/superwhiskers/crunch/v3"
 )
 
@@ -496,7 +494,7 @@ func mapTypeWriter[T any](stream *StreamOut, t T) {
 		// * The client will disconnect but the server won't die,
 		// * that way other clients stay connected, but we still
 		// * have a log of what the error was
-		fmt.Printf("Unsupported Map type trying to be written: %T\n", v)
+		logger.Warningf("Unsupported Map type trying to be written: %T\n", v)
 	}
 }
 
