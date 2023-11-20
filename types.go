@@ -880,7 +880,7 @@ func (stationURL *StationURL) FromString(str string) {
 			ui64, _ := strconv.ParseUint(value, 10, 32)
 			stationURL.SetCID(uint32(ui64))
 		case "PID":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
+			ui64, _ := strconv.ParseUint(value, 10, 64)
 			stationURL.SetPID(NewPID(ui64))
 		case "type":
 			ui64, _ := strconv.ParseUint(value, 10, 32)
