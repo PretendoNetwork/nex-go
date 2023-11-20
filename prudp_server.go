@@ -16,7 +16,7 @@ type PRUDPServer struct {
 	udpSocket                     *net.UDPConn
 	clients                       *MutexMap[string, *PRUDPClient]
 	PRUDPVersion                  int
-	protocolMinorVersion          uint32
+	PRUDPMinorVersion             uint32
 	IsQuazalMode                  bool
 	IsSecureServer                bool
 	SupportedFunctions            uint32
@@ -617,7 +617,11 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 // sendRaw will send the given address the provided packet
 func (s *PRUDPServer) sendRaw(conn net.Addr, data []byte) {
-	s.udpSocket.WriteToUDP(data, conn.(*net.UDPAddr))
+	_, err := s.udpSocket.WriteToUDP(data, conn.(*net.UDPAddr))
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+	}
 }
 
 // AccessKey returns the servers sandbox access key
@@ -761,16 +765,6 @@ func (s *PRUDPServer) NATTraversalProtocolVersion() *LibraryVersion {
 // ConnectionIDCounter returns the servers CID counter
 func (s *PRUDPServer) ConnectionIDCounter() *Counter[uint32] {
 	return s.connectionIDCounter
-}
-
-// SetProtocolMinorVersion sets the servers PRUDP protocol minor version
-func (s *PRUDPServer) SetProtocolMinorVersion(protocolMinorVersion uint32) {
-	s.protocolMinorVersion = protocolMinorVersion
-}
-
-// ProtocolMinorVersion returns the servers PRUDP protocol minor version
-func (s *PRUDPServer) ProtocolMinorVersion() uint32 {
-	return s.protocolMinorVersion
 }
 
 // FindClientByConnectionID returns the PRUDP client connected with the given connection ID

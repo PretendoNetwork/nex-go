@@ -17,11 +17,13 @@ type RMCMessage struct {
 	Parameters []byte // * Input for the method
 }
 
+// Copy copies the message into a new RMCMessage
 func (rmc *RMCMessage) Copy() *RMCMessage {
 	copied := NewRMCMessage()
 
 	copied.IsRequest = rmc.IsRequest
 	copied.IsSuccess = rmc.IsSuccess
+	copied.IsHPP = rmc.IsHPP
 	copied.ProtocolID = rmc.ProtocolID
 	copied.CallID = rmc.CallID
 	copied.MethodID = rmc.MethodID

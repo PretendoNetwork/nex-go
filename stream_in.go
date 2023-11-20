@@ -908,7 +908,7 @@ func StreamReadStructure[T StructureInterface](stream *StreamIn, structure T) (T
 	var useStructureHeader bool
 	switch server := stream.Server.(type) {
 	case *PRUDPServer: // * Support QRV versions
-		useStructureHeader = server.ProtocolMinorVersion() >= 3
+		useStructureHeader = server.PRUDPMinorVersion >= 3
 	default:
 		useStructureHeader = server.LibraryVersion().GreaterOrEqual("3.5.0")
 	}

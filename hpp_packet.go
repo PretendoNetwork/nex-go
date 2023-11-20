@@ -135,6 +135,7 @@ func (p *HPPPacket) SetRMCMessage(message *RMCMessage) {
 	p.message = message
 }
 
+// NewHPPPacket creates and returns a new HPPPacket using the provided Client and payload
 func NewHPPPacket(client *HPPClient, payload []byte) (*HPPPacket, error) {
 	hppPacket := &HPPPacket{
 		sender:    client,

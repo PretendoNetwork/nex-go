@@ -187,7 +187,7 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	var useStructures bool
 	switch server := stream.Server.(type) {
 	case *PRUDPServer: // * Support QRV versions
-		useStructures = server.ProtocolMinorVersion() >= 3
+		useStructures = server.PRUDPMinorVersion >= 3
 	default:
 		useStructures = server.LibraryVersion().GreaterOrEqual("3.5.0")
 	}
