@@ -10,15 +10,15 @@ var hppServer *nex.HPPServer
 
 // * Took these structs out of the protocols lib for convenience
 
-type DataStoreGetNotificationURLParam struct {
+type dataStoreGetNotificationURLParam struct {
 	nex.Structure
 	PreviousURL string
 }
 
-func (dataStoreGetNotificationURLParam *DataStoreGetNotificationURLParam) ExtractFromStream(stream *nex.StreamIn) error {
+func (d *dataStoreGetNotificationURLParam) ExtractFromStream(stream *nex.StreamIn) error {
 	var err error
 
-	dataStoreGetNotificationURLParam.PreviousURL, err = stream.ReadString()
+	d.PreviousURL, err = stream.ReadString()
 	if err != nil {
 		return fmt.Errorf("Failed to extract DataStoreGetNotificationURLParam.PreviousURL. %s", err.Error())
 	}
@@ -26,7 +26,7 @@ func (dataStoreGetNotificationURLParam *DataStoreGetNotificationURLParam) Extrac
 	return nil
 }
 
-type DataStoreReqGetNotificationURLInfo struct {
+type dataStoreReqGetNotificationURLInfo struct {
 	nex.Structure
 	URL        string
 	Key        string
@@ -34,11 +34,11 @@ type DataStoreReqGetNotificationURLInfo struct {
 	RootCACert []byte
 }
 
-func (dataStoreReqGetNotificationURLInfo *DataStoreReqGetNotificationURLInfo) Bytes(stream *nex.StreamOut) []byte {
-	stream.WriteString(dataStoreReqGetNotificationURLInfo.URL)
-	stream.WriteString(dataStoreReqGetNotificationURLInfo.Key)
-	stream.WriteString(dataStoreReqGetNotificationURLInfo.Query)
-	stream.WriteBuffer(dataStoreReqGetNotificationURLInfo.RootCACert)
+func (d *dataStoreReqGetNotificationURLInfo) Bytes(stream *nex.StreamOut) []byte {
+	stream.WriteString(d.URL)
+	stream.WriteString(d.Key)
+	stream.WriteString(d.Query)
+	stream.WriteBuffer(d.RootCACert)
 
 	return stream.Bytes()
 }
@@ -81,7 +81,7 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	parametersStream := nex.NewStreamIn(parameters, hppServer)
 
-	param, err := nex.StreamReadStructure(parametersStream, &DataStoreGetNotificationURLParam{})
+	param, err := nex.StreamReadStructure(parametersStream, &dataStoreGetNotificationURLParam{})
 	if err != nil {
 		fmt.Println("[HPP]", err)
 		return
@@ -91,7 +91,7 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	responseStream := nex.NewStreamOut(hppServer)
 
-	info := &DataStoreReqGetNotificationURLInfo{}
+	info := &dataStoreReqGetNotificationURLInfo{}
 	info.URL = "https://example.com"
 	info.Key = "whatever/key"
 	info.Query = "?pretendo=1"

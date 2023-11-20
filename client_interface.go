@@ -1,3 +1,4 @@
+// Package nex provides a collection of utility structs, functions, and data types for making NEX/QRV servers
 package nex
 
 import "net"

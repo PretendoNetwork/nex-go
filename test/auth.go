@@ -1,3 +1,4 @@
+// Package main implements a test server
 package main
 
 import (

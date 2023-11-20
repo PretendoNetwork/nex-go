@@ -11,7 +11,7 @@ var secureServer *nex.PRUDPServer
 
 // * Took these structs out of the protocols lib for convenience
 
-type PrincipalPreference struct {
+type principalPreference struct {
 	nex.Structure
 	*nex.Data
 	ShowOnlinePresence  bool
@@ -19,7 +19,7 @@ type PrincipalPreference struct {
 	BlockFriendRequests bool
 }
 
-func (pp *PrincipalPreference) Bytes(stream *nex.StreamOut) []byte {
+func (pp *principalPreference) Bytes(stream *nex.StreamOut) []byte {
 	stream.WriteBool(pp.ShowOnlinePresence)
 	stream.WriteBool(pp.ShowCurrentTitle)
 	stream.WriteBool(pp.BlockFriendRequests)
@@ -27,7 +27,7 @@ func (pp *PrincipalPreference) Bytes(stream *nex.StreamOut) []byte {
 	return stream.Bytes()
 }
 
-type Comment struct {
+type comment struct {
 	nex.Structure
 	*nex.Data
 	Unknown     uint8
@@ -35,7 +35,7 @@ type Comment struct {
 	LastChanged *nex.DateTime
 }
 
-func (c *Comment) Bytes(stream *nex.StreamOut) []byte {
+func (c *comment) Bytes(stream *nex.StreamOut) []byte {
 	stream.WriteUInt8(c.Unknown)
 	stream.WriteString(c.Contents)
 	stream.WriteDateTime(c.LastChanged)
@@ -146,22 +146,18 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
 	response := nex.NewRMCMessage()
 
-	principalPreference := &PrincipalPreference{
+	responseStream := nex.NewStreamOut(authServer)
+
+	responseStream.WriteStructure(&principalPreference{
 		ShowOnlinePresence:  true,
 		ShowCurrentTitle:    true,
 		BlockFriendRequests: false,
-	}
-
-	comment := &Comment{
+	})
+	responseStream.WriteStructure(&comment{
 		Unknown:     0,
 		Contents:    "Rewrite Test",
 		LastChanged: nex.NewDateTime(0),
-	}
-
-	responseStream := nex.NewStreamOut(authServer)
-
-	responseStream.WriteStructure(principalPreference)
-	responseStream.WriteStructure(comment)
+	})
 	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
 	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
 	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)

@@ -11,7 +11,10 @@ func generateTicket(userPID *nex.PID, targetPID *nex.PID) []byte {
 	targetKey := nex.DeriveKerberosKey(targetPID, []byte("password"))
 	sessionKey := make([]byte, authServer.KerberosKeySize())
 
-	rand.Read(sessionKey)
+	_, err := rand.Read(sessionKey)
+	if err != nil {
+		panic(err)
+	}
 
 	ticketInternalData := nex.NewKerberosTicketInternalData()
 	serverTime := nex.NewDateTime(0).Now()

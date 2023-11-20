@@ -518,7 +518,11 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 
 			if packet.getFragmentID() == 0 {
 				message := NewRMCMessage()
-				message.FromBytes(payload)
+				err := message.FromBytes(payload)
+				if err != nil {
+					// TODO - Should this return the error too?
+					logger.Error(err.Error())
+				}
 
 				substream.ResetFragmentedPayload()
 
