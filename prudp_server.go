@@ -359,6 +359,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 		client.minorVersion = ack.minorVersion
 		client.supportedFunctions = ack.supportedFunctions
 		client.createReliableSubstreams(ack.maximumSubstreamID)
+		client.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](packet.(*PRUDPPacketV1).initialUnreliableSequenceID)
 	} else {
 		client.createReliableSubstreams(0)
 	}
@@ -542,7 +543,66 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 	}
 }
 
-func (s *PRUDPServer) handleUnreliable(packet PRUDPPacketInterface) {}
+func (s *PRUDPServer) handleUnreliable(packet PRUDPPacketInterface) {
+	if packet.HasFlag(FlagNeedsAck) {
+		s.acknowledgePacket(packet)
+	}
+
+	// * Since unreliable DATA packets can in theory reach the
+	// * server in any order, and they lack a substream, it's
+	// * not actually possible to know what order they should
+	// * be processed in for each request. So assume all packets
+	// * MUST be fragment 0 (unreliable packets do not have frags)
+	// *
+	// * Example -
+	// *
+	// * Say there is 2 requests to the same protocol, methods 1
+	// * and 2. The starting unreliable sequence ID is 10. If both
+	// * method 1 and 2 are called at the same time, but method 1
+	// * has a fragmented payload, the packets could, in theory, reach
+	// * the server like so:
+	// *
+	// *	- Method1 - Sequence 10, Fragment 1
+	// *	- Method1 - Sequence 13, Fragment 3
+	// *	- Method2 - Sequence 12, Fragment 0
+	// *	- Method1 - Sequence 11, Fragment 2
+	// *	- Method1 - Sequence 14, Fragment 0
+	// *
+	// * If we reorder these to the proper order, like so:
+	// *
+	// *	- Method1 - Sequence 10, Fragment 1
+	// *	- Method1 - Sequence 11, Fragment 2
+	// *	- Method2 - Sequence 12, Fragment 0
+	// *	- Method1 - Sequence 13, Fragment 3
+	// *	- Method1 - Sequence 14, Fragment 0
+	// *
+	// * We still have a gap where Method2 was called. It's not
+	// * possible to know if the packet with sequence ID 12 belongs
+	// * to the Method1 calls or not. We don't even know which methods
+	// * the packets are for at this stage yet, since the RMC data
+	// * can't be checked until all the fragments are collected and
+	// * the payload decrypted. In this case, we would see fragment 0
+	// * and assume that's the end of fragments, losing the real last
+	// * fragments and resulting in a bad decryption
+	// TODO - Is this actually true? I'm just assuming, based on common sense, tbh. Kinnay also does not implement fragmented unreliable packets?
+	if packet.getFragmentID() != 0 {
+		logger.Warningf("Unexpected unreliable fragment ID. Expected 0, got %d", packet.getFragmentID())
+		return
+	}
+
+	payload := packet.processUnreliableCrypto()
+
+	message := NewRMCMessage()
+	err := message.FromBytes(payload)
+	if err != nil {
+		// TODO - Should this return the error too?
+		logger.Error(err.Error())
+	}
+
+	packet.SetRMCMessage(message)
+
+	s.emit("data", packet)
+}
 
 func (s *PRUDPServer) sendPing(client *PRUDPClient) {
 	var ping PRUDPPacketInterface
@@ -620,8 +680,9 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 			substream := client.reliableSubstream(packetCopy.SubstreamID())
 
 			packetCopy.SetPayload(substream.Encrypt(compressedPayload))
+		} else {
+			packetCopy.SetPayload(packetCopy.processUnreliableCrypto())
 		}
-		// TODO - Unreliable crypto
 	}
 
 	packetCopy.setSignature(packetCopy.calculateSignature(client.sessionKey, client.serverConnectionSignature))

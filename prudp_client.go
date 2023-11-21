@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"crypto/md5"
 	"net"
 	"time"
 )
@@ -26,6 +27,7 @@ type PRUDPClient struct {
 	supportedFunctions                  uint32 // * Not currently used for anything, but maybe useful later?
 	ConnectionID                        uint32
 	StationURLs                         []*StationURL
+	unreliableBaseKey                   []byte
 }
 
 // reset sets the client back to it's default state
@@ -38,7 +40,7 @@ func (c *PRUDPClient) reset() {
 	c.serverConnectionSignature = make([]byte, 0)
 	c.sessionKey = make([]byte, 0)
 	c.reliableSubstreams = make([]*ReliablePacketSubstreamManager, 0)
-	c.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](0)
+	c.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](1)
 	c.outgoingPingSequenceIDCounter = NewCounter[uint16](0)
 	c.SourceStreamType = 0
 	c.SourcePort = 0
@@ -105,6 +107,17 @@ func (c *PRUDPClient) setSessionKey(sessionKey []byte) {
 
 		substream.SetCipherKey(sessionKey)
 	}
+
+	// * Init the base key used for unreliable DATA packets.
+	// *
+	// * Since unreliable DATA packets can come in out of
+	// * order, each packet uses a dedicated RC4 stream. The
+	// * key of each RC4 stream is made up by using this base
+	// * key, modified using the packets sequence/session IDs
+	unreliableBaseKeyPart1 := md5.Sum(append(sessionKey, []byte{0x18, 0xD8, 0x23, 0x34, 0x37, 0xE4, 0xE3, 0xFE}...))
+	unreliableBaseKeyPart2 := md5.Sum(append(sessionKey, []byte{0x23, 0x3E, 0x60, 0x01, 0x23, 0xCD, 0xAB, 0x80}...))
+
+	c.unreliableBaseKey = append(unreliableBaseKeyPart1[:], unreliableBaseKeyPart2[:]...)
 }
 
 // reliableSubstream returns the clients reliable substream ID
@@ -194,5 +207,6 @@ func NewPRUDPClient(address *net.UDPAddr, server *PRUDPServer) *PRUDPClient {
 		server:                        server,
 		outgoingPingSequenceIDCounter: NewCounter[uint16](0),
 		pid:                           NewPID[uint32](0),
+		unreliableBaseKey:             make([]byte, 0x20),
 	}
 }

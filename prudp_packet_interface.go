@@ -40,4 +40,5 @@ type PRUDPPacketInterface interface {
 	setConnectionSignature(connectionSignature []byte)
 	getFragmentID() uint8
 	setFragmentID(fragmentID uint8)
+	processUnreliableCrypto() []byte
 }

@@ -1,5 +1,7 @@
 package nex
 
+import "crypto/rc4"
+
 // PRUDPPacket holds all the fields each packet should have in all PRUDP versions
 type PRUDPPacket struct {
 	sender                *PRUDPClient
@@ -171,4 +173,20 @@ func (p *PRUDPPacket) RMCMessage() *RMCMessage {
 // SetRMCMessage sets the packets RMC Message
 func (p *PRUDPPacket) SetRMCMessage(message *RMCMessage) {
 	p.message = message
+}
+
+func (p *PRUDPPacket) processUnreliableCrypto() []byte {
+	// * Since unreliable DATA packets can come in out of
+	// * order, each packet uses a dedicated RC4 stream
+	uniqueKey := p.sender.unreliableBaseKey[:]
+	uniqueKey[0] = byte((uint16(uniqueKey[0]) + p.sequenceID) & 0xFF)
+	uniqueKey[1] = byte((uint16(uniqueKey[1]) + (p.sequenceID >> 8)) & 0xFF)
+	uniqueKey[31] = byte((uniqueKey[31] + p.sessionID) & 0xFF)
+
+	cipher, _ := rc4.NewCipher(uniqueKey)
+	ciphered := make([]byte, len(p.payload))
+
+	cipher.XORKeyStream(ciphered, p.payload)
+
+	return ciphered
 }
