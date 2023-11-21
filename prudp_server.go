@@ -664,10 +664,15 @@ func (s *PRUDPServer) decompressPayload(payload []byte) ([]byte, error) {
 	if err != nil {
 		return []byte{}, err
 	}
-	defer zlibReader.Close()
 
 	// * Copy the decompressed payload into a buffer
 	_, err = decompressed.ReadFrom(zlibReader)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// * Close the zlib reader to flush any remaining data
+	err = zlibReader.Close()
 	if err != nil {
 		return []byte{}, err
 	}
