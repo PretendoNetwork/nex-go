@@ -2,6 +2,7 @@ package nex
 
 import (
 	"bytes"
+	"compress/zlib"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -39,6 +40,7 @@ type PRUDPServer struct {
 	pingTimeout                   time.Duration
 	PasswordFromPID               func(pid *PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey []byte
+	CompressionEnabled            bool
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -514,7 +516,13 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 
 	for _, pendingPacket := range substream.Update(packet) {
 		if packet.Type() == DataPacket {
-			payload := substream.AddFragment(pendingPacket.decryptPayload())
+			decryptedPayload := pendingPacket.decryptPayload()
+			decompressedPayload, err := s.decompressPayload(decryptedPayload)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+
+			payload := substream.AddFragment(decompressedPayload)
 
 			if packet.getFragmentID() == 0 {
 				message := NewRMCMessage()
@@ -603,8 +611,15 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 	if packetCopy.Type() == DataPacket && !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
 		if packetCopy.HasFlag(FlagReliable) {
+			payload := packetCopy.Payload()
+			compressedPayload, err := s.compressPayload(payload)
+			if err != nil {
+				logger.Error(err.Error())
+			}
+
 			substream := client.reliableSubstream(packetCopy.SubstreamID())
-			packetCopy.SetPayload(substream.Encrypt(packetCopy.Payload()))
+
+			packetCopy.SetPayload(substream.Encrypt(compressedPayload))
 		}
 		// TODO - Unreliable crypto
 	}
@@ -626,6 +641,80 @@ func (s *PRUDPServer) sendRaw(conn net.Addr, data []byte) {
 		// TODO - Should this return the error too?
 		logger.Error(err.Error())
 	}
+}
+
+func (s *PRUDPServer) decompressPayload(payload []byte) ([]byte, error) {
+	if !s.CompressionEnabled {
+		return payload, nil
+	}
+
+	compressionRatio := payload[0]
+	compressed := payload[1:]
+
+	if compressionRatio == 0 {
+		// * Compression ratio of 0 means no compression
+		return compressed, nil
+	}
+
+	reader := bytes.NewReader(compressed)
+	decompressed := bytes.Buffer{}
+
+	// * Create a zlib reader
+	zlibReader, err := zlib.NewReader(reader)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer zlibReader.Close()
+
+	// * Copy the decompressed payload into a buffer
+	_, err = decompressed.ReadFrom(zlibReader)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	decompressedBytes := decompressed.Bytes()
+
+	ratioCheck := len(decompressedBytes)/len(compressed) + 1
+
+	if ratioCheck != int(compressionRatio) {
+		return []byte{}, fmt.Errorf("Failed to decompress payload. Got bad ratio. Expected %d, got %d", compressionRatio, ratioCheck)
+	}
+
+	return decompressedBytes, nil
+}
+
+func (s *PRUDPServer) compressPayload(payload []byte) ([]byte, error) {
+	if !s.CompressionEnabled {
+		return payload, nil
+	}
+
+	compressed := bytes.Buffer{}
+
+	// * Create a zlib writer with default compression level
+	zlibWriter := zlib.NewWriter(&compressed)
+
+	_, err := zlibWriter.Write(payload)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	// * Close the zlib writer to flush any remaining data
+	err = zlibWriter.Close()
+	if err != nil {
+		return []byte{}, err
+	}
+
+	compressedBytes := compressed.Bytes()
+
+	compressionRatio := len(payload)/len(compressedBytes) + 1
+
+	stream := NewStreamOut(s)
+
+	stream.WriteUInt8(uint8(compressionRatio))
+	stream.Grow(int64(len(compressedBytes)))
+	stream.WriteBytesNext(compressedBytes)
+
+	return stream.Bytes(), nil
 }
 
 // AccessKey returns the servers sandbox access key
