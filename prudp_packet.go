@@ -143,6 +143,15 @@ func (p *PRUDPPacket) decryptPayload() []byte {
 	if p.packetType == DataPacket {
 		substream := p.sender.reliableSubstream(p.SubstreamID())
 
+		if !p.sender.server.UseSecurePRUDP {
+			// * Servers which use the "prudp" scheme instead of
+			// * the secure "prudps" scheme in their station URL
+			// * don't use a session key for packet encryption.
+			// * Instead they use a per-packet RC4 stream using
+			// * the default key
+			substream.SetCipherKey([]byte("CD&ML"))
+		}
+
 		payload = substream.Decrypt(payload)
 	}
 

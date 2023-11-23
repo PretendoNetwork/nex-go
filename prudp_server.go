@@ -41,6 +41,7 @@ type PRUDPServer struct {
 	PasswordFromPID               func(pid *PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey []byte
 	CompressionEnabled            bool
+	UseSecurePRUDP                bool
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -679,6 +680,15 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 			substream := client.reliableSubstream(packetCopy.SubstreamID())
 
+			if !s.UseSecurePRUDP {
+				// * Servers which use the "prudp" scheme instead of
+				// * the secure "prudps" scheme in their station URL
+				// * don't use a session key for packet encryption.
+				// * Instead they use a per-packet RC4 stream using
+				// * the default key
+				substream.SetCipherKey([]byte("CD&ML"))
+			}
+
 			packetCopy.SetPayload(substream.Encrypt(compressedPayload))
 		} else {
 			packetCopy.SetPayload(packetCopy.processUnreliableCrypto())
@@ -968,5 +978,6 @@ func NewPRUDPServer() *PRUDPServer {
 		prudpEventHandlers:  make(map[string][]func(PacketInterface)),
 		connectionIDCounter: NewCounter[uint32](10),
 		pingTimeout:         time.Second * 15,
+		UseSecurePRUDP:      true,
 	}
 }
