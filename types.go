@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -591,416 +590,87 @@ func NewDateTime(value uint64) *DateTime {
 // StationURL contains the data for a NEX station URL.
 // Uses pointers to check for nil, 0 is valid
 type StationURL struct {
-	local         bool // * Not part of the data structure. Used for easier lookups elsewhere
-	public        bool // * Not part of the data structure. Used for easier lookups elsewhere
-	scheme        string
-	address       string
-	port          *uint32
-	pl            *uint32 // * Seen in Minecraft
-	stream        *uint32
-	sid           *uint32
-	cid           *uint32
-	pid           *PID
-	transportType *uint32
-	rvcid         *uint32
-	natm          *uint32
-	natf          *uint32
-	upnp          *uint32
-	pmp           *uint32
-	probeinit     *uint32
-	prid          *uint32
+	local  bool // * Not part of the data structure. Used for easier lookups elsewhere
+	public bool // * Not part of the data structure. Used for easier lookups elsewhere
+	Scheme string
+	Fields *MutexMap[string, string]
 }
 
 // SetLocal marks the StationURL as an local URL
-func (stationURL *StationURL) SetLocal() {
-	stationURL.local = true
-	stationURL.public = false
+func (s *StationURL) SetLocal() {
+	s.local = true
+	s.public = false
 }
 
 // SetPublic marks the StationURL as an public URL
-func (stationURL *StationURL) SetPublic() {
-	stationURL.local = false
-	stationURL.public = true
+func (s *StationURL) SetPublic() {
+	s.local = false
+	s.public = true
 }
 
 // IsLocal checks if the StationURL is a local URL
-func (stationURL *StationURL) IsLocal() bool {
-	return stationURL.local
+func (s *StationURL) IsLocal() bool {
+	return s.local
 }
 
 // IsPublic checks if the StationURL is a public URL
-func (stationURL *StationURL) IsPublic() bool {
-	return stationURL.public
-}
-
-// SetScheme sets the StationURL scheme
-func (stationURL *StationURL) SetScheme(scheme string) {
-	stationURL.scheme = scheme
-}
-
-// SetAddress sets the StationURL address
-func (stationURL *StationURL) SetAddress(address string) {
-	stationURL.address = address
-}
-
-// SetPort sets the StationURL port
-func (stationURL *StationURL) SetPort(port uint32) {
-	stationURL.port = &port
-}
-
-// SetPL sets the StationURL Pl
-func (stationURL *StationURL) SetPL(pl uint32) {
-	stationURL.pl = &pl
-}
-
-// SetStream sets the StationURL stream
-func (stationURL *StationURL) SetStream(stream uint32) {
-	stationURL.stream = &stream
-}
-
-// SetSID sets the StationURL SID
-func (stationURL *StationURL) SetSID(sid uint32) {
-	stationURL.sid = &sid
-}
-
-// SetCID sets the StationURL CID
-func (stationURL *StationURL) SetCID(cid uint32) {
-	stationURL.cid = &cid
-}
-
-// SetPID sets the StationURL PID
-func (stationURL *StationURL) SetPID(pid *PID) {
-	stationURL.pid = pid
-}
-
-// SetType sets the StationURL transportType
-func (stationURL *StationURL) SetType(transportType uint32) {
-	stationURL.transportType = &transportType
-}
-
-// SetRVCID sets the StationURL RVCID
-func (stationURL *StationURL) SetRVCID(rvcid uint32) {
-	stationURL.rvcid = &rvcid
-}
-
-// SetNatm sets the StationURL Natm
-func (stationURL *StationURL) SetNatm(natm uint32) {
-	stationURL.natm = &natm
-}
-
-// SetNatf sets the StationURL Natf
-func (stationURL *StationURL) SetNatf(natf uint32) {
-	stationURL.natf = &natf
-}
-
-// SetUpnp sets the StationURL Upnp
-func (stationURL *StationURL) SetUpnp(upnp uint32) {
-	stationURL.upnp = &upnp
-}
-
-// SetPmp sets the StationURL Pmp
-func (stationURL *StationURL) SetPmp(pmp uint32) {
-	stationURL.pmp = &pmp
-}
-
-// SetProbeInit sets the StationURL ProbeInit
-func (stationURL *StationURL) SetProbeInit(probeinit uint32) {
-	stationURL.probeinit = &probeinit
-}
-
-// SetPRID sets the StationURL PRID
-func (stationURL *StationURL) SetPRID(prid uint32) {
-	stationURL.prid = &prid
-}
-
-// Scheme returns the StationURL scheme type
-func (stationURL *StationURL) Scheme() string {
-	return stationURL.address
-}
-
-// Address returns the StationURL address
-func (stationURL *StationURL) Address() string {
-	return stationURL.address
-}
-
-// Port returns the StationURL port
-func (stationURL *StationURL) Port() uint32 {
-	if stationURL.port == nil {
-		return 0
-	} else {
-		return *stationURL.port
-	}
-}
-
-// PL returns the StationURL Pl
-func (stationURL *StationURL) PL() uint32 {
-	if stationURL.pl == nil {
-		return 0
-	} else {
-		return *stationURL.pl
-	}
-}
-
-// Stream returns the StationURL stream value
-func (stationURL *StationURL) Stream() uint32 {
-	if stationURL.stream == nil {
-		return 0
-	} else {
-		return *stationURL.stream
-	}
-}
-
-// SID returns the StationURL SID value
-func (stationURL *StationURL) SID() uint32 {
-	if stationURL.sid == nil {
-		return 0
-	} else {
-		return *stationURL.sid
-	}
-}
-
-// CID returns the StationURL CID value
-func (stationURL *StationURL) CID() uint32 {
-	if stationURL.cid == nil {
-		return 0
-	} else {
-		return *stationURL.cid
-	}
-}
-
-// PID returns the StationURL PID value
-func (stationURL *StationURL) PID() *PID {
-	return stationURL.pid
-}
-
-// Type returns the StationURL type
-func (stationURL *StationURL) Type() uint32 {
-	if stationURL.transportType == nil {
-		return 0
-	} else {
-		return *stationURL.transportType
-	}
-}
-
-// RVCID returns the StationURL RVCID
-func (stationURL *StationURL) RVCID() uint32 {
-	if stationURL.rvcid == nil {
-		return 0
-	} else {
-		return *stationURL.rvcid
-	}
-}
-
-// Natm returns the StationURL Natm value
-func (stationURL *StationURL) Natm() uint32 {
-	if stationURL.natm == nil {
-		return 0
-	} else {
-		return *stationURL.natm
-	}
-}
-
-// Natf returns the StationURL Natf value
-func (stationURL *StationURL) Natf() uint32 {
-	if stationURL.natf == nil {
-		return 0
-	} else {
-		return *stationURL.natf
-	}
-}
-
-// Upnp returns the StationURL Upnp value
-func (stationURL *StationURL) Upnp() uint32 {
-	if stationURL.upnp == nil {
-		return 0
-	} else {
-		return *stationURL.upnp
-	}
-}
-
-// Pmp returns the StationURL Pmp value
-func (stationURL *StationURL) Pmp() uint32 {
-	if stationURL.pmp == nil {
-		return 0
-	} else {
-		return *stationURL.pmp
-	}
-}
-
-// ProbeInit returns the StationURL ProbeInit value
-func (stationURL *StationURL) ProbeInit() uint32 {
-	if stationURL.probeinit == nil {
-		return 0
-	} else {
-		return *stationURL.probeinit
-	}
-}
-
-// PRID returns the StationURL PRID value
-func (stationURL *StationURL) PRID() uint32 {
-	if stationURL.prid == nil {
-		return 0
-	} else {
-		return *stationURL.prid
-	}
+func (s *StationURL) IsPublic() bool {
+	return s.public
 }
 
 // FromString parses the StationURL data from a string
-func (stationURL *StationURL) FromString(str string) {
+func (s *StationURL) FromString(str string) {
 	split := strings.Split(str, ":/")
 
-	stationURL.scheme = split[0]
-	fields := split[1]
+	s.Scheme = split[0]
+	fields := strings.Split(split[1], ";")
 
-	params := strings.Split(fields, ";")
+	for i := 0; i < len(fields); i++ {
+		field := strings.Split(fields[i], "=")
 
-	for i := 0; i < len(params); i++ {
-		param := params[i]
-		split = strings.Split(param, "=")
+		key := field[0]
+		value := field[1]
 
-		name := split[0]
-		value := split[1]
-
-		switch name {
-		case "address":
-			stationURL.address = value
-		case "port":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetPort(uint32(ui64))
-		case "Pl":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetPL(uint32(ui64))
-		case "stream":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetStream(uint32(ui64))
-		case "sid":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetSID(uint32(ui64))
-		case "CID":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetCID(uint32(ui64))
-		case "PID":
-			ui64, _ := strconv.ParseUint(value, 10, 64)
-			stationURL.SetPID(NewPID(ui64))
-		case "type":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetType(uint32(ui64))
-		case "RVCID":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetRVCID(uint32(ui64))
-		case "natm":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetNatm(uint32(ui64))
-		case "natf":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetNatf(uint32(ui64))
-		case "upnp":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetUpnp(uint32(ui64))
-		case "pmp":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetPmp(uint32(ui64))
-		case "probeinit":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetProbeInit(uint32(ui64))
-		case "PRID":
-			ui64, _ := strconv.ParseUint(value, 10, 32)
-			stationURL.SetPRID(uint32(ui64))
-		}
+		s.Fields.Set(key, value)
 	}
 }
 
 // EncodeToString encodes the StationURL into a string
-func (stationURL *StationURL) EncodeToString() string {
+func (s *StationURL) EncodeToString() string {
 	fields := []string{}
 
-	if stationURL.address != "" {
-		fields = append(fields, "address="+stationURL.address)
-	}
+	s.Fields.Each(func(key, value string) bool {
+		fields = append(fields, fmt.Sprintf("%s=%s", key, value))
+		return false
+	})
 
-	if stationURL.port != nil {
-		fields = append(fields, "port="+strconv.FormatUint(uint64(stationURL.Port()), 10))
-	}
-
-	if stationURL.pl != nil {
-		fields = append(fields, "Pl="+strconv.FormatUint(uint64(stationURL.PL()), 10))
-	}
-
-	if stationURL.stream != nil {
-		fields = append(fields, "stream="+strconv.FormatUint(uint64(stationURL.Stream()), 10))
-	}
-
-	if stationURL.sid != nil {
-		fields = append(fields, "sid="+strconv.FormatUint(uint64(stationURL.SID()), 10))
-	}
-
-	if stationURL.cid != nil {
-		fields = append(fields, "CID="+strconv.FormatUint(uint64(stationURL.CID()), 10))
-	}
-
-	if stationURL.pid != nil {
-		fields = append(fields, "PID="+strconv.FormatUint(uint64(stationURL.PID().pid), 10))
-	}
-
-	if stationURL.transportType != nil {
-		fields = append(fields, "type="+strconv.FormatUint(uint64(stationURL.Type()), 10))
-	}
-
-	if stationURL.rvcid != nil {
-		fields = append(fields, "RVCID="+strconv.FormatUint(uint64(stationURL.RVCID()), 10))
-	}
-
-	if stationURL.natm != nil {
-		fields = append(fields, "natm="+strconv.FormatUint(uint64(stationURL.Natm()), 10))
-	}
-
-	if stationURL.natf != nil {
-		fields = append(fields, "natf="+strconv.FormatUint(uint64(stationURL.Natf()), 10))
-	}
-
-	if stationURL.upnp != nil {
-		fields = append(fields, "upnp="+strconv.FormatUint(uint64(stationURL.Upnp()), 10))
-	}
-
-	if stationURL.pmp != nil {
-		fields = append(fields, "pmp="+strconv.FormatUint(uint64(stationURL.Pmp()), 10))
-	}
-
-	if stationURL.probeinit != nil {
-		fields = append(fields, "probeinit="+strconv.FormatUint(uint64(stationURL.ProbeInit()), 10))
-	}
-
-	if stationURL.prid != nil {
-		fields = append(fields, "PRID="+strconv.FormatUint(uint64(stationURL.PRID()), 10))
-	}
-
-	return stationURL.scheme + ":/" + strings.Join(fields, ";")
+	return s.Scheme + ":/" + strings.Join(fields, ";")
 }
 
 // Copy returns a new copied instance of StationURL
-func (stationURL *StationURL) Copy() *StationURL {
-	return NewStationURL(stationURL.EncodeToString())
+func (s *StationURL) Copy() *StationURL {
+	return NewStationURL(s.EncodeToString())
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
-func (stationURL *StationURL) Equals(other *StationURL) bool {
-	return stationURL.EncodeToString() == other.EncodeToString()
+func (s *StationURL) Equals(other *StationURL) bool {
+	return s.EncodeToString() == other.EncodeToString()
 }
 
 // String returns a string representation of the struct
-func (stationURL *StationURL) String() string {
-	return stationURL.FormatToString(0)
+func (s *StationURL) String() string {
+	return s.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (stationURL *StationURL) FormatToString(indentationLevel int) string {
+func (s *StationURL) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
 	var b strings.Builder
 
 	b.WriteString("StationURL{\n")
-	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, stationURL.EncodeToString()))
+	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, s.EncodeToString()))
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
@@ -1008,7 +678,9 @@ func (stationURL *StationURL) FormatToString(indentationLevel int) string {
 
 // NewStationURL returns a new StationURL
 func NewStationURL(str string) *StationURL {
-	stationURL := &StationURL{}
+	stationURL := &StationURL{
+		Fields: NewMutexMap[string, string](),
+	}
 
 	if str != "" {
 		stationURL.FromString(str)
