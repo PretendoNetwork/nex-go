@@ -485,8 +485,38 @@ func mapTypeWriter[T any](stream *StreamOut, t T) {
 	// * key and value. So we need to just check the
 	// * type each time and call the right function
 	switch v := any(t).(type) {
+	case uint8:
+		stream.WriteUInt8(v)
+	case int8:
+		stream.WriteInt8(v)
+	case uint16:
+		stream.WriteUInt16LE(v)
+	case int16:
+		stream.WriteInt16LE(v)
+	case uint32:
+		stream.WriteUInt32LE(v)
+	case int32:
+		stream.WriteInt32LE(v)
+	case uint64:
+		stream.WriteUInt64LE(v)
+	case int64:
+		stream.WriteInt64LE(v)
+	case float32:
+		stream.WriteFloat32LE(v)
+	case float64:
+		stream.WriteFloat64LE(v)
 	case string:
 		stream.WriteString(v)
+	case bool:
+		stream.WriteBool(v)
+	case []byte:
+		// * This actually isn't a good situation, since a byte slice can be either
+		// * a Buffer or qBuffer. The only known official case is a qBuffer, inside
+		// * UserAccountManagement::LookupSceNpIds, which is why it's implemented
+		// * as a qBuffer
+		stream.WriteQBuffer(v) // TODO - Maybe we should make Buffer and qBuffer real types?
+	case StructureInterface:
+		stream.WriteStructure(v)
 	case *Variant:
 		stream.WriteVariant(v)
 	default:
