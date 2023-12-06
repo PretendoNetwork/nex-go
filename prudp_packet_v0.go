@@ -265,12 +265,14 @@ func (p *PRUDPPacketV0) calculateConnectionSignature(addr net.Addr) ([]byte, err
 }
 
 func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byte) []byte {
-	if p.packetType == DataPacket {
-		return p.calculateDataSignature(sessionKey)
-	}
+	if !p.sender.server.IsQuazalMode {
+		if p.packetType == DataPacket {
+			return p.calculateDataSignature(sessionKey)
+		}
 
-	if p.packetType == DisconnectPacket && p.sender.server.accessKey != "ridfebb9" {
-		return p.calculateDataSignature(sessionKey)
+		if p.packetType == DisconnectPacket && p.sender.server.accessKey != "ridfebb9" {
+			return p.calculateDataSignature(sessionKey)
+		}
 	}
 
 	if len(connectionSignature) != 0 {
