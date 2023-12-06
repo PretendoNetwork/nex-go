@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"strconv"
 
 	"github.com/PretendoNetwork/nex-go"
 )
@@ -106,8 +107,8 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 	address := packet.Sender().Address().(*net.UDPAddr).IP.String()
 
-	localStation.SetAddress(address)
-	localStation.SetPort(uint32(packet.Sender().Address().(*net.UDPAddr).Port))
+	localStation.Fields.Set("address", address)
+	localStation.Fields.Set("port", strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port))
 
 	retval := nex.NewResultSuccess(0x00010001)
 	localStationURL := localStation.EncodeToString()
