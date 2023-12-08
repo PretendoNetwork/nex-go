@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -94,8 +95,12 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		rs.packets.Delete(packet.SequenceID())
 		client.cleanup() // * "removed" event is dispatched here
 
-		virtualStream := client.server.virtualConnectionManager.Get(client.DestinationPort, client.DestinationStreamType)
-		virtualStream.clients.Delete(client.address.String())
+		virtualServer, _ := client.server.virtualServers.Get(client.DestinationPort)
+		virtualServerStream, _ := virtualServer.Get(client.DestinationStreamType)
+
+		discriminator := fmt.Sprintf("%s-%d-%d", client.address.String(), client.SourcePort, client.SourceStreamType)
+
+		virtualServerStream.Delete(discriminator)
 
 		return
 	}

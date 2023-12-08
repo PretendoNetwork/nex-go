@@ -2,6 +2,7 @@ package nex
 
 import (
 	"crypto/md5"
+	"fmt"
 	"net"
 	"time"
 )
@@ -185,8 +186,13 @@ func (c *PRUDPClient) startHeartbeat() {
 		// * client is dead and clean up
 		c.pingKickTimer = time.AfterFunc(server.pingTimeout, func() {
 			c.cleanup() // * "removed" event is dispatched here
-			virtualStream := c.server.virtualConnectionManager.Get(c.DestinationPort, c.DestinationStreamType)
-			virtualStream.clients.Delete(c.address.String())
+
+			virtualServer, _ := c.server.virtualServers.Get(c.DestinationPort)
+			virtualServerStream, _ := virtualServer.Get(c.DestinationStreamType)
+
+			discriminator := fmt.Sprintf("%s-%d-%d", c.address.String(), c.SourcePort, c.SourceStreamType)
+
+			virtualServerStream.Delete(discriminator)
 		})
 	})
 }
