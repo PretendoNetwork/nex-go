@@ -17,7 +17,7 @@ type PRUDPServer struct {
 	udpSocket                       *net.UDPConn
 	PRUDPVersion                    int
 	PRUDPMinorVersion               uint32
-	MaxPRUDPVirtualPorts            uint8
+	MaxVirtualServerPorts           uint8
 	virtualServers                  *MutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]]
 	IsQuazalMode                    bool
 	IsSecureServer                  bool
@@ -111,7 +111,7 @@ func (s *PRUDPServer) Listen(port int) {
 
 	s.udpSocket = socket
 
-	for i := 0; i < int(s.MaxPRUDPVirtualPorts); i++ {
+	for i := 0; i < int(s.MaxVirtualServerPorts); i++ {
 		virtualServer := NewMutexMap[uint8, *MutexMap[string, *PRUDPClient]]()
 		virtualServer.Set(VirtualStreamTypeDO, NewMutexMap[string, *PRUDPClient]())
 		virtualServer.Set(VirtualStreamTypeRV, NewMutexMap[string, *PRUDPClient]())
@@ -125,7 +125,7 @@ func (s *PRUDPServer) Listen(port int) {
 		virtualServer.Set(VirtualStreamTypeRVSecure, NewMutexMap[string, *PRUDPClient]())
 		virtualServer.Set(VirtualStreamTypeRelay, NewMutexMap[string, *PRUDPClient]())
 
-		s.virtualServers.Set(uint8(i), virtualServer)
+		s.virtualServers.Set(uint8(i+1), virtualServer) // * Don't allow 0 as a vport
 	}
 
 	logger.Success("Virtual ports created")
@@ -1031,9 +1031,9 @@ func (s *PRUDPServer) FindClientByPID(serverPort, serverStreamType uint8, pid ui
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
-		MaxPRUDPVirtualPorts:            16, // * UDP PRUDP servers use 16 virtual ports
-		AuthenticationVirtualServerPort: 1,  // * Server ports default to 1
-		SecureVirtualServerPort:         1,  // * Server ports default to 1
+		MaxVirtualServerPorts:           1, // * Assume only 1 port per server by default (NEX 3 and below style)
+		AuthenticationVirtualServerPort: 1, // * Server ports default to 1
+		SecureVirtualServerPort:         1, // * Server ports default to 1
 		virtualServers:                  NewMutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]](),
 		IsQuazalMode:                    false,
 		kerberosKeySize:                 32,
