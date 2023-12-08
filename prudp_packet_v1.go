@@ -27,6 +27,7 @@ type PRUDPPacketV1 struct {
 func (p *PRUDPPacketV1) Copy() PRUDPPacketInterface {
 	copied, _ := NewPRUDPPacketV1(p.sender, nil)
 
+	copied.server = p.server
 	copied.sourceStreamType = p.sourceStreamType
 	copied.sourcePort = p.sourcePort
 	copied.destinationStreamType = p.destinationStreamType
@@ -326,14 +327,14 @@ func (p *PRUDPPacketV1) calculateConnectionSignature(addr net.Addr) ([]byte, err
 	binary.BigEndian.PutUint16(portBytes, uint16(port))
 
 	data := append(ip, portBytes...)
-	hash := hmac.New(md5.New, p.sender.server.PRUDPv1ConnectionSignatureKey)
+	hash := hmac.New(md5.New, p.server.PRUDPv1ConnectionSignatureKey)
 	hash.Write(data)
 
 	return hash.Sum(nil), nil
 }
 
 func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byte) []byte {
-	accessKeyBytes := []byte(p.sender.server.accessKey)
+	accessKeyBytes := []byte(p.server.accessKey)
 	options := p.encodeOptions()
 	header := p.encodeHeader()
 
@@ -364,10 +365,15 @@ func NewPRUDPPacketV1(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketV1
 	}
 
 	if readStream != nil {
+		packet.server = readStream.Server.(*PRUDPServer)
 		err := packet.decode()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode PRUDPv1 packet. %s", err.Error())
 		}
+	}
+
+	if client != nil {
+		packet.server = client.server
 	}
 
 	return packet, nil

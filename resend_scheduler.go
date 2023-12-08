@@ -93,7 +93,10 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		pendingPacket.ticker.Stop()
 		rs.packets.Delete(packet.SequenceID())
 		client.cleanup() // * "removed" event is dispatched here
-		client.server.clients.Delete(client.address.String())
+
+		virtualStream := client.server.virtualConnectionManager.Get(client.DestinationPort, client.DestinationStreamType)
+		virtualStream.clients.Delete(client.address.String())
+
 		return
 	}
 

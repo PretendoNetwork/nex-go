@@ -185,7 +185,8 @@ func (c *PRUDPClient) startHeartbeat() {
 		// * client is dead and clean up
 		c.pingKickTimer = time.AfterFunc(server.pingTimeout, func() {
 			c.cleanup() // * "removed" event is dispatched here
-			c.server.clients.Delete(c.address.String())
+			virtualStream := c.server.virtualConnectionManager.Get(c.DestinationPort, c.DestinationStreamType)
+			virtualStream.clients.Delete(c.address.String())
 		})
 	})
 }

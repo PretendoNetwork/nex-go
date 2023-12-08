@@ -21,6 +21,7 @@ type PRUDPPacketV0 struct {
 func (p *PRUDPPacketV0) Copy() PRUDPPacketInterface {
 	copied, _ := NewPRUDPPacketV0(p.sender, nil)
 
+	copied.server = p.server
 	copied.sourceStreamType = p.sourceStreamType
 	copied.sourcePort = p.sourcePort
 	copied.destinationStreamType = p.destinationStreamType
@@ -64,7 +65,7 @@ func (p *PRUDPPacketV0) decode() error {
 		return errors.New("Failed to read PRUDPv0 header. Not have enough data")
 	}
 
-	server := p.sender.server
+	server := p.server
 	start := p.readStream.ByteOffset()
 
 	source, err := p.readStream.ReadUInt8()
@@ -194,7 +195,7 @@ func (p *PRUDPPacketV0) decode() error {
 
 // Bytes encodes a PRUDPv0 packet into a byte slice
 func (p *PRUDPPacketV0) Bytes() []byte {
-	server := p.sender.server
+	server := p.server
 	stream := NewStreamOut(server)
 
 	stream.WriteUInt8(p.sourcePort | (p.sourceStreamType << 4))
@@ -265,12 +266,12 @@ func (p *PRUDPPacketV0) calculateConnectionSignature(addr net.Addr) ([]byte, err
 }
 
 func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byte) []byte {
-	if !p.sender.server.IsQuazalMode {
+	if !p.server.IsQuazalMode {
 		if p.packetType == DataPacket {
 			return p.calculateDataSignature(sessionKey)
 		}
 
-		if p.packetType == DisconnectPacket && p.sender.server.accessKey != "ridfebb9" {
+		if p.packetType == DisconnectPacket && p.server.accessKey != "ridfebb9" {
 			return p.calculateDataSignature(sessionKey)
 		}
 	}
@@ -283,7 +284,7 @@ func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byt
 }
 
 func (p *PRUDPPacketV0) calculateDataSignature(sessionKey []byte) []byte {
-	server := p.sender.server
+	server := p.server
 	data := p.payload
 
 	if server.AccessKey() != "ridfebb9" {
@@ -309,7 +310,7 @@ func (p *PRUDPPacketV0) calculateDataSignature(sessionKey []byte) []byte {
 }
 
 func (p *PRUDPPacketV0) calculateChecksum(data []byte) uint32 {
-	server := p.sender.server
+	server := p.server
 	checksum := sum[byte, uint32]([]byte(server.AccessKey()))
 
 	if server.IsQuazalMode {
@@ -355,10 +356,15 @@ func NewPRUDPPacketV0(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketV0
 	}
 
 	if readStream != nil {
+		packet.server = readStream.Server.(*PRUDPServer)
 		err := packet.decode()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode PRUDPv0 packet. %s", err.Error())
 		}
+	}
+
+	if client != nil {
+		packet.server = client.server
 	}
 
 	return packet, nil

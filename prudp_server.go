@@ -15,9 +15,10 @@ import (
 // PRUDPServer represents a bare-bones PRUDP server
 type PRUDPServer struct {
 	udpSocket                     *net.UDPConn
-	clients                       *MutexMap[string, *PRUDPClient]
 	PRUDPVersion                  int
 	PRUDPMinorVersion             uint32
+	MaxPRUDPVirtualPorts          uint8
+	virtualConnectionManager      *PRUDPVirtualConnectionManager
 	IsQuazalMode                  bool
 	IsSecureServer                bool
 	SupportedFunctions            uint32
@@ -108,6 +109,9 @@ func (s *PRUDPServer) Listen(port int) {
 
 	s.udpSocket = socket
 
+	s.virtualConnectionManager = NewPRUDPVirtualConnectionManager(s.MaxPRUDPVirtualPorts)
+	logger.Success("Virtual ports created")
+
 	quit := make(chan struct{})
 
 	for i := 0; i < runtime.NumCPU(); i++ {
@@ -137,16 +141,41 @@ func (s *PRUDPServer) handleSocketMessage() error {
 		return err
 	}
 
-	discriminator := addr.String()
+	packetData := buffer[:read]
+	readStream := NewStreamIn(packetData, s)
 
-	client, ok := s.clients.Get(discriminator)
+	var packets []PRUDPPacketInterface
+
+	// * Support any packet type the client sends and respond
+	// * with that same type. Also keep reading from the stream
+	// * until no more data is left, to account for multiple
+	// * packets being sent at once
+	if bytes.Equal(packetData[:2], []byte{0xEA, 0xD0}) {
+		packets, _ = NewPRUDPPacketsV1(nil, readStream)
+	} else {
+		packets, _ = NewPRUDPPacketsV0(nil, readStream)
+	}
+
+	for _, packet := range packets {
+		go s.processPacket(packet, addr)
+	}
+
+	return nil
+}
+
+func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address *net.UDPAddr) {
+	virtualStream := s.virtualConnectionManager.Get(packet.DestinationPort(), packet.DestinationStreamType())
+
+	clientSocketDiscriminator := address.String()
+
+	client, ok := virtualStream.clients.Get(clientSocketDiscriminator)
 
 	if !ok {
-		client = NewPRUDPClient(addr, s)
+		client = NewPRUDPClient(address, s)
 		client.startHeartbeat()
 
 		// * Fail-safe. If the server reboots, then
-		// * s.clients has no record of old clients.
+		// * clients has no record of old clients.
 		// * An existing client which has not killed
 		// * the connection on it's end MAY still send
 		// * DATA packets once the server is back
@@ -166,33 +195,11 @@ func (s *PRUDPServer) handleSocketMessage() error {
 		// * EXPECTED TO NATURALLY DIE HERE
 		client.createReliableSubstreams(0)
 
-		s.clients.Set(discriminator, client)
+		virtualStream.clients.Set(clientSocketDiscriminator, client)
 	}
 
-	packetData := buffer[:read]
-	readStream := NewStreamIn(packetData, s)
-
-	var packets []PRUDPPacketInterface
-
-	// * Support any packet type the client sends and respond
-	// * with that same type. Also keep reading from the stream
-	// * until no more data is left, to account for multiple
-	// * packets being sent at once
-	if bytes.Equal(packetData[:2], []byte{0xEA, 0xD0}) {
-		packets, _ = NewPRUDPPacketsV1(client, readStream)
-	} else {
-		packets, _ = NewPRUDPPacketsV0(client, readStream)
-	}
-
-	for _, packet := range packets {
-		go s.processPacket(packet)
-	}
-
-	return nil
-}
-
-func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface) {
-	packet.Sender().(*PRUDPClient).resetHeartbeat()
+	packet.SetSender(client)
+	client.resetHeartbeat()
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
 		s.handleAcknowledgment(packet)
@@ -409,10 +416,11 @@ func (s *PRUDPServer) handleDisconnect(packet PRUDPPacketInterface) {
 		s.acknowledgePacket(packet)
 	}
 
+	virtualStream := s.virtualConnectionManager.Get(packet.DestinationPort(), packet.DestinationStreamType())
 	client := packet.Sender().(*PRUDPClient)
 
 	client.cleanup() // * "removed" event is dispatched here
-	s.clients.Delete(client.address.String())
+	virtualStream.clients.Delete(client.address.String())
 
 	s.emit("disconnect", packet)
 }
@@ -935,10 +943,11 @@ func (s *PRUDPServer) ConnectionIDCounter() *Counter[uint32] {
 }
 
 // FindClientByConnectionID returns the PRUDP client connected with the given connection ID
-func (s *PRUDPServer) FindClientByConnectionID(connectedID uint32) *PRUDPClient {
+func (s *PRUDPServer) FindClientByConnectionID(port, streamType uint8, connectedID uint32) *PRUDPClient {
 	var client *PRUDPClient
 
-	s.clients.Each(func(discriminator string, c *PRUDPClient) bool {
+	virtualStream := s.virtualConnectionManager.Get(port, streamType)
+	virtualStream.clients.Each(func(discriminator string, c *PRUDPClient) bool {
 		if c.ConnectionID == connectedID {
 			client = c
 			return true
@@ -951,10 +960,11 @@ func (s *PRUDPServer) FindClientByConnectionID(connectedID uint32) *PRUDPClient 
 }
 
 // FindClientByPID returns the PRUDP client connected with the given PID
-func (s *PRUDPServer) FindClientByPID(pid uint64) *PRUDPClient {
+func (s *PRUDPServer) FindClientByPID(port, streamType uint8, pid uint64) *PRUDPClient {
 	var client *PRUDPClient
 
-	s.clients.Each(func(discriminator string, c *PRUDPClient) bool {
+	virtualStream := s.virtualConnectionManager.Get(port, streamType)
+	virtualStream.clients.Each(func(discriminator string, c *PRUDPClient) bool {
 		if c.pid.pid == pid {
 			client = c
 			return true
@@ -969,12 +979,12 @@ func (s *PRUDPServer) FindClientByPID(pid uint64) *PRUDPClient {
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
-		clients:             NewMutexMap[string, *PRUDPClient](),
-		IsQuazalMode:        false,
-		kerberosKeySize:     32,
-		FragmentSize:        1300,
-		prudpEventHandlers:  make(map[string][]func(PacketInterface)),
-		connectionIDCounter: NewCounter[uint32](10),
-		pingTimeout:         time.Second * 15,
+		MaxPRUDPVirtualPorts: 16, // * UDP PRUDP servers use 16 virtual ports
+		IsQuazalMode:         false,
+		kerberosKeySize:      32,
+		FragmentSize:         1300,
+		prudpEventHandlers:   make(map[string][]func(PacketInterface)),
+		connectionIDCounter:  NewCounter[uint32](10),
+		pingTimeout:          time.Second * 15,
 	}
 }

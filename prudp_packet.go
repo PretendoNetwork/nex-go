@@ -4,6 +4,7 @@ import "crypto/rc4"
 
 // PRUDPPacket holds all the fields each packet should have in all PRUDP versions
 type PRUDPPacket struct {
+	server                *PRUDPServer
 	sender                *PRUDPClient
 	readStream            *StreamIn
 	sourceStreamType      uint8
@@ -20,6 +21,11 @@ type PRUDPPacket struct {
 	fragmentID            uint8
 	payload               []byte
 	message               *RMCMessage
+}
+
+// SetSender sets the Client who sent the packet
+func (p *PRUDPPacket) SetSender(sender ClientInterface) {
+	p.sender = sender.(*PRUDPClient)
 }
 
 // Sender returns the Client who sent the packet
