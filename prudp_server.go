@@ -164,7 +164,7 @@ func (s *PRUDPServer) handleSocketMessage() error {
 }
 
 func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address *net.UDPAddr) {
-	virtualStream := s.virtualConnectionManager.Get(packet.DestinationPort(), packet.DestinationStreamType())
+	virtualStream := s.virtualConnectionManager.Get(packet.SourcePort(), packet.SourceStreamType())
 
 	clientSocketDiscriminator := address.String()
 
@@ -416,7 +416,7 @@ func (s *PRUDPServer) handleDisconnect(packet PRUDPPacketInterface) {
 		s.acknowledgePacket(packet)
 	}
 
-	virtualStream := s.virtualConnectionManager.Get(packet.DestinationPort(), packet.DestinationStreamType())
+	virtualStream := s.virtualConnectionManager.Get(packet.SourcePort(), packet.SourceStreamType())
 	client := packet.Sender().(*PRUDPClient)
 
 	client.cleanup() // * "removed" event is dispatched here
