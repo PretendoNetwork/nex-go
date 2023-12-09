@@ -41,7 +41,7 @@ type PRUDPServer struct {
 	clientRemovedEventHandlers      []func(client *PRUDPClient)
 	connectionIDCounter             *Counter[uint32]
 	pingTimeout                     time.Duration
-	PasswordFromPID                 func(pid *PID) (string, uint32)
+	passwordFromPIDHandler          func(pid *PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey   []byte
 	CompressionEnabled              bool
 }
@@ -1026,6 +1026,16 @@ func (s *PRUDPServer) FindClientByPID(serverPort, serverStreamType uint8, pid ui
 	})
 
 	return client
+}
+
+// PasswordFromPIDFunction returns the function for the auth server to get a NEX password using the PID
+func (s *PRUDPServer) PasswordFromPIDFunction() func(pid *PID) (string, uint32) {
+	return s.passwordFromPIDHandler
+}
+
+// SetPasswordFromPIDFunction sets the function for the auth server to get a NEX password using the PID
+func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32)) {
+	s.passwordFromPIDHandler = handler
 }
 
 // NewPRUDPServer will return a new PRUDP server

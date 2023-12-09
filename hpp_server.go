@@ -19,7 +19,7 @@ type HPPServer struct {
 	utilityProtocolVersion      *LibraryVersion
 	natTraversalProtocolVersion *LibraryVersion
 	dataHandlers                []func(packet PacketInterface)
-	PasswordFromPID             func(pid *PID) (string, uint32)
+	passwordFromPIDHandler      func(pid *PID) (string, uint32)
 }
 
 // OnData adds an event handler which is fired when a new HPP request is received
@@ -241,6 +241,16 @@ func (s *HPPServer) SetNATTraversalProtocolVersion(version *LibraryVersion) {
 // NATTraversalProtocolVersion returns the servers NAT Traversal protocol version
 func (s *HPPServer) NATTraversalProtocolVersion() *LibraryVersion {
 	return s.natTraversalProtocolVersion
+}
+
+// PasswordFromPIDFunction returns the function for HPP to get a NEX password using the PID
+func (s *HPPServer) PasswordFromPIDFunction() func(pid *PID) (string, uint32) {
+	return s.passwordFromPIDHandler
+}
+
+// SetPasswordFromPIDFunction sets the function for HPP to get a NEX password using the PID
+func (s *HPPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32)) {
+	s.passwordFromPIDHandler = handler
 }
 
 // NewHPPServer returns a new HPP server

@@ -68,7 +68,7 @@ func startHPPServer() {
 
 	hppServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(2, 4, 1))
 	hppServer.SetAccessKey("76f26496")
-	hppServer.PasswordFromPID = passwordFromPID
+	hppServer.SetPasswordFromPIDFunction(passwordFromPID)
 
 	hppServer.Listen(8085)
 }
