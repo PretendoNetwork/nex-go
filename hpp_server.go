@@ -245,6 +245,11 @@ func (s *HPPServer) NATTraversalProtocolVersion() *LibraryVersion {
 
 // PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
 func (s *HPPServer) PasswordFromPID(pid *PID) (string, uint32) {
+	if s.passwordFromPIDHandler == nil {
+		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
+		return "", Errors.Core.InvalidHandle
+	}
+
 	return s.passwordFromPIDHandler(pid)
 }
 
