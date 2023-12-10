@@ -148,8 +148,8 @@ func (p *PRUDPPacketV0) decode() error {
 			return fmt.Errorf("Failed to read PRUDPv0 payload size. %s", err.Error())
 		}
 	} else {
-		// * Quazal used a 4 byte checksum. NEX uses 1 byte
-		if server.IsQuazalMode {
+		// * Some Quazal games use a 4 byte checksum. NEX uses 1 byte
+		if server.EnhancedChecksum {
 			payloadSize = uint16(p.readStream.Remaining() - 4)
 		} else {
 			payloadSize = uint16(p.readStream.Remaining() - 1)
@@ -162,7 +162,7 @@ func (p *PRUDPPacketV0) decode() error {
 
 	p.payload = p.readStream.ReadBytesNext(int64(payloadSize))
 
-	if server.IsQuazalMode && p.readStream.Remaining() < 4 {
+	if server.EnhancedChecksum && p.readStream.Remaining() < 4 {
 		return errors.New("Failed to read PRUDPv0 checksum. Not have enough data")
 	} else if p.readStream.Remaining() < 1 {
 		return errors.New("Failed to read PRUDPv0 checksum. Not have enough data")
@@ -173,7 +173,7 @@ func (p *PRUDPPacketV0) decode() error {
 	var checksum uint32
 	var checksumU8 uint8
 
-	if server.IsQuazalMode {
+	if server.EnhancedChecksum {
 		checksum, err = p.readStream.ReadUInt32LE()
 	} else {
 		checksumU8, err = p.readStream.ReadUInt8()
@@ -232,7 +232,7 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 
 	checksum := p.calculateChecksum(stream.Bytes())
 
-	if server.IsQuazalMode {
+	if server.EnhancedChecksum {
 		stream.WriteUInt32LE(checksum)
 	} else {
 		stream.WriteUInt8(uint8(checksum))
@@ -313,7 +313,7 @@ func (p *PRUDPPacketV0) calculateChecksum(data []byte) uint32 {
 	server := p.server
 	checksum := sum[byte, uint32]([]byte(server.AccessKey()))
 
-	if server.IsQuazalMode {
+	if server.EnhancedChecksum {
 		padSize := (len(data) + 3) &^ 3
 		data = append(data, make([]byte, padSize-len(data))...)
 		words := make([]uint32, len(data)/4)

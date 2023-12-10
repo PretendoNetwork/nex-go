@@ -41,6 +41,7 @@ type PRUDPServer struct {
 	pingTimeout                   time.Duration
 	passwordFromPIDHandler        func(pid *PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey []byte
+	EnhancedChecksum              bool
 	CompressionEnabled            bool
 }
 
