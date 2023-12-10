@@ -355,11 +355,14 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 	}
 
 	client.serverConnectionSignature = packet.getConnectionSignature()
+	client.clientSessionID = packet.SessionID()
 
 	connectionSignature, err := packet.calculateConnectionSignature(client.address)
 	if err != nil {
 		logger.Error(err.Error())
 	}
+
+	client.serverSessionID = packet.SessionID()
 
 	ack.SetType(ConnectPacket)
 	ack.AddFlag(FlagAck)
@@ -369,7 +372,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 	ack.SetDestinationStreamType(packet.SourceStreamType())
 	ack.SetDestinationPort(packet.SourcePort())
 	ack.setConnectionSignature(make([]byte, len(connectionSignature)))
-	ack.SetSessionID(0)
+	ack.SetSessionID(client.serverSessionID)
 	ack.SetSequenceID(1)
 
 	if ack, ok := ack.(*PRUDPPacketV1); ok {
@@ -697,6 +700,8 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 			packetCopy.SetSequenceID(0)
 		}
 	}
+
+	packetCopy.SetSessionID(client.serverSessionID)
 
 	if packetCopy.Type() == DataPacket && !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
 		if packetCopy.HasFlag(FlagReliable) {

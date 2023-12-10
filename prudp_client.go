@@ -14,6 +14,8 @@ type PRUDPClient struct {
 	pid                                 *PID
 	clientConnectionSignature           []byte
 	serverConnectionSignature           []byte
+	clientSessionID                     uint8
+	serverSessionID                     uint8
 	sessionKey                          []byte
 	reliableSubstreams                  []*ReliablePacketSubstreamManager
 	outgoingUnreliableSequenceIDCounter *Counter[uint16]
