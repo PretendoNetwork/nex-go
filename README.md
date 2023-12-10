@@ -14,7 +14,7 @@
 
 ### Usage note
 
-This module provides a barebones PRUDP server for use with titles using the Nintendo NEX library. It provides some support for titles using the original Rendez-Vous library developed by Quazal. This library only provides the low level packet data, as such it is recommended to use [NEX Protocols Go](https://github.com/PretendoNetwork/nex-protocols-go) to develop servers.
+This module provides a barebones PRUDP server for use with titles using the Nintendo NEX library. It also provides support for titles using the original Rendez-Vous library developed by Quazal. This library only provides the low level packet data, as such it is recommended to use [NEX Protocols Go](https://github.com/PretendoNetwork/nex-protocols-go) to develop servers.
 
 ### Usage
 
