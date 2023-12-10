@@ -75,7 +75,7 @@ func startSecureServer() {
 		}
 	})
 
-	secureServer.IsSecureServer = true
+	secureServer.SecureVirtualServerPorts = []uint8{1}
 	//secureServer.PRUDPVersion = 1
 	secureServer.SetFragmentSize(962)
 	secureServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))

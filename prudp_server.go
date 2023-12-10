@@ -14,36 +14,34 @@ import (
 
 // PRUDPServer represents a bare-bones PRUDP server
 type PRUDPServer struct {
-	udpSocket                       *net.UDPConn
-	PRUDPVersion                    int
-	PRUDPMinorVersion               uint32
-	MaxVirtualServerPorts           uint8
-	virtualServers                  *MutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]]
-	IsQuazalMode                    bool
-	IsSecureServer                  bool
-	AuthenticationVirtualServerPort uint8
-	SecureVirtualServerPort         uint8
-	SupportedFunctions              uint32
-	accessKey                       string
-	kerberosPassword                []byte
-	kerberosTicketVersion           int
-	kerberosKeySize                 int
-	FragmentSize                    int
-	version                         *LibraryVersion
-	datastoreProtocolVersion        *LibraryVersion
-	matchMakingProtocolVersion      *LibraryVersion
-	rankingProtocolVersion          *LibraryVersion
-	ranking2ProtocolVersion         *LibraryVersion
-	messagingProtocolVersion        *LibraryVersion
-	utilityProtocolVersion          *LibraryVersion
-	natTraversalProtocolVersion     *LibraryVersion
-	prudpEventHandlers              map[string][]func(packet PacketInterface)
-	clientRemovedEventHandlers      []func(client *PRUDPClient)
-	connectionIDCounter             *Counter[uint32]
-	pingTimeout                     time.Duration
-	passwordFromPIDHandler          func(pid *PID) (string, uint32)
-	PRUDPv1ConnectionSignatureKey   []byte
-	CompressionEnabled              bool
+	udpSocket                     *net.UDPConn
+	PRUDPVersion                  int
+	PRUDPMinorVersion             uint32
+	virtualServers                *MutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]]
+	IsQuazalMode                  bool
+	VirtualServerPorts            []uint8
+	SecureVirtualServerPorts      []uint8
+	SupportedFunctions            uint32
+	accessKey                     string
+	kerberosPassword              []byte
+	kerberosTicketVersion         int
+	kerberosKeySize               int
+	FragmentSize                  int
+	version                       *LibraryVersion
+	datastoreProtocolVersion      *LibraryVersion
+	matchMakingProtocolVersion    *LibraryVersion
+	rankingProtocolVersion        *LibraryVersion
+	ranking2ProtocolVersion       *LibraryVersion
+	messagingProtocolVersion      *LibraryVersion
+	utilityProtocolVersion        *LibraryVersion
+	natTraversalProtocolVersion   *LibraryVersion
+	prudpEventHandlers            map[string][]func(packet PacketInterface)
+	clientRemovedEventHandlers    []func(client *PRUDPClient)
+	connectionIDCounter           *Counter[uint32]
+	pingTimeout                   time.Duration
+	passwordFromPIDHandler        func(pid *PID) (string, uint32)
+	PRUDPv1ConnectionSignatureKey []byte
+	CompressionEnabled            bool
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -111,7 +109,7 @@ func (s *PRUDPServer) Listen(port int) {
 
 	s.udpSocket = socket
 
-	for i := 0; i < int(s.MaxVirtualServerPorts); i++ {
+	for _, port := range s.VirtualServerPorts {
 		virtualServer := NewMutexMap[uint8, *MutexMap[string, *PRUDPClient]]()
 		virtualServer.Set(VirtualStreamTypeDO, NewMutexMap[string, *PRUDPClient]())
 		virtualServer.Set(VirtualStreamTypeRV, NewMutexMap[string, *PRUDPClient]())
@@ -125,7 +123,7 @@ func (s *PRUDPServer) Listen(port int) {
 		virtualServer.Set(VirtualStreamTypeRVSecure, NewMutexMap[string, *PRUDPClient]())
 		virtualServer.Set(VirtualStreamTypeRelay, NewMutexMap[string, *PRUDPClient]())
 
-		s.virtualServers.Set(uint8(i+1), virtualServer) // * Don't allow 0 as a vport
+		s.virtualServers.Set(port, virtualServer)
 	}
 
 	logger.Success("Virtual ports created")
@@ -392,7 +390,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 
 	var payload []byte
 
-	if s.isSecurePort(packet.DestinationPort()) {
+	if slices.Contains(s.SecureVirtualServerPorts, packet.DestinationPort()) {
 		sessionKey, pid, checkValue, err := s.readKerberosTicket(packet.Payload())
 		if err != nil {
 			logger.Error(err.Error())
@@ -821,32 +819,6 @@ func (s *PRUDPServer) compressPayload(payload []byte) ([]byte, error) {
 	return stream.Bytes(), nil
 }
 
-func (s *PRUDPServer) isSecurePort(port uint8) bool {
-	// * We have to support cases where 2 physical servers exist
-	// * and cases where one physical server exists with multiple
-	// * virtual ports
-
-	// * If marked as true, we can assume that 2 physical servers exist
-	// * and that this is always the secure server
-	if s.IsSecureServer {
-		return true
-	}
-
-	// * If not marked true, we have to check if multiple virtual
-	// * ports are set. Any number of virtual ports can be defined,
-	// * all with different ports, so long as the "secure" port is
-	// * not the same as the "authentication" port
-	authPort := s.AuthenticationVirtualServerPort
-	securePort := s.SecureVirtualServerPort
-	if authPort != securePort && securePort == port {
-		return true
-	}
-
-	// TODO - Are there cases where both RVSecure and OldRVSec are used on the same server, with different ports?
-
-	return false // * Assume not the secure port
-}
-
 // AccessKey returns the servers sandbox access key
 func (s *PRUDPServer) AccessKey() string {
 	return s.accessKey
@@ -1046,15 +1018,14 @@ func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string,
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
-		MaxVirtualServerPorts:           1, // * Assume only 1 port per server by default (NEX 3 and below style)
-		AuthenticationVirtualServerPort: 1, // * Server ports default to 1
-		SecureVirtualServerPort:         1, // * Server ports default to 1
-		virtualServers:                  NewMutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]](),
-		IsQuazalMode:                    false,
-		kerberosKeySize:                 32,
-		FragmentSize:                    1300,
-		prudpEventHandlers:              make(map[string][]func(PacketInterface)),
-		connectionIDCounter:             NewCounter[uint32](10),
-		pingTimeout:                     time.Second * 15,
+		VirtualServerPorts:       []uint8{1},
+		SecureVirtualServerPorts: make([]uint8, 0),
+		virtualServers:           NewMutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]](),
+		IsQuazalMode:             false,
+		kerberosKeySize:          32,
+		FragmentSize:             1300,
+		prudpEventHandlers:       make(map[string][]func(PacketInterface)),
+		connectionIDCounter:      NewCounter[uint32](10),
+		pingTimeout:              time.Second * 15,
 	}
 }
