@@ -243,9 +243,9 @@ func (s *HPPServer) NATTraversalProtocolVersion() *LibraryVersion {
 	return s.natTraversalProtocolVersion
 }
 
-// PasswordFromPIDFunction returns the function for HPP to get a NEX password using the PID
-func (s *HPPServer) PasswordFromPIDFunction() func(pid *PID) (string, uint32) {
-	return s.passwordFromPIDHandler
+// PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
+func (s *HPPServer) PasswordFromPID(pid *PID) (string, uint32) {
+	return s.passwordFromPIDHandler(pid)
 }
 
 // SetPasswordFromPIDFunction sets the function for HPP to get a NEX password using the PID

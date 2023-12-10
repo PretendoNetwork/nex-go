@@ -15,6 +15,6 @@ type ServerInterface interface {
 	SetDefaultLibraryVersion(version *LibraryVersion)
 	Send(packet PacketInterface)
 	OnData(handler func(packet PacketInterface))
-	PasswordFromPIDFunction() func(pid *PID) (string, uint32)
+	PasswordFromPID(pid *PID) (string, uint32)
 	SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32))
 }

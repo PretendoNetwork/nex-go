@@ -91,13 +91,8 @@ func (p *HPPPacket) validatePasswordSignature(signature string) error {
 }
 
 func (p *HPPPacket) calculatePasswordSignature() ([]byte, error) {
-	passwordFromPID := p.Sender().Server().PasswordFromPIDFunction()
-	if passwordFromPID == nil {
-		return nil, errors.New("Missing PasswordFromPID")
-	}
-
 	pid := p.Sender().PID()
-	password, _ := passwordFromPID(pid)
+	password, _ := p.Sender().Server().PasswordFromPID(pid)
 	if password == "" {
 		return nil, errors.New("PID does not exist")
 	}

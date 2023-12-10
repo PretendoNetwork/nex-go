@@ -1028,9 +1028,14 @@ func (s *PRUDPServer) FindClientByPID(serverPort, serverStreamType uint8, pid ui
 	return client
 }
 
-// PasswordFromPIDFunction returns the function for the auth server to get a NEX password using the PID
-func (s *PRUDPServer) PasswordFromPIDFunction() func(pid *PID) (string, uint32) {
-	return s.passwordFromPIDHandler
+// PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
+func (s *PRUDPServer) PasswordFromPID(pid *PID) (string, uint32) {
+	if s.passwordFromPIDHandler == nil {
+		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
+		return "", Errors.Core.InvalidHandle
+	}
+
+	return s.passwordFromPIDHandler(pid)
 }
 
 // SetPasswordFromPIDFunction sets the function for the auth server to get a NEX password using the PID
