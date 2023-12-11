@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"net"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // PRUDPClient represents a single PRUDP client
 type PRUDPClient struct {
-	address                             *net.UDPAddr
 	server                              *PRUDPServer
+	address                             net.Addr
+	webSocketConnection                 *websocket.Conn
 	pid                                 *PID
 	clientConnectionSignature           []byte
 	serverConnectionSignature           []byte
@@ -64,6 +67,10 @@ func (c *PRUDPClient) cleanup() {
 
 	c.reliableSubstreams = make([]*ReliablePacketSubstreamManager, 0)
 	c.stopHeartbeatTimers()
+
+	if c.webSocketConnection != nil {
+		c.webSocketConnection.Close()
+	}
 
 	c.server.emitRemoved(c)
 }
@@ -209,11 +216,12 @@ func (c *PRUDPClient) stopHeartbeatTimers() {
 	}
 }
 
-// NewPRUDPClient creates and returns a new Client using the provided UDP address and server
-func NewPRUDPClient(address *net.UDPAddr, server *PRUDPServer) *PRUDPClient {
+// NewPRUDPClient creates and returns a new PRUDPClient
+func NewPRUDPClient(server *PRUDPServer, address net.Addr, webSocketConnection *websocket.Conn) *PRUDPClient {
 	return &PRUDPClient{
-		address:                       address,
 		server:                        server,
+		address:                       address,
+		webSocketConnection:           webSocketConnection,
 		outgoingPingSequenceIDCounter: NewCounter[uint16](0),
 		pid:                           NewPID[uint32](0),
 		unreliableBaseKey:             make([]byte, 0x20),

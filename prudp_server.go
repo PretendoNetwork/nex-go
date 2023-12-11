@@ -4,17 +4,21 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
 	"runtime"
 	"slices"
 	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 // PRUDPServer represents a bare-bones PRUDP server
 type PRUDPServer struct {
 	udpSocket                     *net.UDPConn
+	websocketServer               *WebSocketServer
 	PRUDPVersion                  int
 	PRUDPMinorVersion             uint32
 	virtualServers                *MutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]]
@@ -87,16 +91,15 @@ func (s *PRUDPServer) emitRemoved(client *PRUDPClient) {
 	}
 }
 
-// Listen starts a PRUDP server on a given port
+// Listen is an alias of ListenUDP. Implemented to conform to the ServerInterface
 func (s *PRUDPServer) Listen(port int) {
-	// * Ensure the server has a key for PRUDPv1 connection signatures
-	if len(s.PRUDPv1ConnectionSignatureKey) != 16 {
-		s.PRUDPv1ConnectionSignatureKey = make([]byte, 16)
-		_, err := rand.Read(s.PRUDPv1ConnectionSignatureKey)
-		if err != nil {
-			panic(err)
-		}
-	}
+	s.ListenUDP(port)
+}
+
+// ListenUDP starts a PRUDP server on a given port using a UDP server
+func (s *PRUDPServer) ListenUDP(port int) {
+	s.initPRUDPv1ConnectionSignatureKey()
+	s.initVirtualPorts()
 
 	udpAddress, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -110,6 +113,60 @@ func (s *PRUDPServer) Listen(port int) {
 
 	s.udpSocket = socket
 
+	quit := make(chan struct{})
+
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go s.listenDatagram(quit)
+	}
+
+	<-quit
+}
+
+// ListenWebSocket starts a PRUDP server on a given port using a WebSocket server
+func (s *PRUDPServer) ListenWebSocket(port int) {
+
+	s.initPRUDPv1ConnectionSignatureKey()
+	s.initVirtualPorts()
+
+	s.websocketServer = &WebSocketServer{
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  64000,
+			WriteBufferSize: 64000,
+		},
+		handleSocketMessage: s.handleSocketMessage,
+	}
+
+	s.websocketServer.listen(port)
+}
+
+// ListenWebSocketSecure starts a PRUDP server on a given port using a secure (TLS) WebSocket server
+func (s *PRUDPServer) ListenWebSocketSecure(port int, certFile, keyFile string) {
+	s.initPRUDPv1ConnectionSignatureKey()
+	s.initVirtualPorts()
+
+	s.websocketServer = &WebSocketServer{
+		upgrader: websocket.Upgrader{
+			ReadBufferSize:  64000,
+			WriteBufferSize: 64000,
+		},
+		handleSocketMessage: s.handleSocketMessage,
+	}
+
+	s.websocketServer.listenSecure(port, certFile, keyFile)
+}
+
+func (s *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
+	// * Ensure the server has a key for PRUDPv1 connection signatures
+	if len(s.PRUDPv1ConnectionSignatureKey) != 16 {
+		s.PRUDPv1ConnectionSignatureKey = make([]byte, 16)
+		_, err := rand.Read(s.PRUDPv1ConnectionSignatureKey)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func (s *PRUDPServer) initVirtualPorts() {
 	for _, port := range s.VirtualServerPorts {
 		virtualServer := NewMutexMap[uint8, *MutexMap[string, *PRUDPClient]]()
 		virtualServer.Set(VirtualStreamTypeDO, NewMutexMap[string, *PRUDPClient]())
@@ -128,21 +185,20 @@ func (s *PRUDPServer) Listen(port int) {
 	}
 
 	logger.Success("Virtual ports created")
-
-	quit := make(chan struct{})
-
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go s.listenDatagram(quit)
-	}
-
-	<-quit
 }
 
 func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
-	err := error(nil)
+	var err error
 
 	for err == nil {
-		err = s.handleSocketMessage()
+		buffer := make([]byte, 64000)
+		var read int
+		var addr *net.UDPAddr
+
+		read, addr, err = s.udpSocket.ReadFromUDP(buffer)
+		packetData := buffer[:read]
+
+		err = s.handleSocketMessage(packetData, addr, nil)
 	}
 
 	quit <- struct{}{}
@@ -150,15 +206,7 @@ func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
 	panic(err)
 }
 
-func (s *PRUDPServer) handleSocketMessage() error {
-	buffer := make([]byte, 64000)
-
-	read, addr, err := s.udpSocket.ReadFromUDP(buffer)
-	if err != nil {
-		return err
-	}
-
-	packetData := buffer[:read]
+func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *websocket.Conn) error {
 	readStream := NewStreamIn(packetData, s)
 
 	var packets []PRUDPPacketInterface
@@ -167,20 +215,22 @@ func (s *PRUDPServer) handleSocketMessage() error {
 	// * with that same type. Also keep reading from the stream
 	// * until no more data is left, to account for multiple
 	// * packets being sent at once
-	if bytes.Equal(packetData[:2], []byte{0xEA, 0xD0}) {
+	if s.websocketServer != nil && packetData[0] == 0x80 {
+		packets, _ = NewPRUDPPacketsLite(nil, readStream)
+	} else if bytes.Equal(packetData[:2], []byte{0xEA, 0xD0}) {
 		packets, _ = NewPRUDPPacketsV1(nil, readStream)
 	} else {
 		packets, _ = NewPRUDPPacketsV0(nil, readStream)
 	}
 
 	for _, packet := range packets {
-		go s.processPacket(packet, addr)
+		go s.processPacket(packet, address, webSocketConnection)
 	}
 
 	return nil
 }
 
-func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address *net.UDPAddr) {
+func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *websocket.Conn) {
 	virtualServer, _ := s.virtualServers.Get(packet.DestinationPort())
 	virtualServerStream, _ := virtualServer.Get(packet.DestinationStreamType())
 
@@ -189,7 +239,7 @@ func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address *net.UD
 	client, ok := virtualServerStream.Get(discriminator)
 
 	if !ok {
-		client = NewPRUDPClient(address, s)
+		client = NewPRUDPClient(s, address, webSocketConnection)
 		client.startHeartbeat()
 
 		// * Fail-safe. If the server reboots, then
@@ -303,10 +353,12 @@ func (s *PRUDPServer) handleSyn(packet PRUDPPacketInterface) {
 
 	var ack PRUDPPacketInterface
 
-	if packet.Version() == 0 {
-		ack, _ = NewPRUDPPacketV0(client, nil)
-	} else {
+	if packet.Version() == 2 {
+		ack, _ = NewPRUDPPacketLite(client, nil)
+	} else if packet.Version() == 1 {
 		ack, _ = NewPRUDPPacketV1(client, nil)
+	} else {
+		ack, _ = NewPRUDPPacketV0(client, nil)
 	}
 
 	connectionSignature, err := packet.calculateConnectionSignature(client.address)
@@ -340,7 +392,7 @@ func (s *PRUDPServer) handleSyn(packet PRUDPPacketInterface) {
 
 	s.emit("syn", ack)
 
-	s.sendRaw(client.address, ack.Bytes())
+	s.sendRaw(client, ack.Bytes())
 }
 
 func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
@@ -348,10 +400,12 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 
 	var ack PRUDPPacketInterface
 
-	if packet.Version() == 0 {
-		ack, _ = NewPRUDPPacketV0(client, nil)
-	} else {
+	if packet.Version() == 2 {
+		ack, _ = NewPRUDPPacketLite(client, nil)
+	} else if packet.Version() == 1 {
 		ack, _ = NewPRUDPPacketV1(client, nil)
+	} else {
+		ack, _ = NewPRUDPPacketV0(client, nil)
 	}
 
 	client.serverConnectionSignature = packet.getConnectionSignature()
@@ -421,7 +475,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 
 	s.emit("connect", ack)
 
-	s.sendRaw(client.address, ack.Bytes())
+	s.sendRaw(client, ack.Bytes())
 }
 
 func (s *PRUDPServer) handleData(packet PRUDPPacketInterface) {
@@ -515,10 +569,12 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *PID, uint32, 
 func (s *PRUDPServer) acknowledgePacket(packet PRUDPPacketInterface) {
 	var ack PRUDPPacketInterface
 
-	if packet.Version() == 0 {
-		ack, _ = NewPRUDPPacketV0(packet.Sender().(*PRUDPClient), nil)
-	} else {
+	if packet.Version() == 2 {
+		ack, _ = NewPRUDPPacketLite(packet.Sender().(*PRUDPClient), nil)
+	} else if packet.Version() == 1 {
 		ack, _ = NewPRUDPPacketV1(packet.Sender().(*PRUDPClient), nil)
+	} else {
+		ack, _ = NewPRUDPPacketV0(packet.Sender().(*PRUDPClient), nil)
 	}
 
 	ack.SetType(packet.Type())
@@ -549,7 +605,15 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 
 	for _, pendingPacket := range substream.Update(packet) {
 		if packet.Type() == DataPacket {
-			decryptedPayload := pendingPacket.decryptPayload()
+			var decryptedPayload []byte
+
+			if packet.Version() != 2 {
+				decryptedPayload = pendingPacket.decryptPayload()
+			} else {
+				// * PRUDPLite does not encrypt payloads
+				decryptedPayload = pendingPacket.Payload()
+			}
+
 			decompressedPayload, err := s.decompressPayload(decryptedPayload)
 			if err != nil {
 				logger.Error(err.Error())
@@ -560,6 +624,7 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 			if packet.getFragmentID() == 0 {
 				message := NewRMCMessage()
 				err := message.FromBytes(payload)
+				fmt.Println(hex.EncodeToString(payload))
 				if err != nil {
 					// TODO - Should this return the error too?
 					logger.Error(err.Error())
@@ -639,7 +704,9 @@ func (s *PRUDPServer) handleUnreliable(packet PRUDPPacketInterface) {
 func (s *PRUDPServer) sendPing(client *PRUDPClient) {
 	var ping PRUDPPacketInterface
 
-	if s.PRUDPVersion == 0 {
+	if s.websocketServer != nil {
+		ping, _ = NewPRUDPPacketLite(client, nil)
+	} else if s.PRUDPVersion == 0 {
 		ping, _ = NewPRUDPPacketV0(client, nil)
 	} else {
 		ping, _ = NewPRUDPPacketV1(client, nil)
@@ -721,9 +788,15 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 				substream.SetCipherKey([]byte("CD&ML"))
 			}
 
-			packetCopy.SetPayload(substream.Encrypt(compressedPayload))
+			// * PRUDPLite packet. No RC4
+			if packetCopy.Version() != 2 {
+				packetCopy.SetPayload(substream.Encrypt(compressedPayload))
+			}
 		} else {
-			packetCopy.SetPayload(packetCopy.processUnreliableCrypto())
+			// * PRUDPLite packet. No RC4
+			if packetCopy.Version() != 2 {
+				packetCopy.SetPayload(packetCopy.processUnreliableCrypto())
+			}
 		}
 	}
 
@@ -734,14 +807,22 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		substream.ResendScheduler.AddPacket(packetCopy)
 	}
 
-	s.sendRaw(packetCopy.Sender().Address(), packetCopy.Bytes())
+	s.sendRaw(packetCopy.Sender().(*PRUDPClient), packetCopy.Bytes())
 }
 
-// sendRaw will send the given address the provided packet
-func (s *PRUDPServer) sendRaw(conn net.Addr, data []byte) {
-	_, err := s.udpSocket.WriteToUDP(data, conn.(*net.UDPAddr))
+// sendRaw will send the given client the provided packet
+func (s *PRUDPServer) sendRaw(client *PRUDPClient, data []byte) {
+	// TODO - Should this return the error too?
+
+	var err error
+
+	if s.udpSocket != nil {
+		_, err = s.udpSocket.WriteToUDP(data, client.address.(*net.UDPAddr))
+	} else if client.webSocketConnection != nil {
+		err = client.webSocketConnection.WriteMessage(websocket.BinaryMessage, data)
+	}
+
 	if err != nil {
-		// TODO - Should this return the error too?
 		logger.Error(err.Error())
 	}
 }
