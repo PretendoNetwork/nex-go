@@ -109,7 +109,7 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		// * Resend the packet to the client
 		server := client.server
 		data := packet.Bytes()
-		server.sendRaw(client.Address(), data)
+		server.sendRaw(client, data)
 
 		pendingPacket.interval += rs.Increase
 		pendingPacket.ticker.Reset(pendingPacket.interval)
