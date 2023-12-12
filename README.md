@@ -25,13 +25,14 @@ Nintendo modified Rendez-Vous somewhat heavily, simplifying the library/transpor
 While the main goal of this library is to support games which use the NEX variant of Rendez-Vous made by Nintendo, we also aim to be compatible with games using the original Rendez-Vous library. Due to the extensible nature of Rendez-Vous, many games may feature customizations much like NEX and have non-standard features/behavior. We do our best to support these cases, but there may be times where supporting all variations becomes untenable. In those cases, a fork of these libraries should be made instead if they require heavy modifications
 
 ### Supported features
+- [x] Quazal compatibility mode/settings
 - [x] [HPP servers](https://nintendo-wiki.pretendo.network/docs/hpp) (NEX over HTTP)
-- [ ] [PRUDP servers](https://nintendo-wiki.pretendo.network/docs/prudp)
+- [x] [PRUDP servers](https://nintendo-wiki.pretendo.network/docs/prudp)
   - [x] UDP transport
-  - [ ] WebSocket transport
+  - [x] WebSocket transport (Experimental, largely untested)
   - [x] PRUDPv0 packets
   - [x] PRUDPv1 packets
-  - [ ] PRUDPLite packets
+  - [x] PRUDPLite packets
 - [x] Fragmented packet payloads
 - [x] Packet retransmission
 - [x] Reliable packets
