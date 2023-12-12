@@ -139,7 +139,7 @@ func (rmc *RMCMessage) Bytes() []byte {
 	// * do it for accuracy.
 	if !rmc.IsHPP || (rmc.IsHPP && rmc.IsRequest) {
 		if rmc.ProtocolID < 0x80 {
-		stream.WriteUInt8(uint8(rmc.ProtocolID | protocolIDFlag))
+			stream.WriteUInt8(uint8(rmc.ProtocolID | protocolIDFlag))
 		} else {
 			stream.WriteUInt8(uint8(0x7F | protocolIDFlag))
 			stream.WriteUInt16LE(rmc.ProtocolID)

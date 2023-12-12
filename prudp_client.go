@@ -6,14 +6,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/lxzan/gws"
 )
 
 // PRUDPClient represents a single PRUDP client
 type PRUDPClient struct {
 	server                              *PRUDPServer
 	address                             net.Addr
-	webSocketConnection                 *websocket.Conn
+	webSocketConnection                 *gws.Conn
 	pid                                 *PID
 	clientConnectionSignature           []byte
 	serverConnectionSignature           []byte
@@ -69,7 +69,7 @@ func (c *PRUDPClient) cleanup() {
 	c.stopHeartbeatTimers()
 
 	if c.webSocketConnection != nil {
-		c.webSocketConnection.Close()
+		c.webSocketConnection.NetConn().Close() // TODO - Swap this out for WriteClose() to send a close frame?
 	}
 
 	c.server.emitRemoved(c)
@@ -217,7 +217,7 @@ func (c *PRUDPClient) stopHeartbeatTimers() {
 }
 
 // NewPRUDPClient creates and returns a new PRUDPClient
-func NewPRUDPClient(server *PRUDPServer, address net.Addr, webSocketConnection *websocket.Conn) *PRUDPClient {
+func NewPRUDPClient(server *PRUDPServer, address net.Addr, webSocketConnection *gws.Conn) *PRUDPClient {
 	return &PRUDPClient{
 		server:                        server,
 		address:                       address,

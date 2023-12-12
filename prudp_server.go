@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/zlib"
 	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"net"
@@ -12,7 +11,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/gorilla/websocket"
+	"github.com/lxzan/gws"
 )
 
 // PRUDPServer represents a bare-bones PRUDP server
@@ -129,11 +128,7 @@ func (s *PRUDPServer) ListenWebSocket(port int) {
 	s.initVirtualPorts()
 
 	s.websocketServer = &WebSocketServer{
-		upgrader: websocket.Upgrader{
-			ReadBufferSize:  64000,
-			WriteBufferSize: 64000,
-		},
-		handleSocketMessage: s.handleSocketMessage,
+		prudpServer: s,
 	}
 
 	s.websocketServer.listen(port)
@@ -145,11 +140,7 @@ func (s *PRUDPServer) ListenWebSocketSecure(port int, certFile, keyFile string) 
 	s.initVirtualPorts()
 
 	s.websocketServer = &WebSocketServer{
-		upgrader: websocket.Upgrader{
-			ReadBufferSize:  64000,
-			WriteBufferSize: 64000,
-		},
-		handleSocketMessage: s.handleSocketMessage,
+		prudpServer: s,
 	}
 
 	s.websocketServer.listenSecure(port, certFile, keyFile)
@@ -206,7 +197,7 @@ func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
 	panic(err)
 }
 
-func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *websocket.Conn) error {
+func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
 	readStream := NewStreamIn(packetData, s)
 
 	var packets []PRUDPPacketInterface
@@ -230,7 +221,7 @@ func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, w
 	return nil
 }
 
-func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *websocket.Conn) {
+func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *gws.Conn) {
 	virtualServer, _ := s.virtualServers.Get(packet.DestinationPort())
 	virtualServerStream, _ := virtualServer.Get(packet.DestinationStreamType())
 
@@ -624,7 +615,6 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 			if packet.getFragmentID() == 0 {
 				message := NewRMCMessage()
 				err := message.FromBytes(payload)
-				fmt.Println(hex.EncodeToString(payload))
 				if err != nil {
 					// TODO - Should this return the error too?
 					logger.Error(err.Error())
@@ -819,7 +809,7 @@ func (s *PRUDPServer) sendRaw(client *PRUDPClient, data []byte) {
 	if s.udpSocket != nil {
 		_, err = s.udpSocket.WriteToUDP(data, client.address.(*net.UDPAddr))
 	} else if client.webSocketConnection != nil {
-		err = client.webSocketConnection.WriteMessage(websocket.BinaryMessage, data)
+		err = client.webSocketConnection.WriteMessage(gws.OpcodeBinary, data)
 	}
 
 	if err != nil {
