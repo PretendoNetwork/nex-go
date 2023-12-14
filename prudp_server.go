@@ -48,6 +48,8 @@ type PRUDPServer struct {
 	CompressionEnabled              bool
 	PRUDPv0CustomChecksumCalculator func(packet *PRUDPPacketV0, data []byte) uint32
 	stringLengthSize                int
+	CustomPayloadCompressor         func(payload []byte) ([]byte, error)
+	CustomPayloadDecompressor       func(payload []byte) ([]byte, error)
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -617,7 +619,7 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 			}
 
 			if s.CompressionEnabled {
-				decompressedPayload, err := s.DecompressPayload(decryptedPayload)
+				decompressedPayload, err := s.decompressPayload(decryptedPayload)
 				if err != nil {
 					logger.Error(err.Error())
 				}
@@ -780,7 +782,7 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 			payload := packetCopy.Payload()
 
 			if s.CompressionEnabled {
-				compressedPayload, err := s.CompressPayload(payload)
+				compressedPayload, err := s.compressPayload(payload)
 				if err != nil {
 					logger.Error(err.Error())
 				}
@@ -837,8 +839,11 @@ func (s *PRUDPServer) sendRaw(client *PRUDPClient, data []byte) {
 	}
 }
 
-// DecompressPayload handles the decompression of DATA packet payloads. By default this uses zlib compression
-func (s *PRUDPServer) DecompressPayload(payload []byte) ([]byte, error) {
+func (s *PRUDPServer) decompressPayload(payload []byte) ([]byte, error) {
+	if s.CustomPayloadDecompressor != nil {
+		return s.CustomPayloadDecompressor(payload)
+	}
+
 	compressionRatio := payload[0]
 	compressed := payload[1:]
 
@@ -879,8 +884,11 @@ func (s *PRUDPServer) DecompressPayload(payload []byte) ([]byte, error) {
 	return decompressedBytes, nil
 }
 
-// CompressPayload handles the compression of DATA packet payloads. By default this uses zlib compression
-func (s *PRUDPServer) CompressPayload(payload []byte) ([]byte, error) {
+func (s *PRUDPServer) compressPayload(payload []byte) ([]byte, error) {
+	if s.CustomPayloadCompressor != nil {
+		return s.CustomPayloadCompressor(payload)
+	}
+
 	compressed := bytes.Buffer{}
 
 	// * Create a zlib writer with default compression level
