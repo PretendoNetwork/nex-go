@@ -3,6 +3,7 @@ package nex
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/lxzan/gws"
@@ -22,7 +23,42 @@ func (wseh *wsEventHandler) OnOpen(socket *gws.Conn) {
 }
 
 func (wseh *wsEventHandler) OnClose(socket *gws.Conn, err error) {
-	// TODO - Client clean up
+	clientsToCleanup := make([]*PRUDPClient, 0)
+
+	// * Loop over all bound ports, and each ports stream types
+	// * to look for clients connecting from this WebSocket
+	// TODO - This kinda sucks tbh. Unsure how much this effects performance. Test more and refactor?
+	wseh.prudpServer.virtualServers.Each(func(port uint8, stream *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]) bool {
+		stream.Each(func(streamType uint8, clients *MutexMap[string, *PRUDPClient]) bool {
+			clients.Each(func(discriminator string, client *PRUDPClient) bool {
+				if strings.HasPrefix(discriminator, socket.RemoteAddr().String()) {
+					clientsToCleanup = append(clientsToCleanup, client)
+					return true // * Assume only one client connected per server port per stream type
+				}
+
+				return false
+			})
+
+			return false
+		})
+
+		return false
+	})
+
+	// * We cannot modify a MutexMap while looping over it
+	// * since the mutex is locked. We first need to grab
+	// * the entries we want to delete, and then loop over
+	// * them here to actually clean them up
+	for _, client := range clientsToCleanup {
+		client.cleanup() // * "removed" event is dispatched here
+
+		virtualServer, _ := wseh.prudpServer.virtualServers.Get(client.DestinationPort)
+		virtualServerStream, _ := virtualServer.Get(client.DestinationStreamType)
+
+		discriminator := fmt.Sprintf("%s-%d-%d", client.address.String(), client.SourcePort, client.SourceStreamType)
+
+		virtualServerStream.Delete(discriminator)
+	}
 }
 
 func (wseh *wsEventHandler) OnPing(socket *gws.Conn, payload []byte) {
