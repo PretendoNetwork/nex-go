@@ -16,36 +16,37 @@ import (
 
 // PRUDPServer represents a bare-bones PRUDP server
 type PRUDPServer struct {
-	udpSocket                     *net.UDPConn
-	websocketServer               *WebSocketServer
-	PRUDPVersion                  int
-	PRUDPMinorVersion             uint32
-	virtualServers                *MutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]]
-	IsQuazalMode                  bool
-	VirtualServerPorts            []uint8
-	SecureVirtualServerPorts      []uint8
-	SupportedFunctions            uint32
-	accessKey                     string
-	kerberosPassword              []byte
-	kerberosTicketVersion         int
-	kerberosKeySize               int
-	FragmentSize                  int
-	version                       *LibraryVersion
-	datastoreProtocolVersion      *LibraryVersion
-	matchMakingProtocolVersion    *LibraryVersion
-	rankingProtocolVersion        *LibraryVersion
-	ranking2ProtocolVersion       *LibraryVersion
-	messagingProtocolVersion      *LibraryVersion
-	utilityProtocolVersion        *LibraryVersion
-	natTraversalProtocolVersion   *LibraryVersion
-	prudpEventHandlers            map[string][]func(packet PacketInterface)
-	clientRemovedEventHandlers    []func(client *PRUDPClient)
-	connectionIDCounter           *Counter[uint32]
-	pingTimeout                   time.Duration
-	passwordFromPIDHandler        func(pid *PID) (string, uint32)
-	PRUDPv1ConnectionSignatureKey []byte
-	EnhancedChecksum              bool
-	CompressionEnabled            bool
+	udpSocket                       *net.UDPConn
+	websocketServer                 *WebSocketServer
+	PRUDPVersion                    int
+	PRUDPMinorVersion               uint32
+	virtualServers                  *MutexMap[uint8, *MutexMap[uint8, *MutexMap[string, *PRUDPClient]]]
+	IsQuazalMode                    bool
+	VirtualServerPorts              []uint8
+	SecureVirtualServerPorts        []uint8
+	SupportedFunctions              uint32
+	accessKey                       string
+	kerberosPassword                []byte
+	kerberosTicketVersion           int
+	kerberosKeySize                 int
+	FragmentSize                    int
+	version                         *LibraryVersion
+	datastoreProtocolVersion        *LibraryVersion
+	matchMakingProtocolVersion      *LibraryVersion
+	rankingProtocolVersion          *LibraryVersion
+	ranking2ProtocolVersion         *LibraryVersion
+	messagingProtocolVersion        *LibraryVersion
+	utilityProtocolVersion          *LibraryVersion
+	natTraversalProtocolVersion     *LibraryVersion
+	prudpEventHandlers              map[string][]func(packet PacketInterface)
+	clientRemovedEventHandlers      []func(client *PRUDPClient)
+	connectionIDCounter             *Counter[uint32]
+	pingTimeout                     time.Duration
+	passwordFromPIDHandler          func(pid *PID) (string, uint32)
+	PRUDPv1ConnectionSignatureKey   []byte
+	EnhancedChecksum                bool
+	CompressionEnabled              bool
+	PRUDPv0CustomChecksumCalculator func(packet *PRUDPPacketV0, data []byte) uint32
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received

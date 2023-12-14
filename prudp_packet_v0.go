@@ -230,7 +230,13 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 		stream.WriteBytesNext(p.payload)
 	}
 
-	checksum := p.calculateChecksum(stream.Bytes())
+	var checksum uint32
+
+	if p.server.PRUDPv0CustomChecksumCalculator != nil {
+		checksum = p.server.PRUDPv0CustomChecksumCalculator(p, stream.Bytes())
+	} else {
+		checksum = p.calculateChecksum(stream.Bytes())
+	}
 
 	if server.EnhancedChecksum {
 		stream.WriteUInt32LE(checksum)
