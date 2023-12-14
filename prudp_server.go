@@ -123,7 +123,6 @@ func (s *PRUDPServer) ListenUDP(port int) {
 
 // ListenWebSocket starts a PRUDP server on a given port using a WebSocket server
 func (s *PRUDPServer) ListenWebSocket(port int) {
-
 	s.initPRUDPv1ConnectionSignatureKey()
 	s.initVirtualPorts()
 
@@ -222,6 +221,16 @@ func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, w
 }
 
 func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *gws.Conn) {
+	if !slices.Contains(s.VirtualServerPorts, packet.DestinationPort()) {
+		logger.Warningf("Client %s trying to connect to unbound server vport %d", address.String(), packet.DestinationPort())
+		return
+	}
+
+	if packet.DestinationStreamType() > VirtualStreamTypeRelay {
+		logger.Warningf("Client %s trying to use invalid to server stream type %d", address.String(), packet.DestinationStreamType())
+		return
+	}
+
 	virtualServer, _ := s.virtualServers.Get(packet.DestinationPort())
 	virtualServerStream, _ := virtualServer.Get(packet.DestinationStreamType())
 
