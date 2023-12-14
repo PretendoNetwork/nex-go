@@ -116,7 +116,7 @@ func (ws *WebSocketServer) listen(port int) {
 
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), ws.mux)
 	if err != nil {
-		logger.Error(err.Error())
+		panic(err)
 	}
 }
 
@@ -125,6 +125,6 @@ func (ws *WebSocketServer) listenSecure(port int, certFile, keyFile string) {
 
 	err := http.ListenAndServeTLS(fmt.Sprintf(":%d", port), certFile, keyFile, ws.mux)
 	if err != nil {
-		logger.Error(err.Error())
+		panic(err)
 	}
 }
