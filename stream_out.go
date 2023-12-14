@@ -206,6 +206,11 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 	stream.WriteBytesNext(content)
 }
 
+// WriteStationURL writes a StationURL type
+func (stream *StreamOut) WriteStationURL(stationURL *StationURL) {
+	stream.WriteString(stationURL.EncodeToString())
+}
+
 // WriteListUInt8 writes a list of uint8 types
 func (stream *StreamOut) WriteListUInt8(list []uint8) {
 	stream.WriteUInt32LE(uint32(len(list)))
