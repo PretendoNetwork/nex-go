@@ -1,6 +1,7 @@
 package nex
 
 import (
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 // HPPServer represents a bare-bones HPP server
 type HPPServer struct {
+	server                      *http.Server
 	accessKey                   string
 	version                     *LibraryVersion
 	datastoreProtocolVersion    *LibraryVersion
@@ -129,9 +131,19 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 
 // Listen starts a HPP server on a given port
 func (s *HPPServer) Listen(port int) {
-	http.HandleFunc("/hpp/", s.handleRequest)
+	s.server.Addr = fmt.Sprintf(":%d", port)
 
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	err := s.server.ListenAndServe()
+	if err != nil {
+		panic(err)
+	}
+}
+
+// ListenSecure starts a HPP server on a given port using a secure (TLS) server
+func (s *HPPServer) ListenSecure(port int, certFile, keyFile string) {
+	s.server.Addr = fmt.Sprintf(":%d", port)
+
+	err := s.server.ListenAndServeTLS(certFile, keyFile)
 	if err != nil {
 		panic(err)
 	}
@@ -271,8 +283,22 @@ func (s *HPPServer) SetStringLengthSize(size int) {
 
 // NewHPPServer returns a new HPP server
 func NewHPPServer() *HPPServer {
-	return &HPPServer{
+	s := &HPPServer{
 		dataHandlers:     make([]func(packet PacketInterface), 0),
 		stringLengthSize: 2,
 	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/hpp/", s.handleRequest)
+
+	httpServer := &http.Server{
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS11, // * The 3DS and Wii U only support up to TLS 1.1 natively
+		},
+	}
+
+	s.server = httpServer
+
+	return s
 }
