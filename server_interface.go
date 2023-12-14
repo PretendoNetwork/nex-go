@@ -17,4 +17,6 @@ type ServerInterface interface {
 	OnData(handler func(packet PacketInterface))
 	PasswordFromPID(pid *PID) (string, uint32)
 	SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32))
+	StringLengthSize() int
+	SetStringLengthSize(size int)
 }

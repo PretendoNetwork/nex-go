@@ -20,6 +20,7 @@ type HPPServer struct {
 	natTraversalProtocolVersion *LibraryVersion
 	dataHandlers                []func(packet PacketInterface)
 	passwordFromPIDHandler      func(pid *PID) (string, uint32)
+	stringLengthSize            int
 }
 
 // OnData adds an event handler which is fired when a new HPP request is received
@@ -258,9 +259,20 @@ func (s *HPPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string, u
 	s.passwordFromPIDHandler = handler
 }
 
+// StringLengthSize returns the size of the length field used for Quazal::String types
+func (s *HPPServer) StringLengthSize() int {
+	return s.stringLengthSize
+}
+
+// SetStringLengthSize sets the size of the length field used for Quazal::String types
+func (s *HPPServer) SetStringLengthSize(size int) {
+	s.stringLengthSize = size
+}
+
 // NewHPPServer returns a new HPP server
 func NewHPPServer() *HPPServer {
 	return &HPPServer{
-		dataHandlers: make([]func(packet PacketInterface), 0),
+		dataHandlers:     make([]func(packet PacketInterface), 0),
+		stringLengthSize: 2,
 	}
 }

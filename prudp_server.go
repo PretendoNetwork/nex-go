@@ -47,6 +47,7 @@ type PRUDPServer struct {
 	EnhancedChecksum                bool
 	CompressionEnabled              bool
 	PRUDPv0CustomChecksumCalculator func(packet *PRUDPPacketV0, data []byte) uint32
+	stringLengthSize                int
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -1102,6 +1103,16 @@ func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string,
 	s.passwordFromPIDHandler = handler
 }
 
+// StringLengthSize returns the size of the length field used for Quazal::String types
+func (s *PRUDPServer) StringLengthSize() int {
+	return s.stringLengthSize
+}
+
+// SetStringLengthSize sets the size of the length field used for Quazal::String types
+func (s *PRUDPServer) SetStringLengthSize(size int) {
+	s.stringLengthSize = size
+}
+
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
@@ -1114,5 +1125,6 @@ func NewPRUDPServer() *PRUDPServer {
 		prudpEventHandlers:       make(map[string][]func(PacketInterface)),
 		connectionIDCounter:      NewCounter[uint32](10),
 		pingTimeout:              time.Second * 15,
+		stringLengthSize:         2,
 	}
 }

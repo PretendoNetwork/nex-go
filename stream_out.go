@@ -142,8 +142,13 @@ func (stream *StreamOut) WriteString(str string) {
 	str = str + "\x00"
 	strLength := len(str)
 
+	if stream.Server.StringLengthSize() == 4 {
+		stream.WriteUInt32LE(uint32(strLength))
+	} else {
+		stream.WriteUInt16LE(uint16(strLength))
+	}
+
 	stream.Grow(int64(strLength))
-	stream.WriteUInt16LE(uint16(strLength))
 	stream.WriteBytesNext([]byte(str))
 }
 

@@ -219,7 +219,20 @@ func (stream *StreamIn) ReadPID() (*PID, error) {
 
 // ReadString reads and returns a nex string type
 func (stream *StreamIn) ReadString() (string, error) {
-	length, err := stream.ReadUInt16LE()
+	var length int64
+	var err error
+
+	// TODO - These variable names kinda suck?
+	if stream.Server.StringLengthSize() == 4 {
+		l, e := stream.ReadUInt32LE()
+		length = int64(l)
+		err = e
+	} else {
+		l, e := stream.ReadUInt16LE()
+		length = int64(l)
+		err = e
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("Failed to read NEX string length. %s", err.Error())
 	}
@@ -228,7 +241,7 @@ func (stream *StreamIn) ReadString() (string, error) {
 		return "", errors.New("NEX string length longer than data size")
 	}
 
-	stringData := stream.ReadBytesNext(int64(length))
+	stringData := stream.ReadBytesNext(length)
 	str := string(stringData)
 
 	return strings.TrimRight(str, "\x00"), nil
