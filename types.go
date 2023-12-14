@@ -600,9 +600,19 @@ func (s *StationURL) IsPublic() bool {
 
 // FromString parses the StationURL data from a string
 func (s *StationURL) FromString(str string) {
+	if str == "" {
+		return
+	}
+
 	split := strings.Split(str, ":/")
 
 	s.Scheme = split[0]
+
+	// * Return if there are no fields
+	if split[1] == "" {
+		return
+	}
+
 	fields := strings.Split(split[1], ";")
 
 	for i := 0; i < len(fields); i++ {
@@ -667,9 +677,7 @@ func NewStationURL(str string) *StationURL {
 		Fields: NewMutexMap[string, string](),
 	}
 
-	if str != "" {
-		stationURL.FromString(str)
-	}
+	stationURL.FromString(str)
 
 	return stationURL
 }
