@@ -617,6 +617,11 @@ func (s *StationURL) FromString(str string) {
 
 // EncodeToString encodes the StationURL into a string
 func (s *StationURL) EncodeToString() string {
+	// * Don't return anything if no scheme is set
+	if s.Scheme == "" {
+		return ""
+	}
+
 	fields := []string{}
 
 	s.Fields.Each(func(key, value string) bool {
