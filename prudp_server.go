@@ -616,12 +616,16 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 				decryptedPayload = pendingPacket.Payload()
 			}
 
-			decompressedPayload, err := s.decompressPayload(decryptedPayload)
-			if err != nil {
-				logger.Error(err.Error())
+			if s.CompressionEnabled {
+				decompressedPayload, err := s.DecompressPayload(decryptedPayload)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+
+				decryptedPayload = decompressedPayload
 			}
 
-			payload := substream.AddFragment(decompressedPayload)
+			payload := substream.AddFragment(decryptedPayload)
 
 			if packet.getFragmentID() == 0 {
 				message := NewRMCMessage()
@@ -774,9 +778,14 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	if packetCopy.Type() == DataPacket && !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
 		if packetCopy.HasFlag(FlagReliable) {
 			payload := packetCopy.Payload()
-			compressedPayload, err := s.compressPayload(payload)
-			if err != nil {
-				logger.Error(err.Error())
+
+			if s.CompressionEnabled {
+				compressedPayload, err := s.CompressPayload(payload)
+				if err != nil {
+					logger.Error(err.Error())
+				}
+
+				payload = compressedPayload
 			}
 
 			substream := client.reliableSubstream(packetCopy.SubstreamID())
@@ -791,7 +800,7 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 			// * PRUDPLite packet. No RC4
 			if packetCopy.Version() != 2 {
-				packetCopy.SetPayload(substream.Encrypt(compressedPayload))
+				packetCopy.SetPayload(substream.Encrypt(payload))
 			}
 		} else {
 			// * PRUDPLite packet. No RC4
@@ -828,11 +837,8 @@ func (s *PRUDPServer) sendRaw(client *PRUDPClient, data []byte) {
 	}
 }
 
-func (s *PRUDPServer) decompressPayload(payload []byte) ([]byte, error) {
-	if !s.CompressionEnabled {
-		return payload, nil
-	}
-
+// DecompressPayload handles the decompression of DATA packet payloads. By default this uses zlib compression
+func (s *PRUDPServer) DecompressPayload(payload []byte) ([]byte, error) {
 	compressionRatio := payload[0]
 	compressed := payload[1:]
 
@@ -873,11 +879,8 @@ func (s *PRUDPServer) decompressPayload(payload []byte) ([]byte, error) {
 	return decompressedBytes, nil
 }
 
-func (s *PRUDPServer) compressPayload(payload []byte) ([]byte, error) {
-	if !s.CompressionEnabled {
-		return payload, nil
-	}
-
+// CompressPayload handles the compression of DATA packet payloads. By default this uses zlib compression
+func (s *PRUDPServer) CompressPayload(payload []byte) ([]byte, error) {
 	compressed := bytes.Buffer{}
 
 	// * Create a zlib writer with default compression level
