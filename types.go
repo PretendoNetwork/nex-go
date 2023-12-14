@@ -342,41 +342,21 @@ func NewDataHolder() *DataHolder {
 // RVConnectionData represents a nex RVConnectionData type
 type RVConnectionData struct {
 	Structure
-	stationURL                 string
-	specialProtocols           []byte
-	stationURLSpecialProtocols string
-	time                       *DateTime
-}
-
-// SetStationURL sets the RVConnectionData station URL
-func (rvConnectionData *RVConnectionData) SetStationURL(stationURL string) {
-	rvConnectionData.stationURL = stationURL
-}
-
-// SetSpecialProtocols sets the RVConnectionData special protocol list (unused by Nintendo)
-func (rvConnectionData *RVConnectionData) SetSpecialProtocols(specialProtocols []byte) {
-	rvConnectionData.specialProtocols = specialProtocols
-}
-
-// SetStationURLSpecialProtocols sets the RVConnectionData special station URL (unused by Nintendo)
-func (rvConnectionData *RVConnectionData) SetStationURLSpecialProtocols(stationURLSpecialProtocols string) {
-	rvConnectionData.stationURLSpecialProtocols = stationURLSpecialProtocols
-}
-
-// SetTime sets the RVConnectionData time
-func (rvConnectionData *RVConnectionData) SetTime(time *DateTime) {
-	rvConnectionData.time = time
+	StationURL                 *StationURL
+	SpecialProtocols           []byte
+	StationURLSpecialProtocols *StationURL
+	Time                       *DateTime
 }
 
 // Bytes encodes the RVConnectionData and returns a byte array
 func (rvConnectionData *RVConnectionData) Bytes(stream *StreamOut) []byte {
-	stream.WriteString(rvConnectionData.stationURL)
-	stream.WriteListUInt8(rvConnectionData.specialProtocols)
-	stream.WriteString(rvConnectionData.stationURLSpecialProtocols)
+	stream.WriteStationURL(rvConnectionData.StationURL)
+	stream.WriteListUInt8(rvConnectionData.SpecialProtocols)
+	stream.WriteStationURL(rvConnectionData.StationURLSpecialProtocols)
 
 	if stream.Server.LibraryVersion().GreaterOrEqual("3.5.0") {
 		rvConnectionData.SetStructureVersion(1)
-		stream.WriteDateTime(rvConnectionData.time)
+		stream.WriteDateTime(rvConnectionData.Time)
 	}
 
 	return stream.Bytes()
@@ -388,15 +368,15 @@ func (rvConnectionData *RVConnectionData) Copy() StructureInterface {
 
 	copied.SetStructureVersion(rvConnectionData.StructureVersion())
 	copied.parentType = rvConnectionData.parentType
-	copied.stationURL = rvConnectionData.stationURL
-	copied.specialProtocols = make([]byte, len(rvConnectionData.specialProtocols))
+	copied.StationURL = rvConnectionData.StationURL.Copy()
+	copied.SpecialProtocols = make([]byte, len(rvConnectionData.SpecialProtocols))
 
-	copy(copied.specialProtocols, rvConnectionData.specialProtocols)
+	copy(copied.SpecialProtocols, rvConnectionData.SpecialProtocols)
 
-	copied.stationURLSpecialProtocols = rvConnectionData.stationURLSpecialProtocols
+	copied.StationURLSpecialProtocols = rvConnectionData.StationURLSpecialProtocols.Copy()
 
-	if rvConnectionData.time != nil {
-		copied.time = rvConnectionData.time.Copy()
+	if rvConnectionData.Time != nil {
+		copied.Time = rvConnectionData.Time.Copy()
 	}
 
 	return copied
@@ -410,28 +390,28 @@ func (rvConnectionData *RVConnectionData) Equals(structure StructureInterface) b
 		return false
 	}
 
-	if rvConnectionData.stationURL != other.stationURL {
+	if !rvConnectionData.StationURL.Equals(other.StationURL) {
 		return false
 	}
 
-	if !bytes.Equal(rvConnectionData.specialProtocols, other.specialProtocols) {
+	if !bytes.Equal(rvConnectionData.SpecialProtocols, other.SpecialProtocols) {
 		return false
 	}
 
-	if rvConnectionData.stationURLSpecialProtocols != other.stationURLSpecialProtocols {
+	if !rvConnectionData.StationURLSpecialProtocols.Equals(other.StationURLSpecialProtocols) {
 		return false
 	}
 
-	if rvConnectionData.time != nil && other.time == nil {
+	if rvConnectionData.Time != nil && other.Time == nil {
 		return false
 	}
 
-	if rvConnectionData.time == nil && other.time != nil {
+	if rvConnectionData.Time == nil && other.Time != nil {
 		return false
 	}
 
-	if rvConnectionData.time != nil && other.time != nil {
-		if !rvConnectionData.time.Equals(other.time) {
+	if rvConnectionData.Time != nil && other.Time != nil {
+		if !rvConnectionData.Time.Equals(other.Time) {
 			return false
 		}
 	}
@@ -453,14 +433,14 @@ func (rvConnectionData *RVConnectionData) FormatToString(indentationLevel int) s
 
 	b.WriteString("RVConnectionData{\n")
 	b.WriteString(fmt.Sprintf("%sstructureVersion: %d,\n", indentationValues, rvConnectionData.structureVersion))
-	b.WriteString(fmt.Sprintf("%sstationURL: %q,\n", indentationValues, rvConnectionData.stationURL))
-	b.WriteString(fmt.Sprintf("%sspecialProtocols: %v,\n", indentationValues, rvConnectionData.specialProtocols))
-	b.WriteString(fmt.Sprintf("%sstationURLSpecialProtocols: %q,\n", indentationValues, rvConnectionData.stationURLSpecialProtocols))
+	b.WriteString(fmt.Sprintf("%sStationURL: %q,\n", indentationValues, rvConnectionData.StationURL.FormatToString(indentationLevel+1)))
+	b.WriteString(fmt.Sprintf("%sSpecialProtocols: %v,\n", indentationValues, rvConnectionData.SpecialProtocols))
+	b.WriteString(fmt.Sprintf("%sStationURLSpecialProtocols: %q,\n", indentationValues, rvConnectionData.StationURLSpecialProtocols.FormatToString(indentationLevel+1)))
 
-	if rvConnectionData.time != nil {
-		b.WriteString(fmt.Sprintf("%stime: %s\n", indentationValues, rvConnectionData.time.FormatToString(indentationLevel+1)))
+	if rvConnectionData.Time != nil {
+		b.WriteString(fmt.Sprintf("%sTime: %s\n", indentationValues, rvConnectionData.Time.FormatToString(indentationLevel+1)))
 	} else {
-		b.WriteString(fmt.Sprintf("%stime: nil\n", indentationValues))
+		b.WriteString(fmt.Sprintf("%sTime: nil\n", indentationValues))
 	}
 
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
