@@ -1008,3 +1008,107 @@ func (variant *Variant) FormatToString(indentationLevel int) string {
 func NewVariant() *Variant {
 	return &Variant{}
 }
+
+// ClassVersionContainer contains version info for structurs used in verbose RMC messages
+type ClassVersionContainer struct {
+	Structure
+	ClassVersions map[string]uint16
+}
+
+// ExtractFromStream extracts a ClassVersionContainer structure from a stream
+func (cvc *ClassVersionContainer) ExtractFromStream(stream *StreamIn) error {
+	length, err := stream.ReadUInt32LE()
+	if err != nil {
+		return fmt.Errorf("Failed to read ClassVersionContainer length. %s", err.Error())
+	}
+
+	for i := 0; i < int(length); i++ {
+		name, err := stream.ReadString()
+		if err != nil {
+			return fmt.Errorf("Failed to read ClassVersionContainer Structure name. %s", err.Error())
+		}
+
+		version, err := stream.ReadUInt16LE()
+		if err != nil {
+			return fmt.Errorf("Failed to read ClassVersionContainer %s version. %s", name, err.Error())
+		}
+
+		cvc.ClassVersions[name] = version
+	}
+
+	return nil
+}
+
+// Bytes encodes the ClassVersionContainer and returns a byte array
+func (cvc *ClassVersionContainer) Bytes(stream *StreamOut) []byte {
+	stream.WriteUInt32LE(uint32(len(cvc.ClassVersions)))
+
+	for name, version := range cvc.ClassVersions {
+		stream.WriteString(name)
+		stream.WriteUInt16LE(version)
+	}
+
+	return stream.Bytes()
+}
+
+// Copy returns a new copied instance of ClassVersionContainer
+func (cvc *ClassVersionContainer) Copy() StructureInterface {
+	copied := NewClassVersionContainer()
+
+	for name, version := range cvc.ClassVersions {
+		copied.ClassVersions[name] = version
+	}
+
+	return copied
+}
+
+// Equals checks if the passed Structure contains the same data as the current instance
+func (cvc *ClassVersionContainer) Equals(structure StructureInterface) bool {
+	other := structure.(*ClassVersionContainer)
+
+	if len(cvc.ClassVersions) != len(other.ClassVersions) {
+		return false
+	}
+
+	for name, version1 := range cvc.ClassVersions {
+		version2, ok := other.ClassVersions[name]
+		if !ok || version1 != version2 {
+			return false
+		}
+	}
+
+	return true
+}
+
+// String returns a string representation of the struct
+func (cvc *ClassVersionContainer) String() string {
+	return cvc.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (cvc *ClassVersionContainer) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationListValues := strings.Repeat("\t", indentationLevel+2)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("ClassVersionContainer{\n")
+	b.WriteString(fmt.Sprintf("%sClassVersions: {\n", indentationValues))
+
+	for name, version := range cvc.ClassVersions {
+		b.WriteString(fmt.Sprintf("%s%s: %d\n", indentationListValues, name, version))
+	}
+
+	b.WriteString(fmt.Sprintf("%s}\n", indentationValues))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
+// NewClassVersionContainer returns a new ClassVersionContainer
+func NewClassVersionContainer() *ClassVersionContainer {
+	return &ClassVersionContainer{
+		ClassVersions: make(map[string]uint16),
+	}
+}

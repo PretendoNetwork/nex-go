@@ -142,7 +142,9 @@ func (stream *StreamOut) WriteString(str string) {
 	str = str + "\x00"
 	strLength := len(str)
 
-	if stream.Server.StringLengthSize() == 4 {
+	if stream.Server == nil {
+		stream.WriteUInt16LE(uint16(strLength))
+	} else if stream.Server.StringLengthSize() == 4 {
 		stream.WriteUInt32LE(uint32(strLength))
 	} else {
 		stream.WriteUInt16LE(uint16(strLength))
@@ -189,12 +191,15 @@ func (stream *StreamOut) WriteStructure(structure StructureInterface) {
 
 	content := structure.Bytes(NewStreamOut(stream.Server))
 
-	var useStructures bool
-	switch server := stream.Server.(type) {
-	case *PRUDPServer: // * Support QRV versions
-		useStructures = server.PRUDPMinorVersion >= 3
-	default:
-		useStructures = server.LibraryVersion().GreaterOrEqual("3.5.0")
+	useStructures := false
+
+	if stream.Server != nil {
+		switch server := stream.Server.(type) {
+		case *PRUDPServer: // * Support QRV versions
+			useStructures = server.PRUDPMinorVersion >= 3
+		default:
+			useStructures = server.LibraryVersion().GreaterOrEqual("3.5.0")
+		}
 	}
 
 	if useStructures {

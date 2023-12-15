@@ -44,7 +44,7 @@ While the main goal of this library is to support games which use the NEX varian
   - [x] Response messages
   - [x] "Packed" encoded messages
   - [x] "Packed" (extended) encoded messages
-  - [ ] "Verbose" encoded messages
+  - [x] "Verbose" encoded messages
 - [x] [Kerberos authentication](https://nintendo-wiki.pretendo.network/docs/nex/kerberos)
 
 ### Example

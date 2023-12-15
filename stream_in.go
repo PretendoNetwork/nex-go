@@ -223,7 +223,11 @@ func (stream *StreamIn) ReadString() (string, error) {
 	var err error
 
 	// TODO - These variable names kinda suck?
-	if stream.Server.StringLengthSize() == 4 {
+	if stream.Server == nil {
+		l, e := stream.ReadUInt16LE()
+		length = int64(l)
+		err = e
+	} else if stream.Server.StringLengthSize() == 4 {
 		l, e := stream.ReadUInt32LE()
 		length = int64(l)
 		err = e
@@ -918,12 +922,15 @@ func StreamReadStructure[T StructureInterface](stream *StreamIn, structure T) (T
 		}
 	}
 
-	var useStructureHeader bool
-	switch server := stream.Server.(type) {
-	case *PRUDPServer: // * Support QRV versions
-		useStructureHeader = server.PRUDPMinorVersion >= 3
-	default:
-		useStructureHeader = server.LibraryVersion().GreaterOrEqual("3.5.0")
+	useStructureHeader := false
+
+	if stream.Server != nil {
+		switch server := stream.Server.(type) {
+		case *PRUDPServer: // * Support QRV versions
+			useStructureHeader = server.PRUDPMinorVersion >= 3
+		default:
+			useStructureHeader = server.LibraryVersion().GreaterOrEqual("3.5.0")
+		}
 	}
 
 	if useStructureHeader {
