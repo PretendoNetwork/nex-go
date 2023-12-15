@@ -139,7 +139,7 @@ func NewHPPPacket(client *HPPClient, payload []byte) (*HPPPacket, error) {
 	}
 
 	if payload != nil {
-		rmcMessage := NewRMCRequest()
+		rmcMessage := NewRMCRequest(client.Server())
 		err := rmcMessage.FromBytes(payload)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode HPP request. %s", err)

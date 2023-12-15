@@ -75,7 +75,7 @@ func startHPPServer() {
 
 func getNotificationURL(packet *nex.HPPPacket) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(hppServer)
 
 	parameters := request.Parameters
 

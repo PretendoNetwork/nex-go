@@ -7,6 +7,7 @@ import (
 
 // RMCMessage represents a message in the RMC (Remote Method Call) protocol
 type RMCMessage struct {
+	Server                ServerInterface
 	VerboseMode           bool                   // * Determines whether or not to encode the message using the "verbose" encoding method
 	IsRequest             bool                   // * Indicates if the message is a request message (true) or response message (false)
 	IsSuccess             bool                   // * Indicates if the message is a success message (true) for a response message
@@ -24,7 +25,7 @@ type RMCMessage struct {
 
 // Copy copies the message into a new RMCMessage
 func (rmc *RMCMessage) Copy() *RMCMessage {
-	copied := NewRMCMessage()
+	copied := NewRMCMessage(rmc.Server)
 
 	copied.IsRequest = rmc.IsRequest
 	copied.IsSuccess = rmc.IsSuccess
@@ -53,7 +54,7 @@ func (rmc *RMCMessage) FromBytes(data []byte) error {
 }
 
 func (rmc *RMCMessage) decodePacked(data []byte) error {
-	stream := NewStreamIn(data, nil)
+	stream := NewStreamIn(data, rmc.Server)
 
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
@@ -140,7 +141,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 }
 
 func (rmc *RMCMessage) decodeVerbose(data []byte) error {
-	stream := NewStreamIn(data, nil)
+	stream := NewStreamIn(data, rmc.Server)
 
 	length, err := stream.ReadUInt32LE()
 	if err != nil {
@@ -229,7 +230,7 @@ func (rmc *RMCMessage) Bytes() []byte {
 }
 
 func (rmc *RMCMessage) encodePacked() []byte {
-	stream := NewStreamOut(nil)
+	stream := NewStreamOut(rmc.Server)
 
 	// * RMC requests have their protocol IDs ORed with 0x80
 	var protocolIDFlag uint16 = 0x80
@@ -276,7 +277,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 
 	serialized := stream.Bytes()
 
-	message := NewStreamOut(nil)
+	message := NewStreamOut(rmc.Server)
 
 	message.WriteUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
@@ -286,7 +287,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 }
 
 func (rmc *RMCMessage) encodeVerbose() []byte {
-	stream := NewStreamOut(nil)
+	stream := NewStreamOut(rmc.Server)
 
 	stream.WriteString(rmc.ProtocolName)
 	stream.WriteBool(rmc.IsRequest)
@@ -325,7 +326,7 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 
 	serialized := stream.Bytes()
 
-	message := NewStreamOut(nil)
+	message := NewStreamOut(rmc.Server)
 
 	message.WriteUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
@@ -335,18 +336,23 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 }
 
 // NewRMCMessage returns a new generic RMC Message
-func NewRMCMessage() *RMCMessage {
-	return &RMCMessage{}
+func NewRMCMessage(server ServerInterface) *RMCMessage {
+	return &RMCMessage{
+		Server: server,
+	}
 }
 
 // NewRMCRequest returns a new blank RMCRequest
-func NewRMCRequest() *RMCMessage {
-	return &RMCMessage{IsRequest: true}
+func NewRMCRequest(server ServerInterface) *RMCMessage {
+	return &RMCMessage{
+		Server:    server,
+		IsRequest: true,
+	}
 }
 
 // NewRMCSuccess returns a new RMC Message configured as a success response
-func NewRMCSuccess(parameters []byte) *RMCMessage {
-	message := NewRMCMessage()
+func NewRMCSuccess(server ServerInterface, parameters []byte) *RMCMessage {
+	message := NewRMCMessage(server)
 	message.IsRequest = false
 	message.IsSuccess = true
 	message.Parameters = parameters
@@ -355,12 +361,12 @@ func NewRMCSuccess(parameters []byte) *RMCMessage {
 }
 
 // NewRMCError returns a new RMC Message configured as a error response
-func NewRMCError(errorCode uint32) *RMCMessage {
+func NewRMCError(server ServerInterface, errorCode uint32) *RMCMessage {
 	if int(errorCode)&errorMask == 0 {
 		errorCode = uint32(int(errorCode) | errorMask)
 	}
 
-	message := NewRMCMessage()
+	message := NewRMCMessage(server)
 	message.IsRequest = false
 	message.IsSuccess = false
 	message.ErrorCode = errorCode

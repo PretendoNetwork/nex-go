@@ -44,7 +44,7 @@ func startAuthenticationServer() {
 
 func login(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(authServer)
 
 	parameters := request.Parameters
 
@@ -105,7 +105,7 @@ func login(packet nex.PRUDPPacketInterface) {
 
 func requestTicket(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(authServer)
 
 	parameters := request.Parameters
 

@@ -87,11 +87,11 @@ func startSecureServer() {
 
 func registerEx(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(secureServer)
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewStreamIn(parameters, authServer)
+	parametersStream := nex.NewStreamIn(parameters, secureServer)
 
 	vecMyURLs, err := parametersStream.ReadListStationURL()
 	if err != nil {
@@ -113,7 +113,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	retval := nex.NewResultSuccess(0x00010001)
 	localStationURL := localStation.EncodeToString()
 
-	responseStream := nex.NewStreamOut(authServer)
+	responseStream := nex.NewStreamOut(secureServer)
 
 	responseStream.WriteResult(retval)
 	responseStream.WriteUInt32LE(secureServer.ConnectionIDCounter().Next())
@@ -145,9 +145,9 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(secureServer)
 
-	responseStream := nex.NewStreamOut(authServer)
+	responseStream := nex.NewStreamOut(secureServer)
 
 	responseStream.WriteStructure(&principalPreference{
 		ShowOnlinePresence:  true,
@@ -193,9 +193,9 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 
 func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(secureServer)
 
-	responseStream := nex.NewStreamOut(authServer)
+	responseStream := nex.NewStreamOut(secureServer)
 
 	responseStream.WriteUInt8(0) // * Unknown
 
@@ -225,7 +225,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 
 func updatePresence(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage()
+	response := nex.NewRMCMessage(secureServer)
 
 	response.IsSuccess = true
 	response.IsRequest = false

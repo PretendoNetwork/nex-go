@@ -624,7 +624,7 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 			payload := substream.AddFragment(decompressedPayload)
 
 			if packet.getFragmentID() == 0 {
-				message := NewRMCMessage()
+				message := NewRMCMessage(s)
 				err := message.FromBytes(payload)
 				if err != nil {
 					// TODO - Should this return the error too?
@@ -690,7 +690,7 @@ func (s *PRUDPServer) handleUnreliable(packet PRUDPPacketInterface) {
 
 	payload := packet.processUnreliableCrypto()
 
-	message := NewRMCMessage()
+	message := NewRMCMessage(s)
 	err := message.FromBytes(payload)
 	if err != nil {
 		// TODO - Should this return the error too?

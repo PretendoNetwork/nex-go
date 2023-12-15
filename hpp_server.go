@@ -103,7 +103,7 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 		rmcMessage := hppPacket.RMCMessage()
 
 		// HPP returns PythonCore::ValidationError if password is missing or invalid
-		errorResponse := NewRMCError(Errors.PythonCore.ValidationError)
+		errorResponse := NewRMCError(s, Errors.PythonCore.ValidationError)
 		errorResponse.CallID = rmcMessage.CallID
 		errorResponse.IsHPP = true
 
