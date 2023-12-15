@@ -2,7 +2,6 @@ package nex
 
 import (
 	"bytes"
-	"compress/zlib"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -11,6 +10,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/PretendoNetwork/nex-go/compression"
 	"github.com/lxzan/gws"
 )
 
@@ -45,11 +45,9 @@ type PRUDPServer struct {
 	passwordFromPIDHandler          func(pid *PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey   []byte
 	EnhancedChecksum                bool
-	CompressionEnabled              bool
 	PRUDPv0CustomChecksumCalculator func(packet *PRUDPPacketV0, data []byte) uint32
 	stringLengthSize                int
-	CustomPayloadCompressor         func(payload []byte) ([]byte, error)
-	CustomPayloadDecompressor       func(payload []byte) ([]byte, error)
+	CompressionAlgorithm            compression.Algorithm
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -618,16 +616,12 @@ func (s *PRUDPServer) handleReliable(packet PRUDPPacketInterface) {
 				decryptedPayload = pendingPacket.Payload()
 			}
 
-			if s.CompressionEnabled {
-				decompressedPayload, err := s.decompressPayload(decryptedPayload)
-				if err != nil {
-					logger.Error(err.Error())
-				}
-
-				decryptedPayload = decompressedPayload
+			decompressedPayload, err := s.CompressionAlgorithm.Decompress(decryptedPayload)
+			if err != nil {
+				logger.Error(err.Error())
 			}
 
-			payload := substream.AddFragment(decryptedPayload)
+			payload := substream.AddFragment(decompressedPayload)
 
 			if packet.getFragmentID() == 0 {
 				message := NewRMCMessage()
@@ -781,13 +775,9 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		if packetCopy.HasFlag(FlagReliable) {
 			payload := packetCopy.Payload()
 
-			if s.CompressionEnabled {
-				compressedPayload, err := s.compressPayload(payload)
-				if err != nil {
-					logger.Error(err.Error())
-				}
-
-				payload = compressedPayload
+			compressedPayload, err := s.CompressionAlgorithm.Compress(payload)
+			if err != nil {
+				logger.Error(err.Error())
 			}
 
 			substream := client.reliableSubstream(packetCopy.SubstreamID())
@@ -802,7 +792,7 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 			// * PRUDPLite packet. No RC4
 			if packetCopy.Version() != 2 {
-				packetCopy.SetPayload(substream.Encrypt(payload))
+				packetCopy.SetPayload(substream.Encrypt(compressedPayload))
 			}
 		} else {
 			// * PRUDPLite packet. No RC4
@@ -837,85 +827,6 @@ func (s *PRUDPServer) sendRaw(client *PRUDPClient, data []byte) {
 	if err != nil {
 		logger.Error(err.Error())
 	}
-}
-
-func (s *PRUDPServer) decompressPayload(payload []byte) ([]byte, error) {
-	if s.CustomPayloadDecompressor != nil {
-		return s.CustomPayloadDecompressor(payload)
-	}
-
-	compressionRatio := payload[0]
-	compressed := payload[1:]
-
-	if compressionRatio == 0 {
-		// * Compression ratio of 0 means no compression
-		return compressed, nil
-	}
-
-	reader := bytes.NewReader(compressed)
-	decompressed := bytes.Buffer{}
-
-	// * Create a zlib reader
-	zlibReader, err := zlib.NewReader(reader)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	// * Copy the decompressed payload into a buffer
-	_, err = decompressed.ReadFrom(zlibReader)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	// * Close the zlib reader to flush any remaining data
-	err = zlibReader.Close()
-	if err != nil {
-		return []byte{}, err
-	}
-
-	decompressedBytes := decompressed.Bytes()
-
-	ratioCheck := len(decompressedBytes)/len(compressed) + 1
-
-	if ratioCheck != int(compressionRatio) {
-		return []byte{}, fmt.Errorf("Failed to decompress payload. Got bad ratio. Expected %d, got %d", compressionRatio, ratioCheck)
-	}
-
-	return decompressedBytes, nil
-}
-
-func (s *PRUDPServer) compressPayload(payload []byte) ([]byte, error) {
-	if s.CustomPayloadCompressor != nil {
-		return s.CustomPayloadCompressor(payload)
-	}
-
-	compressed := bytes.Buffer{}
-
-	// * Create a zlib writer with default compression level
-	zlibWriter := zlib.NewWriter(&compressed)
-
-	_, err := zlibWriter.Write(payload)
-	if err != nil {
-		return []byte{}, err
-	}
-
-	// * Close the zlib writer to flush any remaining data
-	err = zlibWriter.Close()
-	if err != nil {
-		return []byte{}, err
-	}
-
-	compressedBytes := compressed.Bytes()
-
-	compressionRatio := len(payload)/len(compressedBytes) + 1
-
-	stream := NewStreamOut(s)
-
-	stream.WriteUInt8(uint8(compressionRatio))
-	stream.Grow(int64(len(compressedBytes)))
-	stream.WriteBytesNext(compressedBytes)
-
-	return stream.Bytes(), nil
 }
 
 // AccessKey returns the servers sandbox access key
@@ -1137,5 +1048,6 @@ func NewPRUDPServer() *PRUDPServer {
 		connectionIDCounter:      NewCounter[uint32](10),
 		pingTimeout:              time.Second * 15,
 		stringLengthSize:         2,
+		CompressionAlgorithm:     compression.NewDummyCompression(),
 	}
 }
