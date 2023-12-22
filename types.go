@@ -2,8 +2,10 @@ package nex
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -860,31 +862,34 @@ type Variant struct {
 	Str      string
 	DateTime *DateTime
 	UInt64   uint64
+	QUUID    *QUUID
 }
 
 // ExtractFromStream extracts a Variant structure from a stream
-func (variant *Variant) ExtractFromStream(stream *StreamIn) error {
+func (v *Variant) ExtractFromStream(stream *StreamIn) error {
 	var err error
 
-	variant.TypeID, err = stream.ReadUInt8()
+	v.TypeID, err = stream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read Variant type ID. %s", err.Error())
 	}
 
 	// * A type ID of 0 means no value
-	switch variant.TypeID {
+	switch v.TypeID {
 	case 1: // * sint64
-		variant.Int64, err = stream.ReadInt64LE()
+		v.Int64, err = stream.ReadInt64LE()
 	case 2: // * double
-		variant.Float64, err = stream.ReadFloat64LE()
+		v.Float64, err = stream.ReadFloat64LE()
 	case 3: // * bool
-		variant.Bool, err = stream.ReadBool()
+		v.Bool, err = stream.ReadBool()
 	case 4: // * string
-		variant.Str, err = stream.ReadString()
+		v.Str, err = stream.ReadString()
 	case 5: // * datetime
-		variant.DateTime, err = stream.ReadDateTime()
+		v.DateTime, err = stream.ReadDateTime()
 	case 6: // * uint64
-		variant.UInt64, err = stream.ReadUInt64LE()
+		v.UInt64, err = stream.ReadUInt64LE()
+	case 7: // * qUUID
+		v.QUUID, err = stream.ReadQUUID()
 	}
 
 	// * These errors contain details about each of the values type
@@ -897,104 +902,114 @@ func (variant *Variant) ExtractFromStream(stream *StreamIn) error {
 }
 
 // Bytes encodes the Variant and returns a byte array
-func (variant *Variant) Bytes(stream *StreamOut) []byte {
-	stream.WriteUInt8(variant.TypeID)
+func (v *Variant) Bytes(stream *StreamOut) []byte {
+	stream.WriteUInt8(v.TypeID)
 
 	// * A type ID of 0 means no value
-	switch variant.TypeID {
+	switch v.TypeID {
 	case 1: // * sint64
-		stream.WriteInt64LE(variant.Int64)
+		stream.WriteInt64LE(v.Int64)
 	case 2: // * double
-		stream.WriteFloat64LE(variant.Float64)
+		stream.WriteFloat64LE(v.Float64)
 	case 3: // * bool
-		stream.WriteBool(variant.Bool)
+		stream.WriteBool(v.Bool)
 	case 4: // * string
-		stream.WriteString(variant.Str)
+		stream.WriteString(v.Str)
 	case 5: // * datetime
-		stream.WriteDateTime(variant.DateTime)
+		stream.WriteDateTime(v.DateTime)
 	case 6: // * uint64
-		stream.WriteUInt64LE(variant.UInt64)
+		stream.WriteUInt64LE(v.UInt64)
+	case 7: // * qUUID
+		stream.WriteQUUID(v.QUUID)
 	}
 
 	return stream.Bytes()
 }
 
 // Copy returns a new copied instance of Variant
-func (variant *Variant) Copy() *Variant {
+func (v *Variant) Copy() *Variant {
 	copied := NewVariant()
 
-	copied.TypeID = variant.TypeID
-	copied.Int64 = variant.Int64
-	copied.Float64 = variant.Float64
-	copied.Bool = variant.Bool
-	copied.Str = variant.Str
+	copied.TypeID = v.TypeID
+	copied.Int64 = v.Int64
+	copied.Float64 = v.Float64
+	copied.Bool = v.Bool
+	copied.Str = v.Str
 
-	if variant.DateTime != nil {
-		copied.DateTime = variant.DateTime.Copy()
+	if v.DateTime != nil {
+		copied.DateTime = v.DateTime.Copy()
 	}
 
-	copied.UInt64 = variant.UInt64
+	copied.UInt64 = v.UInt64
+
+	if v.QUUID != nil {
+		copied.QUUID = v.QUUID.Copy()
+	}
 
 	return copied
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
-func (variant *Variant) Equals(other *Variant) bool {
-	if variant.TypeID != other.TypeID {
+func (v *Variant) Equals(other *Variant) bool {
+	if v.TypeID != other.TypeID {
 		return false
 	}
 
 	// * A type ID of 0 means no value
-	switch variant.TypeID {
+	switch v.TypeID {
 	case 0: // * no value, always equal
 		return true
 	case 1: // * sint64
-		return variant.Int64 == other.Int64
+		return v.Int64 == other.Int64
 	case 2: // * double
-		return variant.Float64 == other.Float64
+		return v.Float64 == other.Float64
 	case 3: // * bool
-		return variant.Bool == other.Bool
+		return v.Bool == other.Bool
 	case 4: // * string
-		return variant.Str == other.Str
+		return v.Str == other.Str
 	case 5: // * datetime
-		return variant.DateTime.Equals(other.DateTime)
+		return v.DateTime.Equals(other.DateTime)
 	case 6: // * uint64
-		return variant.UInt64 == other.UInt64
+		return v.UInt64 == other.UInt64
+	case 7: // * qUUID
+		return v.QUUID.Equals(other.QUUID)
 	default: // * Something went horribly wrong
 		return false
 	}
 }
 
 // String returns a string representation of the struct
-func (variant *Variant) String() string {
-	return variant.FormatToString(0)
+func (v *Variant) String() string {
+	return v.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (variant *Variant) FormatToString(indentationLevel int) string {
+func (v *Variant) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
 	var b strings.Builder
 
 	b.WriteString("Variant{\n")
-	b.WriteString(fmt.Sprintf("%sTypeID: %d\n", indentationValues, variant.TypeID))
+	b.WriteString(fmt.Sprintf("%sTypeID: %d\n", indentationValues, v.TypeID))
 
-	switch variant.TypeID {
+	switch v.TypeID {
 	case 0: // * no value
 		b.WriteString(fmt.Sprintf("%svalue: nil\n", indentationValues))
 	case 1: // * sint64
-		b.WriteString(fmt.Sprintf("%svalue: %d\n", indentationValues, variant.Int64))
+		b.WriteString(fmt.Sprintf("%svalue: %d\n", indentationValues, v.Int64))
 	case 2: // * double
-		b.WriteString(fmt.Sprintf("%svalue: %g\n", indentationValues, variant.Float64))
+		b.WriteString(fmt.Sprintf("%svalue: %g\n", indentationValues, v.Float64))
 	case 3: // * bool
-		b.WriteString(fmt.Sprintf("%svalue: %t\n", indentationValues, variant.Bool))
+		b.WriteString(fmt.Sprintf("%svalue: %t\n", indentationValues, v.Bool))
 	case 4: // * string
-		b.WriteString(fmt.Sprintf("%svalue: %q\n", indentationValues, variant.Str))
+		b.WriteString(fmt.Sprintf("%svalue: %q\n", indentationValues, v.Str))
 	case 5: // * datetime
-		b.WriteString(fmt.Sprintf("%svalue: %s\n", indentationValues, variant.DateTime.FormatToString(indentationLevel+1)))
+		b.WriteString(fmt.Sprintf("%svalue: %s\n", indentationValues, v.DateTime.FormatToString(indentationLevel+1)))
 	case 6: // * uint64
-		b.WriteString(fmt.Sprintf("%svalue: %d\n", indentationValues, variant.UInt64))
+		b.WriteString(fmt.Sprintf("%svalue: %d\n", indentationValues, v.UInt64))
+	case 7: // * qUUID
+		b.WriteString(fmt.Sprintf("%svalue: %s\n", indentationValues, v.QUUID.FormatToString(indentationLevel+1)))
 	default:
 		b.WriteString(fmt.Sprintf("%svalue: Unknown\n", indentationValues))
 	}
@@ -1110,5 +1125,175 @@ func (cvc *ClassVersionContainer) FormatToString(indentationLevel int) string {
 func NewClassVersionContainer() *ClassVersionContainer {
 	return &ClassVersionContainer{
 		ClassVersions: make(map[string]uint16),
+	}
+}
+
+// QUUID represents a QRV qUUID type. This type encodes a UUID in little-endian byte order
+type QUUID struct {
+	Data []byte
+}
+
+// ExtractFromStream extracts a qUUID structure from a stream
+func (qu *QUUID) ExtractFromStream(stream *StreamIn) error {
+	if stream.Remaining() < int(16) {
+		return errors.New("Not enough data left to read qUUID")
+	}
+
+	qu.Data = stream.ReadBytesNext(16)
+
+	return nil
+}
+
+// Bytes encodes the qUUID and returns a byte array
+func (qu *QUUID) Bytes(stream *StreamOut) []byte {
+	stream.Grow(int64(len(qu.Data)))
+	stream.WriteBytesNext(qu.Data)
+
+	return stream.Bytes()
+}
+
+// Copy returns a new copied instance of qUUID
+func (qu *QUUID) Copy() *QUUID {
+	copied := NewQUUID()
+
+	copied.Data = make([]byte, len(qu.Data))
+
+	copy(copied.Data, qu.Data)
+
+	return copied
+}
+
+// Equals checks if the passed Structure contains the same data as the current instance
+func (qu *QUUID) Equals(other *QUUID) bool {
+	return qu.GetStringValue() == other.GetStringValue()
+}
+
+// String returns a string representation of the struct
+func (qu *QUUID) String() string {
+	return qu.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (qu *QUUID) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("qUUID{\n")
+	b.WriteString(fmt.Sprintf("%sUUID: %s\n", indentationValues, qu.GetStringValue()))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
+}
+
+// GetStringValue returns the UUID encoded in the qUUID
+func (qu *QUUID) GetStringValue() string {
+	// * Create copy of the data since slices.Reverse modifies the slice in-line
+	data := make([]byte, len(qu.Data))
+	copy(data, qu.Data)
+
+	if len(data) != 16 {
+		// * Default dummy UUID as found in WATCH_DOGS
+		return "00000000-0000-0000-0000-000000000002"
+	}
+
+	section1 := data[0:4]
+	section2 := data[4:6]
+	section3 := data[6:8]
+	section4 := data[8:10]
+	section5_1 := data[10:12]
+	section5_2 := data[12:14]
+	section5_3 := data[14:16]
+
+	slices.Reverse(section1)
+	slices.Reverse(section2)
+	slices.Reverse(section3)
+	slices.Reverse(section4)
+	slices.Reverse(section5_1)
+	slices.Reverse(section5_2)
+	slices.Reverse(section5_3)
+
+	var b strings.Builder
+
+	b.WriteString(hex.EncodeToString(section1))
+	b.WriteString("-")
+	b.WriteString(hex.EncodeToString(section2))
+	b.WriteString("-")
+	b.WriteString(hex.EncodeToString(section3))
+	b.WriteString("-")
+	b.WriteString(hex.EncodeToString(section4))
+	b.WriteString("-")
+	b.WriteString(hex.EncodeToString(section5_1))
+	b.WriteString(hex.EncodeToString(section5_2))
+	b.WriteString(hex.EncodeToString(section5_3))
+
+	return b.String()
+}
+
+// FromString converts a UUID string to a qUUID
+func (qu *QUUID) FromString(uuid string) error {
+
+	sections := strings.Split(uuid, "-")
+	if len(sections) != 5 {
+		return fmt.Errorf("Invalid UUID. Not enough sections. Expected 5, got %d", len(sections))
+	}
+
+	data := make([]byte, 0, 16)
+
+	var appendSection = func(section string, expectedSize int) error {
+		sectionBytes, err := hex.DecodeString(section)
+		if err != nil {
+			return err
+		}
+
+		if len(sectionBytes) != expectedSize {
+			return fmt.Errorf("Unexpected section size. Expected %d, got %d", expectedSize, len(sectionBytes))
+		}
+
+		data = append(data, sectionBytes...)
+
+		return nil
+	}
+
+	if err := appendSection(sections[0], 4); err != nil {
+		return fmt.Errorf("Failed to read UUID section 1. %s", err.Error())
+	}
+
+	if err := appendSection(sections[1], 2); err != nil {
+		return fmt.Errorf("Failed to read UUID section 2. %s", err.Error())
+	}
+
+	if err := appendSection(sections[2], 2); err != nil {
+		return fmt.Errorf("Failed to read UUID section 3. %s", err.Error())
+	}
+
+	if err := appendSection(sections[3], 2); err != nil {
+		return fmt.Errorf("Failed to read UUID section 4. %s", err.Error())
+	}
+
+	if err := appendSection(sections[4], 6); err != nil {
+		return fmt.Errorf("Failed to read UUID section 5. %s", err.Error())
+	}
+
+	slices.Reverse(data[0:4])
+	slices.Reverse(data[4:6])
+	slices.Reverse(data[6:8])
+	slices.Reverse(data[8:10])
+	slices.Reverse(data[10:12])
+	slices.Reverse(data[12:14])
+	slices.Reverse(data[14:16])
+
+	qu.Data = make([]byte, 0, 16)
+
+	copy(qu.Data, data)
+
+	return nil
+}
+
+// NewQUUID returns a new qUUID
+func NewQUUID() *QUUID {
+	return &QUUID{
+		Data: make([]byte, 0, 16),
 	}
 }
