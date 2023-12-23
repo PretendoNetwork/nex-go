@@ -23,8 +23,10 @@ func (f64 *PrimitiveF64) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the float64. Requires type assertion when used
-func (f64 PrimitiveF64) Copy() RVType {
-	return &f64
+func (f64 *PrimitiveF64) Copy() RVType {
+	copied := PrimitiveF64(*f64)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

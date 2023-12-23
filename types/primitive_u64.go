@@ -23,8 +23,10 @@ func (u64 *PrimitiveU64) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the uint64. Requires type assertion when used
-func (u64 PrimitiveU64) Copy() RVType {
-	return &u64
+func (u64 *PrimitiveU64) Copy() RVType {
+	copied := PrimitiveU64(*u64)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

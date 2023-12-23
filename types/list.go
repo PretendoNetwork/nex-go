@@ -41,7 +41,7 @@ func (l *List[T]) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the List[T]. Requires type assertion when used
-func (l List[T]) Copy() RVType {
+func (l *List[T]) Copy() RVType {
 	copied := NewList[T]()
 	copied.real = make([]T, len(l.real))
 	copied.Type = l.Type.Copy().(T)

@@ -23,8 +23,10 @@ func (s8 *PrimitiveS8) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the int8. Requires type assertion when used
-func (s8 PrimitiveS8) Copy() RVType {
-	return &s8
+func (s8 *PrimitiveS8) Copy() RVType {
+	copied := PrimitiveS8(*s8)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

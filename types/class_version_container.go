@@ -21,7 +21,7 @@ func (cvc *ClassVersionContainer) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the ClassVersionContainer. Requires type assertion when used
-func (cvc ClassVersionContainer) Copy() RVType {
+func (cvc *ClassVersionContainer) Copy() RVType {
 	copied := NewClassVersionContainer()
 	copied.ClassVersions = cvc.ClassVersions.Copy().(*Map[*String, *PrimitiveU16])
 

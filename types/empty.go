@@ -43,7 +43,7 @@ func (e *Empty) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the Empty. Requires type assertion when used
-func (e Empty) Copy() RVType {
+func (e *Empty) Copy() RVType {
 	copied := NewEmpty()
 	copied.structureVersion = e.structureVersion
 

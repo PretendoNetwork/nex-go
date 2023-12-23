@@ -23,8 +23,10 @@ func (b *PrimitiveBool) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the PrimitiveBool. Requires type assertion when used
-func (b PrimitiveBool) Copy() RVType {
-	return &b
+func (b *PrimitiveBool) Copy() RVType {
+	copied := PrimitiveBool(*b)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

@@ -23,8 +23,10 @@ func (u16 *PrimitiveU16) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the uint16. Requires type assertion when used
-func (u16 PrimitiveU16) Copy() RVType {
-	return &u16
+func (u16 *PrimitiveU16) Copy() RVType {
+	copied := PrimitiveU16(*u16)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

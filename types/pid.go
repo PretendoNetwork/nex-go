@@ -47,7 +47,7 @@ func (p *PID) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the PID. Requires type assertion when used
-func (p PID) Copy() RVType {
+func (p *PID) Copy() RVType {
 	return NewPID(p.pid)
 }
 

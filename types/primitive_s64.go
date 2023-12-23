@@ -23,8 +23,10 @@ func (s64 *PrimitiveS64) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the int64. Requires type assertion when used
-func (s64 PrimitiveS64) Copy() RVType {
-	return &s64
+func (s64 *PrimitiveS64) Copy() RVType {
+	copied := PrimitiveS64(*s64)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

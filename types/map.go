@@ -54,7 +54,7 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the Map[K, V]. Requires type assertion when used
-func (m Map[K, V]) Copy() RVType {
+func (m *Map[K, V]) Copy() RVType {
 	copied := NewMap[K, V]()
 	copied.keys = make([]K, len(m.keys))
 	copied.values = make([]V, len(m.values))

@@ -23,8 +23,10 @@ func (s16 *PrimitiveS16) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the int16. Requires type assertion when used
-func (s16 PrimitiveS16) Copy() RVType {
-	return &s16
+func (s16 *PrimitiveS16) Copy() RVType {
+	copied := PrimitiveS16(*s16)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

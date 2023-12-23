@@ -74,7 +74,7 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a new copied instance of DataHolder
-func (adh *AnyDataHolder) Copy() *AnyDataHolder {
+func (adh *AnyDataHolder) Copy() RVType {
 	copied := NewAnyDataHolder()
 
 	copied.TypeName = adh.TypeName
@@ -86,7 +86,13 @@ func (adh *AnyDataHolder) Copy() *AnyDataHolder {
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
-func (adh *AnyDataHolder) Equals(other *AnyDataHolder) bool {
+func (adh *AnyDataHolder) Equals(o RVType) bool {
+	if _, ok := o.(*AnyDataHolder); !ok {
+		return false
+	}
+
+	other := o.(*AnyDataHolder)
+
 	if adh.TypeName != other.TypeName {
 		return false
 	}

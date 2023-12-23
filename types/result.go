@@ -30,7 +30,7 @@ func (r *Result) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the Result. Requires type assertion when used
-func (r Result) Copy() RVType {
+func (r *Result) Copy() RVType {
 	return NewResult(r.Code)
 }
 

@@ -23,8 +23,10 @@ func (s32 *PrimitiveS32) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the int32. Requires type assertion when used
-func (s32 PrimitiveS32) Copy() RVType {
-	return &s32
+func (s32 *PrimitiveS32) Copy() RVType {
+	copied := PrimitiveS32(*s32)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

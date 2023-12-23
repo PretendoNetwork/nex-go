@@ -29,7 +29,7 @@ func (dt *DateTime) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a new copied instance of DateTime
-func (dt DateTime) Copy() RVType {
+func (dt *DateTime) Copy() RVType {
 	return NewDateTime(dt.value)
 }
 

@@ -23,8 +23,10 @@ func (f32 *PrimitiveF32) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the float32. Requires type assertion when used
-func (f32 PrimitiveF32) Copy() RVType {
-	return &f32
+func (f32 *PrimitiveF32) Copy() RVType {
+	copied := PrimitiveF32(*f32)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

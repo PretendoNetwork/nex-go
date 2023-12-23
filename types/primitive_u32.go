@@ -23,8 +23,10 @@ func (u32 *PrimitiveU32) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a pointer to a copy of the uint32. Requires type assertion when used
-func (u32 PrimitiveU32) Copy() RVType {
-	return &u32
+func (u32 *PrimitiveU32) Copy() RVType {
+	copied := PrimitiveU32(*u32)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance
