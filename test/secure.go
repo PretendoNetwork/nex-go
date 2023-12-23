@@ -90,7 +90,8 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 	parametersStream := nex.NewStreamIn(parameters, secureServer)
 
-	vecMyURLs := types.NewList(types.NewStationURL(""))
+	vecMyURLs := types.NewList[*types.StationURL]()
+	vecMyURLs.Type = types.NewStationURL("")
 	if err := vecMyURLs.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}

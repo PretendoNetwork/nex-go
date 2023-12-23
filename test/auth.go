@@ -68,7 +68,8 @@ func login(packet nex.PRUDPPacketInterface) {
 	strReturnMsg := types.String("Test Build")
 
 	pConnectionData.StationURL = types.NewStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
-	pConnectionData.SpecialProtocols = types.NewList(types.NewPrimitiveU8())
+	pConnectionData.SpecialProtocols = types.NewList[*types.PrimitiveU8]()
+	pConnectionData.SpecialProtocols.Type = types.NewPrimitiveU8()
 	pConnectionData.StationURLSpecialProtocols = types.NewStationURL("")
 	pConnectionData.Time = types.NewDateTime(0).Now()
 
