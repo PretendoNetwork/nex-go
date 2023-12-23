@@ -172,7 +172,6 @@ func (qu *QUUID) FromString(uuid string) error {
 	return nil
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewQUUID returns a new qUUID
 func NewQUUID() *QUUID {
 	return &QUUID{

@@ -61,7 +61,7 @@ func (rvcd *RVConnectionData) ExtractFrom(readable Readable) error {
 	var stationURLSpecialProtocols *StationURL
 	var time *DateTime
 
-	specialProtocols.Type = NewPrimitiveU8()
+	specialProtocols.Type = NewPrimitiveU8(0)
 
 	if err := stationURL.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read RVConnectionData StationURL. %s", err.Error())

@@ -36,9 +36,9 @@ func (s8 *PrimitiveS8) Equals(o RVType) bool {
 	return *s8 == *o.(*PrimitiveS8)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewPrimitiveS8 returns a new PrimitiveS8
-func NewPrimitiveS8() *PrimitiveS8 {
-	var s8 PrimitiveS8
+func NewPrimitiveS8(i8 int8) *PrimitiveS8 {
+	s8 := PrimitiveS8(i8)
+
 	return &s8
 }

@@ -154,7 +154,7 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	}).WriteTo(responseStream)
 	(&comment{
 		Unknown:     0,
-		Contents:    types.NewString(),
+		Contents:    types.NewString("Rewrite Test"),
 		LastChanged: types.NewDateTime(0),
 	}).WriteTo(responseStream)
 	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)

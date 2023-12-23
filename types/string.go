@@ -74,9 +74,9 @@ func (s *String) Equals(o RVType) bool {
 	return *s == *o.(*String)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewString returns a new String
-func NewString() *String {
-	var s String
+func NewString(str string) *String {
+	s := String(str)
+
 	return &s
 }

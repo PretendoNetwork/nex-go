@@ -53,9 +53,9 @@ func (b *Buffer) Equals(o RVType) bool {
 	return bytes.Equal([]byte(*b), []byte(*o.(*Buffer)))
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewBuffer returns a new Buffer
-func NewBuffer() *Buffer {
-	var b Buffer
+func NewBuffer(data []byte) *Buffer {
+	var b Buffer = data
+
 	return &b
 }

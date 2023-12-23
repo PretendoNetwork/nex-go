@@ -36,9 +36,9 @@ func (u32 *PrimitiveU32) Equals(o RVType) bool {
 	return *u32 == *o.(*PrimitiveU32)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewPrimitiveU32 returns a new PrimitiveU32
-func NewPrimitiveU32() *PrimitiveU32 {
-	var u32 PrimitiveU32
+func NewPrimitiveU32(ui32 uint32) *PrimitiveU32 {
+	u32 := PrimitiveU32(ui32)
+
 	return &u32
 }

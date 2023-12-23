@@ -96,7 +96,6 @@ func (p *PID) FormatToString(indentationLevel int) string {
 	return b.String()
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewPID returns a PID instance. The size of PID depends on the client version
 func NewPID[T uint32 | uint64](pid T) *PID {
 	switch v := any(pid).(type) {

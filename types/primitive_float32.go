@@ -36,9 +36,9 @@ func (f32 *PrimitiveF32) Equals(o RVType) bool {
 	return *f32 == *o.(*PrimitiveF32)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewPrimitiveF32 returns a new PrimitiveF32
-func NewPrimitiveF32() *PrimitiveF32 {
-	var f32 PrimitiveF32
+func NewPrimitiveF32(float float32) *PrimitiveF32 {
+	f32 := PrimitiveF32(float)
+
 	return &f32
 }

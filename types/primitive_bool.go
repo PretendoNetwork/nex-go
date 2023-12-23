@@ -36,9 +36,9 @@ func (b *PrimitiveBool) Equals(o RVType) bool {
 	return *b == *o.(*PrimitiveBool)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewPrimitiveBool returns a new PrimitiveBool
-func NewPrimitiveBool() *PrimitiveBool {
-	var b PrimitiveBool
+func NewPrimitiveBool(boolean bool) *PrimitiveBool {
+	b := PrimitiveBool(boolean)
+
 	return &b
 }

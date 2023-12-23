@@ -78,19 +78,16 @@ func (r *Result) FormatToString(indentationLevel int) string {
 	return b.String()
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewResult returns a new Result
 func NewResult(code uint32) *Result {
 	return &Result{code}
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewResultSuccess returns a new Result set as a success
 func NewResultSuccess(code uint32) *Result {
 	return NewResult(uint32(int(code) & ^errorMask))
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewResultError returns a new Result set as an error
 func NewResultError(code uint32) *Result {
 	return NewResult(uint32(int(code) | errorMask))

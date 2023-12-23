@@ -53,9 +53,9 @@ func (qb *QBuffer) Equals(o RVType) bool {
 	return bytes.Equal([]byte(*qb), []byte(*o.(*Buffer)))
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewQBuffer returns a new QBuffer
-func NewQBuffer() *QBuffer {
-	var qb QBuffer
+func NewQBuffer(data []byte) *QBuffer {
+	var qb QBuffer = data
+
 	return &qb
 }

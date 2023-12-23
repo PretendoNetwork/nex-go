@@ -154,7 +154,7 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 		return errors.New("RMC Message has unexpected size")
 	}
 
-	rmc.ProtocolName = types.NewString()
+	rmc.ProtocolName = types.NewString("")
 	if err := rmc.ProtocolName.ExtractFrom(stream); err != nil {
 		return fmt.Errorf("Failed to read RMC Message protocol name. %s", err.Error())
 	}
@@ -170,7 +170,7 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 			return fmt.Errorf("Failed to read RMC Message (request) call ID. %s", err.Error())
 		}
 
-		rmc.MethodName = types.NewString()
+		rmc.MethodName = types.NewString("")
 		if err := rmc.MethodName.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read RMC Message (request) method name. %s", err.Error())
 		}
@@ -196,7 +196,7 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
 			}
 
-			rmc.MethodName = types.NewString()
+			rmc.MethodName = types.NewString("")
 			if err := rmc.MethodName.ExtractFrom(stream); err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) method name. %s", err.Error())
 			}

@@ -134,7 +134,6 @@ func (dt *DateTime) FormatToString(indentationLevel int) string {
 	return b.String()
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewDateTime returns a new DateTime instance
 func NewDateTime(value uint64) *DateTime {
 	return &DateTime{value: value}

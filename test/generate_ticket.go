@@ -26,14 +26,10 @@ func generateTicket(userPID *types.PID, targetPID *types.PID) []byte {
 
 	encryptedTicketInternalData, _ := ticketInternalData.Encrypt(targetKey, nex.NewStreamOut(authServer))
 
-	encryptedTicketInternalDataBuffer := types.NewBuffer()
-
-	*encryptedTicketInternalDataBuffer = encryptedTicketInternalData
-
 	ticket := nex.NewKerberosTicket()
 	ticket.SessionKey = sessionKey
 	ticket.TargetPID = targetPID
-	ticket.InternalData = encryptedTicketInternalDataBuffer
+	ticket.InternalData = types.NewBuffer(encryptedTicketInternalData)
 
 	encryptedTicket, _ := ticket.Encrypt(userKey, nex.NewStreamOut(authServer))
 

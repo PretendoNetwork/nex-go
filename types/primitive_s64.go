@@ -36,9 +36,9 @@ func (s64 *PrimitiveS64) Equals(o RVType) bool {
 	return *s64 == *o.(*PrimitiveS64)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewPrimitiveS64 returns a new PrimitiveS64
-func NewPrimitiveS64() *PrimitiveS64 {
-	var s64 PrimitiveS64
+func NewPrimitiveS64(i64 int64) *PrimitiveS64 {
+	s64 := PrimitiveS64(i64)
+
 	return &s64
 }
