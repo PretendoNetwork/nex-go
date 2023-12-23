@@ -15,7 +15,7 @@ var secureServer *nex.PRUDPServer
 
 type principalPreference struct {
 	types.Structure
-	*types.NullData
+	*types.Empty
 	ShowOnlinePresence  bool
 	ShowCurrentTitle    bool
 	BlockFriendRequests bool
@@ -29,7 +29,7 @@ func (pp *principalPreference) WriteTo(stream *nex.StreamOut) {
 
 type comment struct {
 	types.Structure
-	*types.NullData
+	*types.Empty
 	Unknown     uint8
 	Contents    *types.String
 	LastChanged *types.DateTime
