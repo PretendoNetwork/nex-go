@@ -8,8 +8,8 @@ type Map[K RVType, V RVType] struct {
 	// * or store the key/value types indirectly
 	keys      []K
 	values    []V
-	keyType   K
-	valueType V
+	KeyType   K
+	ValueType V
 }
 
 // WriteTo writes the bool to the given writable
@@ -33,12 +33,12 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 	values := make([]V, 0, length)
 
 	for i := 0; i < int(length); i++ {
-		key := m.keyType.Copy()
+		key := m.KeyType.Copy()
 		if err := key.ExtractFrom(readable); err != nil {
 			return err
 		}
 
-		value := m.valueType.Copy()
+		value := m.ValueType.Copy()
 		if err := value.ExtractFrom(readable); err != nil {
 			return err
 		}
@@ -55,9 +55,11 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Map[K, V]. Requires type assertion when used
 func (m Map[K, V]) Copy() RVType {
-	copied := NewMap(m.keyType, m.valueType)
+	copied := NewMap[K, V]()
 	copied.keys = make([]K, len(m.keys))
 	copied.values = make([]V, len(m.values))
+	copied.KeyType = m.KeyType.Copy().(K)
+	copied.ValueType = m.ValueType.Copy().(V)
 
 	for i := 0; i < len(m.keys); i++ {
 		copied.keys[i] = m.keys[i].Copy().(K)
@@ -132,7 +134,7 @@ func (m *Map[K, V]) Get(key K) (V, bool) {
 		return m.values[index], true
 	}
 
-	return m.valueType.Copy().(V), false
+	return m.ValueType.Copy().(V), false
 }
 
 // Size returns the length of the Map
@@ -140,13 +142,10 @@ func (m *Map[K, V]) Size() int {
 	return len(m.keys)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetKeyType"/"SetValueType" kind of methods?
 // NewMap returns a new Map of the provided type
-func NewMap[K RVType, V RVType](keyType K, valueType V) *Map[K, V] {
+func NewMap[K RVType, V RVType]() *Map[K, V] {
 	return &Map[K, V]{
-		keys:      make([]K, 0),
-		values:    make([]V, 0),
-		keyType:   keyType.Copy().(K),
-		valueType: valueType.Copy().(V),
+		keys:   make([]K, 0),
+		values: make([]V, 0),
 	}
 }

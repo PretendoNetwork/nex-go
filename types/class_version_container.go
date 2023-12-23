@@ -13,7 +13,9 @@ func (cvc *ClassVersionContainer) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the ClassVersionContainer to the given readable
 func (cvc *ClassVersionContainer) ExtractFrom(readable Readable) error {
-	cvc.ClassVersions = NewMap(NewString(), NewPrimitiveU16())
+	cvc.ClassVersions = NewMap[*String, *PrimitiveU16]()
+	cvc.ClassVersions.KeyType = NewString()
+	cvc.ClassVersions.ValueType = NewPrimitiveU16()
 
 	return cvc.ClassVersions.ExtractFrom(readable)
 }
@@ -35,7 +37,6 @@ func (cvc *ClassVersionContainer) Equals(o RVType) bool {
 	return cvc.ClassVersions.Equals(o)
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewClassVersionContainer returns a new ClassVersionContainer
 func NewClassVersionContainer() *ClassVersionContainer {
 	return &ClassVersionContainer{}
