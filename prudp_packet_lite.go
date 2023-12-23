@@ -71,7 +71,7 @@ func (p *PRUDPPacketLite) Version() int {
 
 // decode parses the packets data
 func (p *PRUDPPacketLite) decode() error {
-	magic, err := p.readStream.ReadUInt8()
+	magic, err := p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPLite magic. %s", err.Error())
 	}
@@ -80,17 +80,17 @@ func (p *PRUDPPacketLite) decode() error {
 		return fmt.Errorf("Invalid PRUDPLite magic. Expected 0x80, got 0x%x", magic)
 	}
 
-	p.optionsLength, err = p.readStream.ReadUInt8()
+	p.optionsLength, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite options length. %s", err.Error())
 	}
 
-	payloadLength, err := p.readStream.ReadUInt16LE()
+	payloadLength, err := p.readStream.ReadPrimitiveUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite payload length. %s", err.Error())
 	}
 
-	streamTypes, err := p.readStream.ReadUInt8()
+	streamTypes, err := p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual ports stream types. %s", err.Error())
 	}
@@ -98,22 +98,22 @@ func (p *PRUDPPacketLite) decode() error {
 	p.sourceStreamType = streamTypes >> 4
 	p.destinationStreamType = streamTypes & 0xF
 
-	p.sourcePort, err = p.readStream.ReadUInt8()
+	p.sourcePort, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual source port. %s", err.Error())
 	}
 
-	p.destinationPort, err = p.readStream.ReadUInt8()
+	p.destinationPort, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual destination port. %s", err.Error())
 	}
 
-	p.fragmentID, err = p.readStream.ReadUInt8()
+	p.fragmentID, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite fragment ID. %s", err.Error())
 	}
 
-	typeAndFlags, err := p.readStream.ReadUInt16LE()
+	typeAndFlags, err := p.readStream.ReadPrimitiveUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPLite type and flags. %s", err.Error())
 	}
@@ -121,7 +121,7 @@ func (p *PRUDPPacketLite) decode() error {
 	p.flags = typeAndFlags >> 4
 	p.packetType = typeAndFlags & 0xF
 
-	p.sequenceID, err = p.readStream.ReadUInt16LE()
+	p.sequenceID, err = p.readStream.ReadPrimitiveUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite sequence ID. %s", err.Error())
 	}
@@ -142,15 +142,15 @@ func (p *PRUDPPacketLite) Bytes() []byte {
 
 	stream := NewStreamOut(nil)
 
-	stream.WriteUInt8(0x80)
-	stream.WriteUInt8(uint8(len(options)))
-	stream.WriteUInt16LE(uint16(len(p.payload)))
-	stream.WriteUInt8((p.sourceStreamType << 4) | p.destinationStreamType)
-	stream.WriteUInt8(p.sourcePort)
-	stream.WriteUInt8(p.destinationPort)
-	stream.WriteUInt8(p.fragmentID)
-	stream.WriteUInt16LE(p.packetType | (p.flags << 4))
-	stream.WriteUInt16LE(p.sequenceID)
+	stream.WritePrimitiveUInt8(0x80)
+	stream.WritePrimitiveUInt8(uint8(len(options)))
+	stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
+	stream.WritePrimitiveUInt8((p.sourceStreamType << 4) | p.destinationStreamType)
+	stream.WritePrimitiveUInt8(p.sourcePort)
+	stream.WritePrimitiveUInt8(p.destinationPort)
+	stream.WritePrimitiveUInt8(p.fragmentID)
+	stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4))
+	stream.WritePrimitiveUInt16LE(p.sequenceID)
 
 	stream.Grow(int64(len(options)))
 	stream.WriteBytesNext(options)
@@ -166,19 +166,19 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 	optionsStream := NewStreamIn(data, nil)
 
 	for optionsStream.Remaining() > 0 {
-		optionID, err := optionsStream.ReadUInt8()
+		optionID, err := optionsStream.ReadPrimitiveUInt8()
 		if err != nil {
 			return err
 		}
 
-		optionSize, err := optionsStream.ReadUInt8() // * Options size. We already know the size based on the ID, though
+		optionSize, err := optionsStream.ReadPrimitiveUInt8() // * Options size. We already know the size based on the ID, though
 		if err != nil {
 			return err
 		}
 
 		if p.packetType == SynPacket || p.packetType == ConnectPacket {
 			if optionID == 0 {
-				p.supportedFunctions, err = optionsStream.ReadUInt32LE()
+				p.supportedFunctions, err = optionsStream.ReadPrimitiveUInt32LE()
 
 				p.minorVersion = p.supportedFunctions & 0xFF
 				p.supportedFunctions = p.supportedFunctions >> 8
@@ -189,19 +189,19 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 			}
 
 			if optionID == 4 {
-				p.maximumSubstreamID, err = optionsStream.ReadUInt8()
+				p.maximumSubstreamID, err = optionsStream.ReadPrimitiveUInt8()
 			}
 		}
 
 		if p.packetType == ConnectPacket {
 			if optionID == 3 {
-				p.initialUnreliableSequenceID, err = optionsStream.ReadUInt16LE()
+				p.initialUnreliableSequenceID, err = optionsStream.ReadPrimitiveUInt16LE()
 			}
 		}
 
 		if p.packetType == DataPacket {
 			if optionID == 2 {
-				p.fragmentID, err = optionsStream.ReadUInt8()
+				p.fragmentID, err = optionsStream.ReadPrimitiveUInt8()
 			}
 		}
 
@@ -226,20 +226,20 @@ func (p *PRUDPPacketLite) encodeOptions() []byte {
 	optionsStream := NewStreamOut(nil)
 
 	if p.packetType == SynPacket || p.packetType == ConnectPacket {
-		optionsStream.WriteUInt8(0)
-		optionsStream.WriteUInt8(4)
-		optionsStream.WriteUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
+		optionsStream.WritePrimitiveUInt8(0)
+		optionsStream.WritePrimitiveUInt8(4)
+		optionsStream.WritePrimitiveUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
 
 		if p.packetType == SynPacket && p.HasFlag(FlagAck) {
-			optionsStream.WriteUInt8(1)
-			optionsStream.WriteUInt8(16)
+			optionsStream.WritePrimitiveUInt8(1)
+			optionsStream.WritePrimitiveUInt8(16)
 			optionsStream.Grow(16)
 			optionsStream.WriteBytesNext(p.connectionSignature)
 		}
 
 		if p.packetType == ConnectPacket && !p.HasFlag(FlagAck) {
-			optionsStream.WriteUInt8(1)
-			optionsStream.WriteUInt8(16)
+			optionsStream.WritePrimitiveUInt8(1)
+			optionsStream.WritePrimitiveUInt8(16)
 			optionsStream.Grow(16)
 			optionsStream.WriteBytesNext(p.liteSignature)
 		}

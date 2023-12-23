@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
 var secureServer *nex.PRUDPServer
@@ -13,35 +14,31 @@ var secureServer *nex.PRUDPServer
 // * Took these structs out of the protocols lib for convenience
 
 type principalPreference struct {
-	nex.Structure
-	*nex.Data
+	types.Structure
+	*types.NullData
 	ShowOnlinePresence  bool
 	ShowCurrentTitle    bool
 	BlockFriendRequests bool
 }
 
-func (pp *principalPreference) Bytes(stream *nex.StreamOut) []byte {
-	stream.WriteBool(pp.ShowOnlinePresence)
-	stream.WriteBool(pp.ShowCurrentTitle)
-	stream.WriteBool(pp.BlockFriendRequests)
-
-	return stream.Bytes()
+func (pp *principalPreference) WriteTo(stream *nex.StreamOut) {
+	stream.WritePrimitiveBool(pp.ShowOnlinePresence)
+	stream.WritePrimitiveBool(pp.ShowCurrentTitle)
+	stream.WritePrimitiveBool(pp.BlockFriendRequests)
 }
 
 type comment struct {
-	nex.Structure
-	*nex.Data
+	types.Structure
+	*types.NullData
 	Unknown     uint8
-	Contents    string
-	LastChanged *nex.DateTime
+	Contents    *types.String
+	LastChanged *types.DateTime
 }
 
-func (c *comment) Bytes(stream *nex.StreamOut) []byte {
-	stream.WriteUInt8(c.Unknown)
-	stream.WriteString(c.Contents)
-	stream.WriteDateTime(c.LastChanged)
-
-	return stream.Bytes()
+func (c *comment) WriteTo(stream *nex.StreamOut) {
+	stream.WritePrimitiveUInt8(c.Unknown)
+	c.Contents.WriteTo(stream)
+	c.LastChanged.WriteTo(stream)
 }
 
 func startSecureServer() {
@@ -93,31 +90,31 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 	parametersStream := nex.NewStreamIn(parameters, secureServer)
 
-	vecMyURLs, err := parametersStream.ReadListStationURL()
-	if err != nil {
+	vecMyURLs := types.NewList(types.NewStationURL(""))
+	if err := vecMyURLs.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}
 
-	_, err = parametersStream.ReadDataHolder()
-	if err != nil {
+	hCustomData := types.NewAnyDataHolder()
+	if err := hCustomData.ExtractFrom(parametersStream); err != nil {
 		fmt.Println(err)
 	}
 
-	localStation := vecMyURLs[0]
+	localStation, _ := vecMyURLs.Get(0)
 
 	address := packet.Sender().Address().(*net.UDPAddr).IP.String()
 
-	localStation.Fields.Set("address", address)
-	localStation.Fields.Set("port", strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port))
+	localStation.Fields["address"] = address
+	localStation.Fields["port"] = strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port)
 
-	retval := nex.NewResultSuccess(0x00010001)
-	localStationURL := localStation.EncodeToString()
+	retval := types.NewResultSuccess(0x00010001)
+	localStationURL := types.String(localStation.EncodeToString())
 
 	responseStream := nex.NewStreamOut(secureServer)
 
-	responseStream.WriteResult(retval)
-	responseStream.WriteUInt32LE(secureServer.ConnectionIDCounter().Next())
-	responseStream.WriteString(localStationURL)
+	retval.WriteTo(responseStream)
+	responseStream.WritePrimitiveUInt32LE(secureServer.ConnectionIDCounter().Next())
+	localStationURL.WriteTo(responseStream)
 
 	response.IsSuccess = true
 	response.IsRequest = false
@@ -149,23 +146,23 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 
 	responseStream := nex.NewStreamOut(secureServer)
 
-	responseStream.WriteStructure(&principalPreference{
+	(&principalPreference{
 		ShowOnlinePresence:  true,
 		ShowCurrentTitle:    true,
 		BlockFriendRequests: false,
-	})
-	responseStream.WriteStructure(&comment{
+	}).WriteTo(responseStream)
+	(&comment{
 		Unknown:     0,
-		Contents:    "Rewrite Test",
-		LastChanged: nex.NewDateTime(0),
-	})
-	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
-	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
-	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)
-	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(blockList)
-	responseStream.WriteBool(false) // * Unknown
-	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(notifications)
-	responseStream.WriteBool(false) // * Unknown
+		Contents:    types.NewString(),
+		LastChanged: types.NewDateTime(0),
+	}).WriteTo(responseStream)
+	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
+	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
+	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)
+	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(blockList)
+	responseStream.WritePrimitiveBool(false) // * Unknown
+	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(notifications)
+	responseStream.WritePrimitiveBool(false) // * Unknown
 
 	response.IsSuccess = true
 	response.IsRequest = false
@@ -197,7 +194,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 
 	responseStream := nex.NewStreamOut(secureServer)
 
-	responseStream.WriteUInt8(0) // * Unknown
+	responseStream.WritePrimitiveUInt8(0) // * Unknown
 
 	response.IsSuccess = true
 	response.IsRequest = false

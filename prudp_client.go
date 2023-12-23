@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/PretendoNetwork/nex-go/types"
 	"github.com/lxzan/gws"
 )
 
@@ -14,7 +15,7 @@ type PRUDPClient struct {
 	server                              *PRUDPServer
 	address                             net.Addr
 	webSocketConnection                 *gws.Conn
-	pid                                 *PID
+	pid                                 *types.PID
 	clientConnectionSignature           []byte
 	serverConnectionSignature           []byte
 	clientSessionID                     uint8
@@ -32,7 +33,7 @@ type PRUDPClient struct {
 	minorVersion                        uint32 // * Not currently used for anything, but maybe useful later?
 	supportedFunctions                  uint32 // * Not currently used for anything, but maybe useful later?
 	ConnectionID                        uint32
-	StationURLs                         []*StationURL
+	StationURLs                         []*types.StationURL
 	unreliableBaseKey                   []byte
 }
 
@@ -86,12 +87,12 @@ func (c *PRUDPClient) Address() net.Addr {
 }
 
 // PID returns the clients NEX PID
-func (c *PRUDPClient) PID() *PID {
+func (c *PRUDPClient) PID() *types.PID {
 	return c.pid
 }
 
 // SetPID sets the clients NEX PID
-func (c *PRUDPClient) SetPID(pid *PID) {
+func (c *PRUDPClient) SetPID(pid *types.PID) {
 	c.pid = pid
 }
 
@@ -223,7 +224,7 @@ func NewPRUDPClient(server *PRUDPServer, address net.Addr, webSocketConnection *
 		address:                       address,
 		webSocketConnection:           webSocketConnection,
 		outgoingPingSequenceIDCounter: NewCounter[uint16](0),
-		pid:                           NewPID[uint32](0),
+		pid:                           types.NewPID[uint32](0),
 		unreliableBaseKey:             make([]byte, 0x20),
 	}
 }

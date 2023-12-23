@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/PretendoNetwork/nex-go/compression"
+	"github.com/PretendoNetwork/nex-go/types"
 	"github.com/lxzan/gws"
 )
 
@@ -42,7 +43,7 @@ type PRUDPServer struct {
 	clientRemovedEventHandlers      []func(client *PRUDPClient)
 	connectionIDCounter             *Counter[uint32]
 	pingTimeout                     time.Duration
-	passwordFromPIDHandler          func(pid *PID) (string, uint32)
+	passwordFromPIDHandler          func(pid *types.PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey   []byte
 	EnhancedChecksum                bool
 	PRUDPv0CustomChecksumCalculator func(packet *PRUDPPacketV0, data []byte) uint32
@@ -312,13 +313,13 @@ func (s *PRUDPServer) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
 	if packet.SubstreamID() == 1 {
 		// * New aggregate acknowledgment packets set this to 1
 		// * and encode the real substream ID in in the payload
-		substreamID, _ := stream.ReadUInt8()
-		additionalIDsCount, _ := stream.ReadUInt8()
-		baseSequenceID, _ = stream.ReadUInt16LE()
+		substreamID, _ := stream.ReadPrimitiveUInt8()
+		additionalIDsCount, _ := stream.ReadPrimitiveUInt8()
+		baseSequenceID, _ = stream.ReadPrimitiveUInt16LE()
 		substream = client.reliableSubstream(substreamID)
 
 		for i := 0; i < int(additionalIDsCount); i++ {
-			additionalID, _ := stream.ReadUInt16LE()
+			additionalID, _ := stream.ReadPrimitiveUInt16LE()
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	} else {
@@ -329,7 +330,7 @@ func (s *PRUDPServer) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
 		baseSequenceID = packet.SequenceID()
 
 		for stream.Remaining() > 0 {
-			additionalID, _ := stream.ReadUInt16LE()
+			additionalID, _ := stream.ReadPrimitiveUInt16LE()
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	}
@@ -464,8 +465,8 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 		// * The response value is a Buffer whose data contains
 		// * checkValue+1. This is just a lazy way of encoding
 		// * a Buffer type
-		stream.WriteUInt32LE(4)              // * Buffer length
-		stream.WriteUInt32LE(checkValue + 1) // * Buffer data
+		stream.WritePrimitiveUInt32LE(4)              // * Buffer length
+		stream.WritePrimitiveUInt32LE(checkValue + 1) // * Buffer data
 
 		payload = stream.Bytes()
 	} else {
@@ -511,24 +512,23 @@ func (s *PRUDPServer) handlePing(packet PRUDPPacketInterface) {
 	}
 }
 
-func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *PID, uint32, error) {
+func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
 	stream := NewStreamIn(payload, s)
 
-	ticketData, err := stream.ReadBuffer()
-	if err != nil {
+	ticketData := types.NewBuffer()
+	if err := ticketData.ExtractFrom(stream); err != nil {
 		return nil, nil, 0, err
 	}
 
-	requestData, err := stream.ReadBuffer()
-	if err != nil {
+	requestData := types.NewBuffer()
+	if err := requestData.ExtractFrom(stream); err != nil {
 		return nil, nil, 0, err
 	}
 
-	serverKey := DeriveKerberosKey(NewPID[uint64](2), s.kerberosPassword)
+	serverKey := DeriveKerberosKey(types.NewPID[uint64](2), s.kerberosPassword)
 
 	ticket := NewKerberosTicketInternalData()
-	err = ticket.Decrypt(NewStreamIn(ticketData, s), serverKey)
-	if err != nil {
+	if err := ticket.Decrypt(NewStreamIn([]byte(*ticketData), s), serverKey); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -543,24 +543,24 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *PID, uint32, 
 	sessionKey := ticket.SessionKey
 	kerberos := NewKerberosEncryption(sessionKey)
 
-	decryptedRequestData, err := kerberos.Decrypt(requestData)
+	decryptedRequestData, err := kerberos.Decrypt(*requestData)
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
 	checkDataStream := NewStreamIn(decryptedRequestData, s)
 
-	userPID, err := checkDataStream.ReadPID()
+	userPID := types.NewPID[uint64](0)
+	if err := userPID.ExtractFrom(checkDataStream); err != nil {
+		return nil, nil, 0, err
+	}
+
+	_, err = checkDataStream.ReadPrimitiveUInt32LE() // * CID of secure server station url
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
-	_, err = checkDataStream.ReadUInt32LE() // * CID of secure server station url
-	if err != nil {
-		return nil, nil, 0, err
-	}
-
-	responseCheck, err := checkDataStream.ReadUInt32LE()
+	responseCheck, err := checkDataStream.ReadPrimitiveUInt32LE()
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -999,7 +999,7 @@ func (s *PRUDPServer) FindClientByPID(serverPort, serverStreamType uint8, pid ui
 	virtualServerStream, _ := virtualServer.Get(serverStreamType)
 
 	virtualServerStream.Each(func(discriminator string, c *PRUDPClient) bool {
-		if c.pid.pid == pid {
+		if c.pid.Value() == pid {
 			client = c
 			return true
 		}
@@ -1011,7 +1011,7 @@ func (s *PRUDPServer) FindClientByPID(serverPort, serverStreamType uint8, pid ui
 }
 
 // PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
-func (s *PRUDPServer) PasswordFromPID(pid *PID) (string, uint32) {
+func (s *PRUDPServer) PasswordFromPID(pid *types.PID) (string, uint32) {
 	if s.passwordFromPIDHandler == nil {
 		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
 		return "", Errors.Core.NotImplemented
@@ -1021,7 +1021,7 @@ func (s *PRUDPServer) PasswordFromPID(pid *PID) (string, uint32) {
 }
 
 // SetPasswordFromPIDFunction sets the function for the auth server to get a NEX password using the PID
-func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32)) {
+func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32)) {
 	s.passwordFromPIDHandler = handler
 }
 

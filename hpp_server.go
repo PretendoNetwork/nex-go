@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
 // HPPServer represents a bare-bones HPP server
@@ -21,7 +23,7 @@ type HPPServer struct {
 	utilityProtocolVersion      *LibraryVersion
 	natTraversalProtocolVersion *LibraryVersion
 	dataHandlers                []func(packet PacketInterface)
-	passwordFromPIDHandler      func(pid *PID) (string, uint32)
+	passwordFromPIDHandler      func(pid *types.PID) (string, uint32)
 	stringLengthSize            int
 }
 
@@ -80,7 +82,7 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	client := NewHPPClient(tcpAddr, s)
-	client.SetPID(NewPID(uint32(pid)))
+	client.SetPID(types.NewPID(uint32(pid)))
 
 	hppPacket, err := NewHPPPacket(client, rmcRequestBytes)
 	if err != nil {
@@ -257,7 +259,7 @@ func (s *HPPServer) NATTraversalProtocolVersion() *LibraryVersion {
 }
 
 // PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
-func (s *HPPServer) PasswordFromPID(pid *PID) (string, uint32) {
+func (s *HPPServer) PasswordFromPID(pid *types.PID) (string, uint32) {
 	if s.passwordFromPIDHandler == nil {
 		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
 		return "", Errors.Core.NotImplemented
@@ -267,7 +269,7 @@ func (s *HPPServer) PasswordFromPID(pid *PID) (string, uint32) {
 }
 
 // SetPasswordFromPIDFunction sets the function for HPP to get a NEX password using the PID
-func (s *HPPServer) SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32)) {
+func (s *HPPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32)) {
 	s.passwordFromPIDHandler = handler
 }
 

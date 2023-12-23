@@ -1,12 +1,16 @@
 package nex
 
-import "net"
+import (
+	"net"
+
+	"github.com/PretendoNetwork/nex-go/types"
+)
 
 // HPPClient represents a single HPP client
 type HPPClient struct {
 	address *net.TCPAddr
 	server  *HPPServer
-	pid     *PID
+	pid     *types.PID
 }
 
 // Server returns the server the client is connecting to
@@ -20,12 +24,12 @@ func (c *HPPClient) Address() net.Addr {
 }
 
 // PID returns the clients NEX PID
-func (c *HPPClient) PID() *PID {
+func (c *HPPClient) PID() *types.PID {
 	return c.pid
 }
 
 // SetPID sets the clients NEX PID
-func (c *HPPClient) SetPID(pid *PID) {
+func (c *HPPClient) SetPID(pid *types.PID) {
 	c.pid = pid
 }
 

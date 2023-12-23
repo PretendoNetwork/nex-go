@@ -68,12 +68,12 @@ func (p *PRUDPPacketV0) decode() error {
 	server := p.server
 	start := p.readStream.ByteOffset()
 
-	source, err := p.readStream.ReadUInt8()
+	source, err := p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 source. %s", err.Error())
 	}
 
-	destination, err := p.readStream.ReadUInt8()
+	destination, err := p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 destination. %s", err.Error())
 	}
@@ -84,7 +84,7 @@ func (p *PRUDPPacketV0) decode() error {
 	p.destinationPort = destination & 0xF
 
 	if server.IsQuazalMode {
-		typeAndFlags, err := p.readStream.ReadUInt8()
+		typeAndFlags, err := p.readStream.ReadPrimitiveUInt8()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 type and flags. %s", err.Error())
 		}
@@ -92,7 +92,7 @@ func (p *PRUDPPacketV0) decode() error {
 		p.flags = uint16(typeAndFlags >> 3)
 		p.packetType = uint16(typeAndFlags & 7)
 	} else {
-		typeAndFlags, err := p.readStream.ReadUInt16LE()
+		typeAndFlags, err := p.readStream.ReadPrimitiveUInt16LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 type and flags. %s", err.Error())
 		}
@@ -105,14 +105,14 @@ func (p *PRUDPPacketV0) decode() error {
 		return errors.New("Invalid PRUDPv0 packet type")
 	}
 
-	p.sessionID, err = p.readStream.ReadUInt8()
+	p.sessionID, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 session ID. %s", err.Error())
 	}
 
 	p.signature = p.readStream.ReadBytesNext(4)
 
-	p.sequenceID, err = p.readStream.ReadUInt16LE()
+	p.sequenceID, err = p.readStream.ReadPrimitiveUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 sequence ID. %s", err.Error())
 	}
@@ -130,7 +130,7 @@ func (p *PRUDPPacketV0) decode() error {
 			return errors.New("Failed to read PRUDPv0 fragment ID. Not have enough data")
 		}
 
-		p.fragmentID, err = p.readStream.ReadUInt8()
+		p.fragmentID, err = p.readStream.ReadPrimitiveUInt8()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 fragment ID. %s", err.Error())
 		}
@@ -143,7 +143,7 @@ func (p *PRUDPPacketV0) decode() error {
 			return errors.New("Failed to read PRUDPv0 payload size. Not have enough data")
 		}
 
-		payloadSize, err = p.readStream.ReadUInt16LE()
+		payloadSize, err = p.readStream.ReadPrimitiveUInt16LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 payload size. %s", err.Error())
 		}
@@ -156,7 +156,7 @@ func (p *PRUDPPacketV0) decode() error {
 		}
 	}
 
-	if p.readStream.Remaining() < int(payloadSize) {
+	if p.readStream.Remaining() < uint64(payloadSize) {
 		return errors.New("Failed to read PRUDPv0 payload. Not have enough data")
 	}
 
@@ -174,9 +174,9 @@ func (p *PRUDPPacketV0) decode() error {
 	var checksumU8 uint8
 
 	if server.EnhancedChecksum {
-		checksum, err = p.readStream.ReadUInt32LE()
+		checksum, err = p.readStream.ReadPrimitiveUInt32LE()
 	} else {
-		checksumU8, err = p.readStream.ReadUInt8()
+		checksumU8, err = p.readStream.ReadPrimitiveUInt8()
 		checksum = uint32(checksumU8)
 	}
 
@@ -198,19 +198,19 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	server := p.server
 	stream := NewStreamOut(server)
 
-	stream.WriteUInt8(p.sourcePort | (p.sourceStreamType << 4))
-	stream.WriteUInt8(p.destinationPort | (p.destinationStreamType << 4))
+	stream.WritePrimitiveUInt8(p.sourcePort | (p.sourceStreamType << 4))
+	stream.WritePrimitiveUInt8(p.destinationPort | (p.destinationStreamType << 4))
 
 	if server.IsQuazalMode {
-		stream.WriteUInt8(uint8(p.packetType | (p.flags << 3)))
+		stream.WritePrimitiveUInt8(uint8(p.packetType | (p.flags << 3)))
 	} else {
-		stream.WriteUInt16LE(p.packetType | (p.flags << 4))
+		stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4))
 	}
 
-	stream.WriteUInt8(p.sessionID)
+	stream.WritePrimitiveUInt8(p.sessionID)
 	stream.Grow(int64(len(p.signature)))
 	stream.WriteBytesNext(p.signature)
-	stream.WriteUInt16LE(p.sequenceID)
+	stream.WritePrimitiveUInt16LE(p.sequenceID)
 
 	if p.packetType == SynPacket || p.packetType == ConnectPacket {
 		stream.Grow(int64(len(p.connectionSignature)))
@@ -218,11 +218,11 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	}
 
 	if p.packetType == DataPacket {
-		stream.WriteUInt8(p.fragmentID)
+		stream.WritePrimitiveUInt8(p.fragmentID)
 	}
 
 	if p.HasFlag(FlagHasSize) {
-		stream.WriteUInt16LE(uint16(len(p.payload)))
+		stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
 	}
 
 	if len(p.payload) > 0 {
@@ -239,9 +239,9 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	}
 
 	if server.EnhancedChecksum {
-		stream.WriteUInt32LE(checksum)
+		stream.WritePrimitiveUInt32LE(checksum)
 	} else {
-		stream.WriteUInt8(uint8(checksum))
+		stream.WritePrimitiveUInt8(uint8(checksum))
 	}
 
 	return stream.Bytes()

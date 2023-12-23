@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
 var authServer *nex.PRUDPServer
@@ -50,34 +51,34 @@ func login(packet nex.PRUDPPacketInterface) {
 
 	parametersStream := nex.NewStreamIn(parameters, authServer)
 
-	strUserName, err := parametersStream.ReadString()
+	strUserName := types.NewString()
+	if err := strUserName.ExtractFrom(parametersStream); err != nil {
+		panic(err)
+	}
+
+	converted, err := strconv.Atoi(string(*strUserName))
 	if err != nil {
 		panic(err)
 	}
 
-	converted, err := strconv.Atoi(strUserName)
-	if err != nil {
-		panic(err)
-	}
+	retval := types.NewResultSuccess(0x00010001)
+	pidPrincipal := types.NewPID(uint32(converted))
+	pbufResponse := types.Buffer(generateTicket(pidPrincipal, types.NewPID[uint32](2)))
+	pConnectionData := types.NewRVConnectionData()
+	strReturnMsg := types.String("Test Build")
 
-	retval := nex.NewResultSuccess(0x00010001)
-	pidPrincipal := nex.NewPID(uint32(converted))
-	pbufResponse := generateTicket(pidPrincipal, nex.NewPID[uint32](2))
-	pConnectionData := nex.NewRVConnectionData()
-	strReturnMsg := "Test Build"
-
-	pConnectionData.StationURL = nex.NewStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
-	pConnectionData.SpecialProtocols = []byte{}
-	pConnectionData.StationURLSpecialProtocols = nex.NewStationURL("")
-	pConnectionData.Time = nex.NewDateTime(0).Now()
+	pConnectionData.StationURL = types.NewStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
+	pConnectionData.SpecialProtocols = types.NewList(types.NewPrimitiveU8())
+	pConnectionData.StationURLSpecialProtocols = types.NewStationURL("")
+	pConnectionData.Time = types.NewDateTime(0).Now()
 
 	responseStream := nex.NewStreamOut(authServer)
 
-	responseStream.WriteResult(retval)
-	responseStream.WritePID(pidPrincipal)
-	responseStream.WriteBuffer(pbufResponse)
-	responseStream.WriteStructure(pConnectionData)
-	responseStream.WriteString(strReturnMsg)
+	retval.WriteTo(responseStream)
+	pidPrincipal.WriteTo(responseStream)
+	pbufResponse.WriteTo(responseStream)
+	pConnectionData.WriteTo(responseStream)
+	strReturnMsg.WriteTo(responseStream)
 
 	response.IsSuccess = true
 	response.IsRequest = false
@@ -111,23 +112,23 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 
 	parametersStream := nex.NewStreamIn(parameters, authServer)
 
-	idSource, err := parametersStream.ReadPID()
-	if err != nil {
+	idSource := types.NewPID[uint64](0)
+	if err := idSource.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}
 
-	idTarget, err := parametersStream.ReadPID()
-	if err != nil {
+	idTarget := types.NewPID[uint64](0)
+	if err := idTarget.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}
 
-	retval := nex.NewResultSuccess(0x00010001)
-	pbufResponse := generateTicket(idSource, idTarget)
+	retval := types.NewResultSuccess(0x00010001)
+	pbufResponse := types.Buffer(generateTicket(idSource, idTarget))
 
 	responseStream := nex.NewStreamOut(authServer)
 
-	responseStream.WriteResult(retval)
-	responseStream.WriteBuffer(pbufResponse)
+	retval.WriteTo(responseStream)
+	pbufResponse.WriteTo(responseStream)
 
 	response.IsSuccess = true
 	response.IsRequest = false

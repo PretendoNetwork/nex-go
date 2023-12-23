@@ -7,6 +7,8 @@ import (
 	"crypto/rc4"
 	"errors"
 	"fmt"
+
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
 // KerberosEncryption is a struct representing a Kerberos encryption utility
@@ -67,8 +69,8 @@ func NewKerberosEncryption(key []byte) *KerberosEncryption {
 // KerberosTicket represents a ticket granting a user access to a secure server
 type KerberosTicket struct {
 	SessionKey   []byte
-	TargetPID    *PID
-	InternalData []byte
+	TargetPID    *types.PID
+	InternalData *types.Buffer
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
@@ -78,8 +80,8 @@ func (kt *KerberosTicket) Encrypt(key []byte, stream *StreamOut) ([]byte, error)
 	stream.Grow(int64(len(kt.SessionKey)))
 	stream.WriteBytesNext(kt.SessionKey)
 
-	stream.WritePID(kt.TargetPID)
-	stream.WriteBuffer(kt.InternalData)
+	kt.TargetPID.WriteTo(stream)
+	kt.InternalData.WriteTo(stream)
 
 	return encryption.Encrypt(stream.Bytes()), nil
 }
@@ -91,15 +93,15 @@ func NewKerberosTicket() *KerberosTicket {
 
 // KerberosTicketInternalData holds the internal data for a kerberos ticket to be processed by the server
 type KerberosTicketInternalData struct {
-	Issued     *DateTime
-	SourcePID  *PID
+	Issued     *types.DateTime
+	SourcePID  *types.PID
 	SessionKey []byte
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
 func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]byte, error) {
-	stream.WriteDateTime(ti.Issued)
-	stream.WritePID(ti.SourcePID)
+	ti.Issued.WriteTo(stream)
+	ti.SourcePID.WriteTo(stream)
 
 	stream.Grow(int64(len(ti.SessionKey)))
 	stream.WriteBytesNext(ti.SessionKey)
@@ -122,8 +124,11 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]
 
 		finalStream := NewStreamOut(stream.Server)
 
-		finalStream.WriteBuffer(ticketKey)
-		finalStream.WriteBuffer(encrypted)
+		var ticketBuffer types.Buffer = ticketKey
+		var encryptedBuffer types.Buffer = encrypted
+
+		ticketBuffer.WriteTo(finalStream)
+		encryptedBuffer.WriteTo(finalStream)
 
 		return finalStream.Bytes(), nil
 	}
@@ -136,20 +141,20 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]
 // Decrypt decrypts the given data and populates the struct
 func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) error {
 	if stream.Server.(*PRUDPServer).kerberosTicketVersion == 1 {
-		ticketKey, err := stream.ReadBuffer()
-		if err != nil {
+		ticketKey := types.NewBuffer()
+		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data key. %s", err.Error())
 		}
 
-		data, err := stream.ReadBuffer()
-		if err != nil {
+		data := types.NewBuffer()
+		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data. %s", err.Error())
 		}
 
-		hash := md5.Sum(append(key, ticketKey...))
+		hash := md5.Sum(append(key, *ticketKey...))
 		key = hash[:]
 
-		stream = NewStreamIn(data, stream.Server)
+		stream = NewStreamIn(*data, stream.Server)
 	}
 
 	encryption := NewKerberosEncryption(key)
@@ -161,13 +166,13 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) erro
 
 	stream = NewStreamIn(decrypted, stream.Server)
 
-	timestamp, err := stream.ReadDateTime()
-	if err != nil {
+	timestamp := types.NewDateTime(0)
+	if err := timestamp.ExtractFrom(stream); err != nil {
 		return fmt.Errorf("Failed to read Kerberos ticket internal data timestamp %s", err.Error())
 	}
 
-	userPID, err := stream.ReadPID()
-	if err != nil {
+	userPID := types.NewPID[uint64](0)
+	if err := userPID.ExtractFrom(stream); err != nil {
 		return fmt.Errorf("Failed to read Kerberos ticket internal data user PID %s", err.Error())
 	}
 
@@ -184,7 +189,7 @@ func NewKerberosTicketInternalData() *KerberosTicketInternalData {
 }
 
 // DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
-func DeriveKerberosKey(pid *PID, password []byte) []byte {
+func DeriveKerberosKey(pid *types.PID, password []byte) []byte {
 	key := password
 
 	for i := 0; i < 65000+int(pid.Value())%1024; i++ {

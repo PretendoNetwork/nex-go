@@ -1,5 +1,7 @@
 package nex
 
+import "github.com/PretendoNetwork/nex-go/types"
+
 // ServerInterface defines all the methods a server should have regardless of type
 type ServerInterface interface {
 	AccessKey() string
@@ -15,8 +17,8 @@ type ServerInterface interface {
 	SetDefaultLibraryVersion(version *LibraryVersion)
 	Send(packet PacketInterface)
 	OnData(handler func(packet PacketInterface))
-	PasswordFromPID(pid *PID) (string, uint32)
-	SetPasswordFromPIDFunction(handler func(pid *PID) (string, uint32))
+	PasswordFromPID(pid *types.PID) (string, uint32)
+	SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32))
 	StringLengthSize() int
 	SetStringLengthSize(size int)
 }

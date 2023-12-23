@@ -4,10 +4,11 @@ import (
 	"crypto/rand"
 
 	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
-func generateTicket(userPID *nex.PID, targetPID *nex.PID) []byte {
-	userKey := nex.DeriveKerberosKey(userPID, []byte("abcdefghijklmnop"))
+func generateTicket(userPID *types.PID, targetPID *types.PID) []byte {
+	userKey := nex.DeriveKerberosKey(userPID, []byte("z5sykuHnX0q5SCJN"))
 	targetKey := nex.DeriveKerberosKey(targetPID, []byte("password"))
 	sessionKey := make([]byte, authServer.KerberosKeySize())
 
@@ -17,7 +18,7 @@ func generateTicket(userPID *nex.PID, targetPID *nex.PID) []byte {
 	}
 
 	ticketInternalData := nex.NewKerberosTicketInternalData()
-	serverTime := nex.NewDateTime(0).Now()
+	serverTime := types.NewDateTime(0).Now()
 
 	ticketInternalData.Issued = serverTime
 	ticketInternalData.SourcePID = userPID
@@ -25,10 +26,14 @@ func generateTicket(userPID *nex.PID, targetPID *nex.PID) []byte {
 
 	encryptedTicketInternalData, _ := ticketInternalData.Encrypt(targetKey, nex.NewStreamOut(authServer))
 
+	encryptedTicketInternalDataBuffer := types.NewBuffer()
+
+	*encryptedTicketInternalDataBuffer = encryptedTicketInternalData
+
 	ticket := nex.NewKerberosTicket()
 	ticket.SessionKey = sessionKey
 	ticket.TargetPID = targetPID
-	ticket.InternalData = encryptedTicketInternalData
+	ticket.InternalData = encryptedTicketInternalDataBuffer
 
 	encryptedTicket, _ := ticket.Encrypt(userKey, nex.NewStreamOut(authServer))
 
