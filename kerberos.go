@@ -171,7 +171,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) erro
 		return fmt.Errorf("Failed to read Kerberos ticket internal data timestamp %s", err.Error())
 	}
 
-	userPID := types.NewPID[uint64](0)
+	userPID := types.NewPID(0)
 	if err := userPID.ExtractFrom(stream); err != nil {
 		return fmt.Errorf("Failed to read Kerberos ticket internal data user PID %s", err.Error())
 	}

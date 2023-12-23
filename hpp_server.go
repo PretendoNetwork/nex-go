@@ -82,7 +82,7 @@ func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
 	}
 
 	client := NewHPPClient(tcpAddr, s)
-	client.SetPID(types.NewPID(uint32(pid)))
+	client.SetPID(types.NewPID(uint64(pid)))
 
 	hppPacket, err := NewHPPPacket(client, rmcRequestBytes)
 	if err != nil {

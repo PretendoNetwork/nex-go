@@ -62,8 +62,8 @@ func login(packet nex.PRUDPPacketInterface) {
 	}
 
 	retval := types.NewResultSuccess(0x00010001)
-	pidPrincipal := types.NewPID(uint32(converted))
-	pbufResponse := types.Buffer(generateTicket(pidPrincipal, types.NewPID[uint32](2)))
+	pidPrincipal := types.NewPID(uint64(converted))
+	pbufResponse := types.Buffer(generateTicket(pidPrincipal, types.NewPID(2)))
 	pConnectionData := types.NewRVConnectionData()
 	strReturnMsg := types.String("Test Build")
 
@@ -113,12 +113,12 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 
 	parametersStream := nex.NewStreamIn(parameters, authServer)
 
-	idSource := types.NewPID[uint64](0)
+	idSource := types.NewPID(0)
 	if err := idSource.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}
 
-	idTarget := types.NewPID[uint64](0)
+	idTarget := types.NewPID(0)
 	if err := idTarget.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}

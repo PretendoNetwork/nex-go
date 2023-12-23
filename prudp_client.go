@@ -224,7 +224,7 @@ func NewPRUDPClient(server *PRUDPServer, address net.Addr, webSocketConnection *
 		address:                       address,
 		webSocketConnection:           webSocketConnection,
 		outgoingPingSequenceIDCounter: NewCounter[uint16](0),
-		pid:                           types.NewPID[uint32](0),
+		pid:                           types.NewPID(0),
 		unreliableBaseKey:             make([]byte, 0x20),
 	}
 }

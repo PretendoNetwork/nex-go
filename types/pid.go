@@ -83,33 +83,13 @@ func (p *PID) FormatToString(indentationLevel int) string {
 	var b strings.Builder
 
 	b.WriteString("PID{\n")
-
-	switch v := any(p.pid).(type) {
-	case uint32:
-		b.WriteString(fmt.Sprintf("%spid: %d (legacy)\n", indentationValues, v))
-	case uint64:
-		b.WriteString(fmt.Sprintf("%spid: %d (modern)\n", indentationValues, v))
-	}
-
+	b.WriteString(fmt.Sprintf("%spid: %d\n", indentationValues, p.pid))
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
 }
 
-// NewPID returns a PID instance. The size of PID depends on the client version
-func NewPID[T uint32 | uint64](pid T) *PID {
-	switch v := any(pid).(type) {
-	case uint32:
-		return &PID{pid: uint64(v)}
-	case uint64:
-		return &PID{pid: v}
-	}
-
-	// * This will never happen because Go will
-	// * not compile any code where "pid" is not
-	// * a uint32/uint64, so it will ALWAYS get
-	// * caught by the above switch-case. This
-	// * return is only here because Go won't
-	// * compile without a default return
-	return nil
+// NewPID returns a PID instance. The real size of PID depends on the client version
+func NewPID(pid uint64) *PID {
+	return &PID{pid: pid}
 }

@@ -525,7 +525,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, ui
 		return nil, nil, 0, err
 	}
 
-	serverKey := DeriveKerberosKey(types.NewPID[uint64](2), s.kerberosPassword)
+	serverKey := DeriveKerberosKey(types.NewPID(2), s.kerberosPassword)
 
 	ticket := NewKerberosTicketInternalData()
 	if err := ticket.Decrypt(NewStreamIn([]byte(*ticketData), s), serverKey); err != nil {
@@ -550,7 +550,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, ui
 
 	checkDataStream := NewStreamIn(decryptedRequestData, s)
 
-	userPID := types.NewPID[uint64](0)
+	userPID := types.NewPID(0)
 	if err := userPID.ExtractFrom(checkDataStream); err != nil {
 		return nil, nil, 0, err
 	}
