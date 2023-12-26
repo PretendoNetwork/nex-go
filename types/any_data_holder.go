@@ -12,7 +12,9 @@ func RegisterDataHolderType(name string, rvType RVType) {
 	AnyDataHolderObjects[name] = rvType
 }
 
-// AnyDataHolder is a class which can contain any Structure
+// AnyDataHolder is a class which can contain any Structure. These Structures usually inherit from at least one
+// other Structure. Typically this base class is the empty `Data` Structure, but this is not always the case.
+// The contained Structures name & length are sent with the Structure body, so the receiver can properly decode it
 type AnyDataHolder struct {
 	TypeName   string // TODO - Replace this with String?
 	Length1    uint32 // TODO - Replace this with PrimitiveU32?
