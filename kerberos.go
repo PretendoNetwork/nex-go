@@ -124,8 +124,8 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]
 
 		finalStream := NewStreamOut(stream.Server)
 
-		var ticketBuffer types.Buffer = ticketKey
-		var encryptedBuffer types.Buffer = encrypted
+		ticketBuffer := types.NewBuffer(ticketKey)
+		encryptedBuffer := types.NewBuffer(encrypted)
 
 		ticketBuffer.WriteTo(finalStream)
 		encryptedBuffer.WriteTo(finalStream)
@@ -141,20 +141,20 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]
 // Decrypt decrypts the given data and populates the struct
 func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) error {
 	if stream.Server.(*PRUDPServer).kerberosTicketVersion == 1 {
-		ticketKey := types.NewBuffer([]byte{})
+		ticketKey := types.NewBuffer(nil)
 		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data key. %s", err.Error())
 		}
 
-		data := types.NewBuffer([]byte{})
+		data := types.NewBuffer(nil)
 		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data. %s", err.Error())
 		}
 
-		hash := md5.Sum(append(key, *ticketKey...))
+		hash := md5.Sum(append(key, ticketKey.Value...))
 		key = hash[:]
 
-		stream = NewStreamIn(*data, stream.Server)
+		stream = NewStreamIn(data.Value, stream.Server)
 	}
 
 	encryption := NewKerberosEncryption(key)

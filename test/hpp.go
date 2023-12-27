@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
 var hppServer *nex.HPPServer
@@ -11,14 +12,18 @@ var hppServer *nex.HPPServer
 // * Took these structs out of the protocols lib for convenience
 
 type dataStoreGetNotificationURLParam struct {
-	nex.Structure
-	PreviousURL string
+	types.Structure
+	PreviousURL *types.String
 }
 
-func (d *dataStoreGetNotificationURLParam) ExtractFromStream(stream *nex.StreamIn) error {
+func (d *dataStoreGetNotificationURLParam) ExtractFrom(readable types.Readable) error {
 	var err error
 
-	d.PreviousURL, err = stream.ReadString()
+	if err = d.ExtractHeaderFrom(readable); err != nil {
+		return fmt.Errorf("Failed to extract DataStoreGetNotificationURLParam header. %s", err.Error())
+	}
+
+	err = d.PreviousURL.ExtractFrom(readable)
 	if err != nil {
 		return fmt.Errorf("Failed to extract DataStoreGetNotificationURLParam.PreviousURL. %s", err.Error())
 	}
@@ -27,23 +32,29 @@ func (d *dataStoreGetNotificationURLParam) ExtractFromStream(stream *nex.StreamI
 }
 
 type dataStoreReqGetNotificationURLInfo struct {
-	nex.Structure
-	URL        string
-	Key        string
-	Query      string
-	RootCACert []byte
+	types.Structure
+	URL        *types.String
+	Key        *types.String
+	Query      *types.String
+	RootCACert *types.Buffer
 }
 
-func (d *dataStoreReqGetNotificationURLInfo) Bytes(stream *nex.StreamOut) []byte {
-	stream.WriteString(d.URL)
-	stream.WriteString(d.Key)
-	stream.WriteString(d.Query)
-	stream.WriteBuffer(d.RootCACert)
+func (d *dataStoreReqGetNotificationURLInfo) WriteTo(writable types.Writable) {
+	contentWritable := writable.CopyNew()
 
-	return stream.Bytes()
+	d.URL.WriteTo(contentWritable)
+	d.Key.WriteTo(contentWritable)
+	d.Query.WriteTo(contentWritable)
+	d.RootCACert.WriteTo(contentWritable)
+
+	content := contentWritable.Bytes()
+
+	d.WriteHeaderTo(writable, uint32(len(content)))
+
+	writable.Write(content)
 }
 
-func passwordFromPID(pid *nex.PID) (string, uint32) {
+func passwordFromPID(pid *types.PID) (string, uint32) {
 	return "notmypassword", 0
 }
 
@@ -70,7 +81,7 @@ func startHPPServer() {
 	hppServer.SetAccessKey("76f26496")
 	hppServer.SetPasswordFromPIDFunction(passwordFromPID)
 
-	hppServer.Listen(8085)
+	hppServer.Listen(12345)
 }
 
 func getNotificationURL(packet *nex.HPPPacket) {
@@ -81,7 +92,9 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	parametersStream := nex.NewStreamIn(parameters, hppServer)
 
-	param, err := nex.StreamReadStructure(parametersStream, &dataStoreGetNotificationURLParam{})
+	param := &dataStoreGetNotificationURLParam{}
+	param.PreviousURL = types.NewString("")
+	err := param.ExtractFrom(parametersStream)
 	if err != nil {
 		fmt.Println("[HPP]", err)
 		return
@@ -92,11 +105,12 @@ func getNotificationURL(packet *nex.HPPPacket) {
 	responseStream := nex.NewStreamOut(hppServer)
 
 	info := &dataStoreReqGetNotificationURLInfo{}
-	info.URL = "https://example.com"
-	info.Key = "whatever/key"
-	info.Query = "?pretendo=1"
+	info.URL = types.NewString("https://example.com")
+	info.Key = types.NewString("whatever/key")
+	info.Query = types.NewString("?pretendo=1")
+	info.RootCACert = types.NewBuffer(nil)
 
-	responseStream.WriteStructure(info)
+	info.WriteTo(responseStream)
 
 	response.IsSuccess = true
 	response.IsRequest = false

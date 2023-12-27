@@ -11,7 +11,7 @@ import (
 // Legacy clients (WiiU/3DS) use a uint32, whereas modern clients (Nintendo Switch) use a uint64.
 // Value is always stored as the higher uint64, the consuming API should assert accordingly
 type PID struct {
-	pid uint64 // TODO - Replace this with PrimitiveU64?
+	pid uint64
 }
 
 // WriteTo writes the bool to the given writable

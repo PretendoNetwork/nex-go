@@ -1,13 +1,13 @@
 package types
 
-// TODO - Should this have a "Value"-kind of method to get the original value?
-
-// PrimitiveU64 is a type alias of uint64 with receiver methods to conform to RVType
-type PrimitiveU64 uint64 // TODO - Should we make this a struct instead of a type alias?
+// PrimitiveU64 is a struct of uint64 with receiver methods to conform to RVType
+type PrimitiveU64 struct {
+	Value uint64
+}
 
 // WriteTo writes the uint64 to the given writable
 func (u64 *PrimitiveU64) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt64LE(uint64(*u64))
+	writable.WritePrimitiveUInt64LE(u64.Value)
 }
 
 // ExtractFrom extracts the uint64 to the given readable
@@ -17,16 +17,14 @@ func (u64 *PrimitiveU64) ExtractFrom(readable Readable) error {
 		return err
 	}
 
-	*u64 = PrimitiveU64(value)
+	u64.Value = value
 
 	return nil
 }
 
 // Copy returns a pointer to a copy of the uint64. Requires type assertion when used
 func (u64 *PrimitiveU64) Copy() RVType {
-	copied := PrimitiveU64(*u64)
-
-	return &copied
+	return NewPrimitiveU64(u64.Value)
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -35,12 +33,10 @@ func (u64 *PrimitiveU64) Equals(o RVType) bool {
 		return false
 	}
 
-	return *u64 == *o.(*PrimitiveU64)
+	return u64.Value == o.(*PrimitiveU64).Value
 }
 
 // NewPrimitiveU64 returns a new PrimitiveU64
 func NewPrimitiveU64(ui64 uint64) *PrimitiveU64 {
-	u64 := PrimitiveU64(ui64)
-
-	return &u64
+	return &PrimitiveU64{Value: ui64}
 }

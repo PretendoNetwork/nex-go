@@ -1,13 +1,13 @@
 package types
 
-// TODO - Should this have a "Value"-kind of method to get the original value?
-
-// PrimitiveS8 is a type alias of int8 with receiver methods to conform to RVType
-type PrimitiveS8 int8 // TODO - Should we make this a struct instead of a type alias?
+// PrimitiveS8 is a struct of int8 with receiver methods to conform to RVType
+type PrimitiveS8 struct {
+	Value int8
+}
 
 // WriteTo writes the int8 to the given writable
 func (s8 *PrimitiveS8) WriteTo(writable Writable) {
-	writable.WritePrimitiveInt8(int8(*s8))
+	writable.WritePrimitiveInt8(s8.Value)
 }
 
 // ExtractFrom extracts the int8 to the given readable
@@ -17,16 +17,14 @@ func (s8 *PrimitiveS8) ExtractFrom(readable Readable) error {
 		return err
 	}
 
-	*s8 = PrimitiveS8(value)
+	s8.Value = value
 
 	return nil
 }
 
 // Copy returns a pointer to a copy of the int8. Requires type assertion when used
 func (s8 *PrimitiveS8) Copy() RVType {
-	copied := PrimitiveS8(*s8)
-
-	return &copied
+	return NewPrimitiveS8(s8.Value)
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -35,12 +33,10 @@ func (s8 *PrimitiveS8) Equals(o RVType) bool {
 		return false
 	}
 
-	return *s8 == *o.(*PrimitiveS8)
+	return s8.Value == o.(*PrimitiveS8).Value
 }
 
 // NewPrimitiveS8 returns a new PrimitiveS8
 func NewPrimitiveS8(i8 int8) *PrimitiveS8 {
-	s8 := PrimitiveS8(i8)
-
-	return &s8
+	return &PrimitiveS8{Value: i8}
 }

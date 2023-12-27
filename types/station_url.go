@@ -15,20 +15,20 @@ type StationURL struct {
 
 // WriteTo writes the StationURL to the given writable
 func (s *StationURL) WriteTo(writable Writable) {
-	str := String(s.EncodeToString())
+	str := NewString(s.EncodeToString())
 
 	str.WriteTo(writable)
 }
 
 // ExtractFrom extracts the StationURL to the given readable
 func (s *StationURL) ExtractFrom(readable Readable) error {
-	var str String
+	str := NewString("")
 
 	if err := str.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read StationURL. %s", err.Error())
 	}
 
-	s.FromString(string(str))
+	s.FromString(str.Value)
 
 	return nil
 }

@@ -16,9 +16,9 @@ func RegisterDataHolderType(name string, rvType RVType) {
 // other Structure. Typically this base class is the empty `Data` Structure, but this is not always the case.
 // The contained Structures name & length are sent with the Structure body, so the receiver can properly decode it
 type AnyDataHolder struct {
-	TypeName   string // TODO - Replace this with String?
-	Length1    uint32 // TODO - Replace this with PrimitiveU32?
-	Length2    uint32 // TODO - Replace this with PrimitiveU32?
+	TypeName   string
+	Length1    uint32
+	Length2    uint32
 	ObjectData RVType
 }
 
@@ -29,7 +29,7 @@ func (adh *AnyDataHolder) WriteTo(writable Writable) {
 	adh.ObjectData.WriteTo(contentWritable)
 
 	objectData := contentWritable.Bytes()
-	typeName := String(adh.TypeName)
+	typeName := NewString(adh.TypeName)
 	length1 := uint32(len(objectData) + 4)
 	length2 := uint32(len(objectData))
 
@@ -41,7 +41,7 @@ func (adh *AnyDataHolder) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the AnyDataholder to the given readable
 func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
-	var typeName String
+	typeName := NewString("")
 
 	err := typeName.ExtractFrom(readable)
 	if err != nil {
@@ -58,17 +58,17 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read DanyDataHolder length 2. %s", err.Error())
 	}
 
-	if _, ok := AnyDataHolderObjects[string(typeName)]; !ok {
-		return fmt.Errorf("Unknown AnyDataHolder type: %s", string(typeName))
+	if _, ok := AnyDataHolderObjects[typeName.Value]; !ok {
+		return fmt.Errorf("Unknown AnyDataHolder type: %s", typeName.Value)
 	}
 
-	adh.ObjectData = AnyDataHolderObjects[string(typeName)].Copy()
+	adh.ObjectData = AnyDataHolderObjects[typeName.Value].Copy()
 
 	if err := adh.ObjectData.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read DanyDataHolder object data. %s", err.Error())
 	}
 
-	adh.TypeName = string(typeName)
+	adh.TypeName = typeName.Value
 	adh.Length1 = length1
 	adh.Length2 = length2
 

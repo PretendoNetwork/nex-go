@@ -515,12 +515,12 @@ func (s *PRUDPServer) handlePing(packet PRUDPPacketInterface) {
 func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
 	stream := NewStreamIn(payload, s)
 
-	ticketData := types.NewBuffer([]byte{})
+	ticketData := types.NewBuffer(nil)
 	if err := ticketData.ExtractFrom(stream); err != nil {
 		return nil, nil, 0, err
 	}
 
-	requestData := types.NewBuffer([]byte{})
+	requestData := types.NewBuffer(nil)
 	if err := requestData.ExtractFrom(stream); err != nil {
 		return nil, nil, 0, err
 	}
@@ -528,7 +528,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, ui
 	serverKey := DeriveKerberosKey(types.NewPID(2), s.kerberosPassword)
 
 	ticket := NewKerberosTicketInternalData()
-	if err := ticket.Decrypt(NewStreamIn([]byte(*ticketData), s), serverKey); err != nil {
+	if err := ticket.Decrypt(NewStreamIn(ticketData.Value, s), serverKey); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -543,7 +543,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, ui
 	sessionKey := ticket.SessionKey
 	kerberos := NewKerberosEncryption(sessionKey)
 
-	decryptedRequestData, err := kerberos.Decrypt(*requestData)
+	decryptedRequestData, err := kerberos.Decrypt(requestData.Value)
 	if err != nil {
 		return nil, nil, 0, err
 	}

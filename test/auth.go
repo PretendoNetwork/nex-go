@@ -56,16 +56,16 @@ func login(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	converted, err := strconv.Atoi(string(*strUserName))
+	converted, err := strconv.Atoi(strUserName.Value)
 	if err != nil {
 		panic(err)
 	}
 
 	retval := types.NewResultSuccess(0x00010001)
 	pidPrincipal := types.NewPID(uint64(converted))
-	pbufResponse := types.Buffer(generateTicket(pidPrincipal, types.NewPID(2)))
+	pbufResponse := types.NewBuffer(generateTicket(pidPrincipal, types.NewPID(2)))
 	pConnectionData := types.NewRVConnectionData()
-	strReturnMsg := types.String("Test Build")
+	strReturnMsg := types.NewString("Test Build")
 
 	pConnectionData.StationURL = types.NewStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
 	pConnectionData.SpecialProtocols = types.NewList[*types.PrimitiveU8]()
@@ -124,7 +124,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	}
 
 	retval := types.NewResultSuccess(0x00010001)
-	pbufResponse := types.Buffer(generateTicket(idSource, idTarget))
+	pbufResponse := types.NewBuffer(generateTicket(idSource, idTarget))
 
 	responseStream := nex.NewStreamOut(authServer)
 

@@ -1,19 +1,19 @@
 package types
 
-// TODO - Should this have a "Value"-kind of method to get the original value?
-
 import (
 	"errors"
 	"fmt"
 	"strings"
 )
 
-// String is a type alias of string with receiver methods to conform to RVType
-type String string // TODO - Should we make this a struct instead of a type alias?
+// String is a struct of string with receiver methods to conform to RVType
+type String struct {
+	Value string
+}
 
 // WriteTo writes the String to the given writable
 func (s *String) WriteTo(writable Writable) {
-	str := *s + "\x00"
+	str := s.Value + "\x00"
 	strLength := len(str)
 
 	if writable.StringLengthSize() == 4 {
@@ -55,16 +55,14 @@ func (s *String) ExtractFrom(readable Readable) error {
 
 	str := strings.TrimRight(string(stringData), "\x00")
 
-	*s = String(str)
+	s.Value = str
 
 	return nil
 }
 
 // Copy returns a pointer to a copy of the String. Requires type assertion when used
 func (s *String) Copy() RVType {
-	copied := String(*s)
-
-	return &copied
+	return NewString(s.Value)
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -73,12 +71,10 @@ func (s *String) Equals(o RVType) bool {
 		return false
 	}
 
-	return *s == *o.(*String)
+	return s.Value == o.(*String).Value
 }
 
 // NewString returns a new String
 func NewString(str string) *String {
-	s := String(str)
-
-	return &s
+	return &String{Value: str}
 }

@@ -15,30 +15,30 @@ var secureServer *nex.PRUDPServer
 
 type principalPreference struct {
 	types.Structure
-	*types.Empty
-	ShowOnlinePresence  bool
-	ShowCurrentTitle    bool
-	BlockFriendRequests bool
+	*types.Data
+	ShowOnlinePresence  *types.PrimitiveBool
+	ShowCurrentTitle    *types.PrimitiveBool
+	BlockFriendRequests *types.PrimitiveBool
 }
 
-func (pp *principalPreference) WriteTo(stream *nex.StreamOut) {
-	stream.WritePrimitiveBool(pp.ShowOnlinePresence)
-	stream.WritePrimitiveBool(pp.ShowCurrentTitle)
-	stream.WritePrimitiveBool(pp.BlockFriendRequests)
+func (pp *principalPreference) WriteTo(writable types.Writable) {
+	pp.ShowOnlinePresence.WriteTo(writable)
+	pp.ShowCurrentTitle.WriteTo(writable)
+	pp.BlockFriendRequests.WriteTo(writable)
 }
 
 type comment struct {
 	types.Structure
-	*types.Empty
-	Unknown     uint8
+	*types.Data
+	Unknown     *types.PrimitiveU8
 	Contents    *types.String
 	LastChanged *types.DateTime
 }
 
-func (c *comment) WriteTo(stream *nex.StreamOut) {
-	stream.WritePrimitiveUInt8(c.Unknown)
-	c.Contents.WriteTo(stream)
-	c.LastChanged.WriteTo(stream)
+func (c *comment) WriteTo(writable types.Writable) {
+	c.Unknown.WriteTo(writable)
+	c.Contents.WriteTo(writable)
+	c.LastChanged.WriteTo(writable)
 }
 
 func startSecureServer() {
@@ -109,7 +109,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	localStation.Fields["port"] = strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port)
 
 	retval := types.NewResultSuccess(0x00010001)
-	localStationURL := types.String(localStation.EncodeToString())
+	localStationURL := types.NewString(localStation.EncodeToString())
 
 	responseStream := nex.NewStreamOut(secureServer)
 
@@ -148,12 +148,12 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	responseStream := nex.NewStreamOut(secureServer)
 
 	(&principalPreference{
-		ShowOnlinePresence:  true,
-		ShowCurrentTitle:    true,
-		BlockFriendRequests: false,
+		ShowOnlinePresence:  types.NewPrimitiveBool(true),
+		ShowCurrentTitle:    types.NewPrimitiveBool(true),
+		BlockFriendRequests: types.NewPrimitiveBool(false),
 	}).WriteTo(responseStream)
 	(&comment{
-		Unknown:     0,
+		Unknown:     types.NewPrimitiveU8(0),
 		Contents:    types.NewString("Rewrite Test"),
 		LastChanged: types.NewDateTime(0),
 	}).WriteTo(responseStream)

@@ -14,7 +14,7 @@ func RegisterVariantType(id uint8, rvType RVType) {
 
 // Variant is a type which can old many other types
 type Variant struct {
-	TypeID uint8 // TODO - Replace this with PrimitiveU8?
+	TypeID uint8
 	Type   RVType
 }
 

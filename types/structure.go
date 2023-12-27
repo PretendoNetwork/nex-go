@@ -1,39 +1,43 @@
 package types
 
-// StructureInterface implements all Structure methods
-type StructureInterface interface {
-	SetParentType(parentType StructureInterface)
-	ParentType() StructureInterface
-	SetStructureVersion(version uint8)
-	StructureVersion() uint8
-	Copy() StructureInterface
-	Equals(other StructureInterface) bool
-	FormatToString(indentationLevel int) string
-}
+import (
+	"errors"
+	"fmt"
+)
 
 // Structure represents a Quazal Rendez-Vous/NEX Structure (custom class) base struct
 type Structure struct {
-	parentType       StructureInterface
-	structureVersion uint8
-	StructureInterface
+	ParentType       RVType
+	StructureVersion uint8
 }
 
-// SetParentType sets the Structures parent type
-func (s *Structure) SetParentType(parentType StructureInterface) {
-	s.parentType = parentType
+// ExtractHeaderFrom extracts the structure header from the given readable
+func (s *Structure) ExtractHeaderFrom(readable Readable) error {
+	if readable.UseStructureHeader() {
+		version, err := readable.ReadPrimitiveUInt8()
+		if err != nil {
+			return fmt.Errorf("Failed to read Structure version. %s", err.Error())
+		}
+
+		contentLength, err := readable.ReadPrimitiveUInt32LE()
+		if err != nil {
+			return fmt.Errorf("Failed to read Structure content length. %s", err.Error())
+		}
+
+		if readable.Remaining() < uint64(contentLength) {
+			return errors.New("Structure content length longer than data size")
+		}
+
+		s.StructureVersion = version
+	}
+
+	return nil
 }
 
-// ParentType returns the Structures parent type. nil if the Structure does not inherit another Structure
-func (s *Structure) ParentType() StructureInterface {
-	return s.parentType
-}
-
-// SetStructureVersion sets the structures version. Only used in NEX 3.5+
-func (s *Structure) SetStructureVersion(version uint8) {
-	s.structureVersion = version
-}
-
-// StructureVersion returns the structures version. Only used in NEX 3.5+
-func (s *Structure) StructureVersion() uint8 {
-	return s.structureVersion
+// WriteHeaderTo writes the structure header to the given writable
+func (s *Structure) WriteHeaderTo(writable Writable, contentLength uint32) {
+	if writable.UseStructureHeader() {
+		writable.WritePrimitiveUInt8(s.StructureVersion)
+		writable.WritePrimitiveUInt32LE(contentLength)
+	}
 }

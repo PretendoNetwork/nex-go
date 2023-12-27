@@ -114,7 +114,6 @@ func (qu *QUUID) GetStringValue() string {
 
 // FromString converts a UUID string to a qUUID
 func (qu *QUUID) FromString(uuid string) error {
-
 	sections := strings.Split(uuid, "-")
 	if len(sections) != 5 {
 		return fmt.Errorf("Invalid UUID. Not enough sections. Expected 5, got %d", len(sections))

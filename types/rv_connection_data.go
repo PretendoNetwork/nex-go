@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -22,69 +21,45 @@ func (rvcd *RVConnectionData) WriteTo(writable Writable) {
 	rvcd.SpecialProtocols.WriteTo(contentWritable)
 	rvcd.StationURLSpecialProtocols.WriteTo(contentWritable)
 
-	if rvcd.structureVersion >= 1 {
+	if rvcd.StructureVersion >= 1 {
 		rvcd.Time.WriteTo(contentWritable)
 	}
 
 	content := contentWritable.Bytes()
 
-	if writable.UseStructureHeader() {
-		writable.WritePrimitiveUInt8(rvcd.StructureVersion())
-		writable.WritePrimitiveUInt32LE(uint32(len(content)))
-	}
+	rvcd.WriteHeaderTo(writable, uint32(len(content)))
 
 	writable.Write(content)
 }
 
 // ExtractFrom extracts the RVConnectionData to the given readable
 func (rvcd *RVConnectionData) ExtractFrom(readable Readable) error {
-	if readable.UseStructureHeader() {
-		version, err := readable.ReadPrimitiveUInt8()
+	var err error
+	if err = rvcd.ExtractHeaderFrom(readable); err != nil {
+		return fmt.Errorf("Failed to read RVConnectionData header. %s", err.Error())
+	}
+
+	err = rvcd.StationURL.ExtractFrom(readable)
+	if err != nil {
+		return fmt.Errorf("Failed to read RVConnectionData.StationURL. %s", err.Error())
+	}
+
+	err = rvcd.SpecialProtocols.ExtractFrom(readable)
+	if err != nil {
+		return fmt.Errorf("Failed to read RVConnectionData.SpecialProtocols. %s", err.Error())
+	}
+
+	err = rvcd.StationURLSpecialProtocols.ExtractFrom(readable)
+	if err != nil {
+		return fmt.Errorf("Failed to read RVConnectionData.StationURLSpecialProtocols. %s", err.Error())
+	}
+
+	if rvcd.StructureVersion >= 1 {
+		err := rvcd.Time.ExtractFrom(readable)
 		if err != nil {
-			return fmt.Errorf("Failed to read RVConnectionData version. %s", err.Error())
-		}
-
-		contentLength, err := readable.ReadPrimitiveUInt32LE()
-		if err != nil {
-			return fmt.Errorf("Failed to read RVConnectionData content length. %s", err.Error())
-		}
-
-		if readable.Remaining() < uint64(contentLength) {
-			return errors.New("RVConnectionData content length longer than data size")
-		}
-
-		rvcd.SetStructureVersion(version)
-	}
-
-	var stationURL *StationURL
-	specialProtocols := NewList[*PrimitiveU8]()
-	var stationURLSpecialProtocols *StationURL
-	var time *DateTime
-
-	specialProtocols.Type = NewPrimitiveU8(0)
-
-	if err := stationURL.ExtractFrom(readable); err != nil {
-		return fmt.Errorf("Failed to read RVConnectionData StationURL. %s", err.Error())
-	}
-
-	if err := specialProtocols.ExtractFrom(readable); err != nil {
-		return fmt.Errorf("Failed to read SpecialProtocols StationURL. %s", err.Error())
-	}
-
-	if err := stationURLSpecialProtocols.ExtractFrom(readable); err != nil {
-		return fmt.Errorf("Failed to read StationURLSpecialProtocols StationURL. %s", err.Error())
-	}
-
-	if rvcd.structureVersion >= 1 {
-		if err := time.ExtractFrom(readable); err != nil {
-			return fmt.Errorf("Failed to read Time StationURL. %s", err.Error())
+			return fmt.Errorf("Failed to read RVConnectionData.Time. %s", err.Error())
 		}
 	}
-
-	rvcd.StationURL = stationURL
-	rvcd.SpecialProtocols = specialProtocols
-	rvcd.StationURLSpecialProtocols = stationURLSpecialProtocols
-	rvcd.Time = time
 
 	return nil
 }
@@ -93,12 +68,12 @@ func (rvcd *RVConnectionData) ExtractFrom(readable Readable) error {
 func (rvcd *RVConnectionData) Copy() RVType {
 	copied := NewRVConnectionData()
 
-	copied.structureVersion = rvcd.structureVersion
+	copied.StructureVersion = rvcd.StructureVersion
 	copied.StationURL = rvcd.StationURL.Copy().(*StationURL)
 	copied.SpecialProtocols = rvcd.SpecialProtocols.Copy().(*List[*PrimitiveU8])
 	copied.StationURLSpecialProtocols = rvcd.StationURLSpecialProtocols.Copy().(*StationURL)
 
-	if rvcd.structureVersion >= 1 {
+	if rvcd.StructureVersion >= 1 {
 		copied.Time = rvcd.Time.Copy().(*DateTime)
 	}
 
@@ -113,7 +88,7 @@ func (rvcd *RVConnectionData) Equals(o RVType) bool {
 
 	other := o.(*RVConnectionData)
 
-	if rvcd.structureVersion != other.structureVersion {
+	if rvcd.StructureVersion != other.StructureVersion {
 		return false
 	}
 
@@ -129,7 +104,7 @@ func (rvcd *RVConnectionData) Equals(o RVType) bool {
 		return false
 	}
 
-	if rvcd.structureVersion >= 1 {
+	if rvcd.StructureVersion >= 1 {
 		if !rvcd.Time.Equals(other.Time) {
 			return false
 		}
@@ -138,8 +113,16 @@ func (rvcd *RVConnectionData) Equals(o RVType) bool {
 	return true
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewRVConnectionData returns a new RVConnectionData
 func NewRVConnectionData() *RVConnectionData {
-	return &RVConnectionData{}
+	rvcd := &RVConnectionData{
+		StationURL: NewStationURL(""),
+		SpecialProtocols: NewList[*PrimitiveU8](),
+		StationURLSpecialProtocols: NewStationURL(""),
+		Time: NewDateTime(0),
+	}
+
+	rvcd.SpecialProtocols.Type = NewPrimitiveU8(0)
+
+	return rvcd
 }

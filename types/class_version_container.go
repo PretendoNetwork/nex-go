@@ -13,10 +13,6 @@ func (cvc *ClassVersionContainer) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the ClassVersionContainer to the given readable
 func (cvc *ClassVersionContainer) ExtractFrom(readable Readable) error {
-	cvc.ClassVersions = NewMap[*String, *PrimitiveU16]()
-	cvc.ClassVersions.KeyType = NewString("")
-	cvc.ClassVersions.ValueType = NewPrimitiveU16(0)
-
 	return cvc.ClassVersions.ExtractFrom(readable)
 }
 
@@ -39,5 +35,12 @@ func (cvc *ClassVersionContainer) Equals(o RVType) bool {
 
 // NewClassVersionContainer returns a new ClassVersionContainer
 func NewClassVersionContainer() *ClassVersionContainer {
-	return &ClassVersionContainer{}
+	cvc := &ClassVersionContainer{
+		ClassVersions: NewMap[*String, *PrimitiveU16](),
+	}
+
+	cvc.ClassVersions.KeyType = NewString("")
+	cvc.ClassVersions.ValueType = NewPrimitiveU16(0)
+
+	return cvc
 }

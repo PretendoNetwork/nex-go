@@ -8,7 +8,7 @@ import (
 
 // DateTime represents a NEX DateTime type
 type DateTime struct {
-	value uint64 // TODO - Replace this with PrimitiveU64?
+	value uint64
 }
 
 // WriteTo writes the DateTime to the given writable
