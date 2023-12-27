@@ -18,7 +18,7 @@ func (qu *QUUID) WriteTo(writable Writable) {
 	writable.Write(qu.Data)
 }
 
-// ExtractFrom extracts the QUUID to the given readable
+// ExtractFrom extracts the QUUID from the given readable
 func (qu *QUUID) ExtractFrom(readable Readable) error {
 	if readable.Remaining() < uint64(16) {
 		return errors.New("Not enough data left to read qUUID")

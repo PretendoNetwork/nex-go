@@ -10,7 +10,7 @@ func (u64 *PrimitiveU64) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt64LE(u64.Value)
 }
 
-// ExtractFrom extracts the uint64 to the given readable
+// ExtractFrom extracts the uint64 from the given readable
 func (u64 *PrimitiveU64) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveUInt64LE()
 	if err != nil {

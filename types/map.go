@@ -22,7 +22,7 @@ func (m *Map[K, V]) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the bool to the given readable
+// ExtractFrom extracts the bool from the given readable
 func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 	length, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {

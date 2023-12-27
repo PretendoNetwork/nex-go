@@ -32,7 +32,7 @@ func (rvcd *RVConnectionData) WriteTo(writable Writable) {
 	writable.Write(content)
 }
 
-// ExtractFrom extracts the RVConnectionData to the given readable
+// ExtractFrom extracts the RVConnectionData from the given readable
 func (rvcd *RVConnectionData) ExtractFrom(readable Readable) error {
 	var err error
 	if err = rvcd.ExtractHeaderFrom(readable); err != nil {

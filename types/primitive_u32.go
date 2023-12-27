@@ -10,7 +10,7 @@ func (u32 *PrimitiveU32) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt32LE(u32.Value)
 }
 
-// ExtractFrom extracts the uint32 to the given readable
+// ExtractFrom extracts the uint32 from the given readable
 func (u32 *PrimitiveU32) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {

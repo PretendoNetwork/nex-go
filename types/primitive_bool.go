@@ -10,7 +10,7 @@ func (b *PrimitiveBool) WriteTo(writable Writable) {
 	writable.WritePrimitiveBool(b.Value)
 }
 
-// ExtractFrom extracts the bool to the given readable
+// ExtractFrom extracts the bool from the given readable
 func (b *PrimitiveBool) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveBool()
 	if err != nil {

@@ -10,7 +10,7 @@ func (s32 *PrimitiveS32) WriteTo(writable Writable) {
 	writable.WritePrimitiveInt32LE(s32.Value)
 }
 
-// ExtractFrom extracts the int32 to the given readable
+// ExtractFrom extracts the int32 from the given readable
 func (s32 *PrimitiveS32) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveInt32LE()
 	if err != nil {

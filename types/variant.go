@@ -14,30 +14,28 @@ func RegisterVariantType(id uint8, rvType RVType) {
 
 // Variant is a type which can old many other types
 type Variant struct {
-	TypeID uint8
+	TypeID *PrimitiveU8
 	Type   RVType
 }
 
 // WriteTo writes the Variant to the given writable
 func (v *Variant) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt8(v.TypeID)
+	v.TypeID.WriteTo(writable)
 	v.Type.WriteTo(writable)
 }
 
-// ExtractFrom extracts the Variant to the given readable
+// ExtractFrom extracts the Variant from the given readable
 func (v *Variant) ExtractFrom(readable Readable) error {
-	typeID, err := readable.ReadPrimitiveUInt8()
+	err := v.TypeID.ExtractFrom(readable)
 	if err != nil {
 		return fmt.Errorf("Failed to read Variant type ID. %s", err.Error())
 	}
 
-	v.TypeID = typeID
-
-	if _, ok := VariantTypes[v.TypeID]; !ok {
+	if _, ok := VariantTypes[v.TypeID.Value]; !ok {
 		return fmt.Errorf("Invalid Variant type ID %d", v.TypeID)
 	}
 
-	v.Type = VariantTypes[v.TypeID].Copy()
+	v.Type = VariantTypes[v.TypeID.Value].Copy()
 
 	return v.Type.ExtractFrom(readable)
 }
@@ -46,7 +44,7 @@ func (v *Variant) ExtractFrom(readable Readable) error {
 func (v *Variant) Copy() RVType {
 	copied := NewVariant()
 
-	copied.TypeID = v.TypeID
+	copied.TypeID = v.TypeID.Copy().(*PrimitiveU8)
 	copied.Type = v.Type.Copy()
 
 	return copied
@@ -60,7 +58,7 @@ func (v *Variant) Equals(o RVType) bool {
 
 	other := o.(*Variant)
 
-	if v.TypeID != other.TypeID {
+	if !v.TypeID.Equals(other.TypeID) {
 		return false
 	}
 
@@ -70,5 +68,7 @@ func (v *Variant) Equals(o RVType) bool {
 // TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewVariant returns a new Variant
 func NewVariant() *Variant {
-	return &Variant{}
+	return &Variant{
+		TypeID: NewPrimitiveU8(0),
+	}
 }

@@ -21,7 +21,7 @@ func (b *Buffer) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the Buffer to the given readable
+// ExtractFrom extracts the Buffer from the given readable
 func (b *Buffer) ExtractFrom(readable Readable) error {
 	length, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {

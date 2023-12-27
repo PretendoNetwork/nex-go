@@ -25,7 +25,7 @@ func (rr *ResultRange) WriteTo(writable Writable) {
 	writable.Write(content)
 }
 
-// ExtractFrom extracts the ResultRange to the given readable
+// ExtractFrom extracts the ResultRange from the given readable
 func (rr *ResultRange) ExtractFrom(readable Readable) error {
 	var err error
 

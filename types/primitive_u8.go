@@ -11,7 +11,7 @@ func (u8 *PrimitiveU8) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt8(u8.Value)
 }
 
-// ExtractFrom extracts the uint8 to the given readable
+// ExtractFrom extracts the uint8 from the given readable
 func (u8 *PrimitiveU8) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveUInt8()
 	if err != nil {

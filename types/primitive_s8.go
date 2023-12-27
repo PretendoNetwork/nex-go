@@ -10,7 +10,7 @@ func (s8 *PrimitiveS8) WriteTo(writable Writable) {
 	writable.WritePrimitiveInt8(s8.Value)
 }
 
-// ExtractFrom extracts the int8 to the given readable
+// ExtractFrom extracts the int8 from the given readable
 func (s8 *PrimitiveS8) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveInt8()
 	if err != nil {

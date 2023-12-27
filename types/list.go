@@ -17,7 +17,7 @@ func (l *List[T]) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the bool to the given readable
+// ExtractFrom extracts the bool from the given readable
 func (l *List[T]) ExtractFrom(readable Readable) error {
 	length, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {

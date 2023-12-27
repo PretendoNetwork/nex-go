@@ -10,7 +10,7 @@ func (f32 *PrimitiveF32) WriteTo(writable Writable) {
 	writable.WritePrimitiveFloat32LE(f32.Value)
 }
 
-// ExtractFrom extracts the float32 to the given readable
+// ExtractFrom extracts the float32 from the given readable
 func (f32 *PrimitiveF32) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveFloat32LE()
 	if err != nil {

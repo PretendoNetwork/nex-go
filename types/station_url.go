@@ -20,7 +20,7 @@ func (s *StationURL) WriteTo(writable Writable) {
 	str.WriteTo(writable)
 }
 
-// ExtractFrom extracts the StationURL to the given readable
+// ExtractFrom extracts the StationURL from the given readable
 func (s *StationURL) ExtractFrom(readable Readable) error {
 	str := NewString("")
 

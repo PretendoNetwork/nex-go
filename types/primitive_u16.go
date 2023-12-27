@@ -10,7 +10,7 @@ func (u16 *PrimitiveU16) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt16LE(u16.Value)
 }
 
-// ExtractFrom extracts the uint16 to the given readable
+// ExtractFrom extracts the uint16 from the given readable
 func (u16 *PrimitiveU16) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveUInt16LE()
 	if err != nil {

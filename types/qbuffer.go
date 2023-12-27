@@ -21,7 +21,7 @@ func (qb *QBuffer) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the QBuffer to the given readable
+// ExtractFrom extracts the QBuffer from the given readable
 func (qb *QBuffer) ExtractFrom(readable Readable) error {
 	length, err := readable.ReadPrimitiveUInt16LE()
 	if err != nil {

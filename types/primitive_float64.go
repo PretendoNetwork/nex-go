@@ -10,7 +10,7 @@ func (f64 *PrimitiveF64) WriteTo(writable Writable) {
 	writable.WritePrimitiveFloat64LE(f64.Value)
 }
 
-// ExtractFrom extracts the float64 to the given readable
+// ExtractFrom extracts the float64 from the given readable
 func (f64 *PrimitiveF64) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveFloat64LE()
 	if err != nil {

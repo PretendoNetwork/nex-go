@@ -17,7 +17,7 @@ func (r *Result) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt32LE(r.Code)
 }
 
-// ExtractFrom extracts the Result to the given readable
+// ExtractFrom extracts the Result from the given readable
 func (r *Result) ExtractFrom(readable Readable) error {
 	code, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {

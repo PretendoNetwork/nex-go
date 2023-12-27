@@ -10,7 +10,7 @@ func (s16 *PrimitiveS16) WriteTo(writable Writable) {
 	writable.WritePrimitiveInt16LE(s16.Value)
 }
 
-// ExtractFrom extracts the int16 to the given readable
+// ExtractFrom extracts the int16 from the given readable
 func (s16 *PrimitiveS16) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveInt16LE()
 	if err != nil {

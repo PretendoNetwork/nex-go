@@ -25,7 +25,7 @@ func (s *String) WriteTo(writable Writable) {
 	writable.Write([]byte(str))
 }
 
-// ExtractFrom extracts the String to the given readable
+// ExtractFrom extracts the String from the given readable
 func (s *String) ExtractFrom(readable Readable) error {
 	var length uint64
 	var err error

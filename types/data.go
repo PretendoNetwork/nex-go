@@ -15,7 +15,7 @@ func (e *Data) WriteTo(writable Writable) {
 	e.WriteHeaderTo(writable, 0)
 }
 
-// ExtractFrom extracts the Data to the given readable
+// ExtractFrom extracts the Data from the given readable
 func (e *Data) ExtractFrom(readable Readable) error {
 	if err := e.ExtractHeaderFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read Data header. %s", err.Error())

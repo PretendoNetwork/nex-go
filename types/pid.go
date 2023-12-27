@@ -23,7 +23,7 @@ func (p *PID) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the bool to the given readable
+// ExtractFrom extracts the bool from the given readable
 func (p *PID) ExtractFrom(readable Readable) error {
 	var pid uint64
 	var err error

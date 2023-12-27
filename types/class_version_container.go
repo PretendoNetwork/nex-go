@@ -11,7 +11,7 @@ func (cvc *ClassVersionContainer) WriteTo(writable Writable) {
 	cvc.ClassVersions.WriteTo(writable)
 }
 
-// ExtractFrom extracts the ClassVersionContainer to the given readable
+// ExtractFrom extracts the ClassVersionContainer from the given readable
 func (cvc *ClassVersionContainer) ExtractFrom(readable Readable) error {
 	return cvc.ClassVersions.ExtractFrom(readable)
 }

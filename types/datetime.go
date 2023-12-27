@@ -16,7 +16,7 @@ func (dt *DateTime) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt64LE(dt.value)
 }
 
-// ExtractFrom extracts the DateTime to the given readable
+// ExtractFrom extracts the DateTime from the given readable
 func (dt *DateTime) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveUInt64LE()
 	if err != nil {
