@@ -7,7 +7,6 @@ import (
 
 // Structure represents a Quazal Rendez-Vous/NEX Structure (custom class) base struct
 type Structure struct {
-	ParentType       RVType
 	StructureVersion uint8
 }
 
