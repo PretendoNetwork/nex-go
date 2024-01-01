@@ -3,6 +3,7 @@ package nex
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"net"
@@ -449,7 +450,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 		client.createReliableSubstreams(0)
 	}
 
-	var payload []byte
+	payload := make([]byte, 0)
 
 	if slices.Contains(s.SecureVirtualServerPorts, packet.DestinationPort()) {
 		sessionKey, pid, checkValue, err := s.readKerberosTicket(packet.Payload())
@@ -460,17 +461,17 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 		client.SetPID(pid)
 		client.setSessionKey(sessionKey)
 
+		responseCheckValue := checkValue + 1
+		responseCheckValueBytes := make([]byte, 4)
+
+		binary.LittleEndian.PutUint32(responseCheckValueBytes, responseCheckValue)
+
+		checkValueResponse := types.NewBuffer(responseCheckValueBytes)
 		stream := NewByteStreamOut(s)
 
-		// * The response value is a Buffer whose data contains
-		// * checkValue+1. This is just a lazy way of encoding
-		// * a Buffer type
-		stream.WritePrimitiveUInt32LE(4)              // * Buffer length
-		stream.WritePrimitiveUInt32LE(checkValue + 1) // * Buffer data
+		checkValueResponse.WriteTo(stream)
 
 		payload = stream.Bytes()
-	} else {
-		payload = make([]byte, 0)
 	}
 
 	ack.SetPayload(payload)
