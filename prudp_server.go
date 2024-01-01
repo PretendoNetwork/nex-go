@@ -200,7 +200,7 @@ func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
 }
 
 func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
-	readStream := NewStreamIn(packetData, s)
+	readStream := NewByteStreamIn(packetData, s)
 
 	var packets []PRUDPPacketInterface
 
@@ -305,7 +305,7 @@ func (s *PRUDPServer) handleAcknowledgment(packet PRUDPPacketInterface) {
 
 func (s *PRUDPServer) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
 	client := packet.Sender().(*PRUDPClient)
-	stream := NewStreamIn(packet.Payload(), s)
+	stream := NewByteStreamIn(packet.Payload(), s)
 	sequenceIDs := make([]uint16, 0)
 	var baseSequenceID uint16
 	var substream *ReliablePacketSubstreamManager
@@ -460,7 +460,7 @@ func (s *PRUDPServer) handleConnect(packet PRUDPPacketInterface) {
 		client.SetPID(pid)
 		client.setSessionKey(sessionKey)
 
-		stream := NewStreamOut(s)
+		stream := NewByteStreamOut(s)
 
 		// * The response value is a Buffer whose data contains
 		// * checkValue+1. This is just a lazy way of encoding
@@ -513,7 +513,7 @@ func (s *PRUDPServer) handlePing(packet PRUDPPacketInterface) {
 }
 
 func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
-	stream := NewStreamIn(payload, s)
+	stream := NewByteStreamIn(payload, s)
 
 	ticketData := types.NewBuffer(nil)
 	if err := ticketData.ExtractFrom(stream); err != nil {
@@ -528,7 +528,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, ui
 	serverKey := DeriveKerberosKey(types.NewPID(2), s.kerberosPassword)
 
 	ticket := NewKerberosTicketInternalData()
-	if err := ticket.Decrypt(NewStreamIn(ticketData.Value, s), serverKey); err != nil {
+	if err := ticket.Decrypt(NewByteStreamIn(ticketData.Value, s), serverKey); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -548,7 +548,7 @@ func (s *PRUDPServer) readKerberosTicket(payload []byte) ([]byte, *types.PID, ui
 		return nil, nil, 0, err
 	}
 
-	checkDataStream := NewStreamIn(decryptedRequestData, s)
+	checkDataStream := NewByteStreamIn(decryptedRequestData, s)
 
 	userPID := types.NewPID(0)
 	if err := userPID.ExtractFrom(checkDataStream); err != nil {

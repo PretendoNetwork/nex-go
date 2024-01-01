@@ -196,7 +196,7 @@ func (p *PRUDPPacketV0) decode() error {
 // Bytes encodes a PRUDPv0 packet into a byte slice
 func (p *PRUDPPacketV0) Bytes() []byte {
 	server := p.server
-	stream := NewStreamOut(server)
+	stream := NewByteStreamOut(server)
 
 	stream.WritePrimitiveUInt8(p.sourcePort | (p.sourceStreamType << 4))
 	stream.WritePrimitiveUInt8(p.destinationPort | (p.destinationStreamType << 4))
@@ -353,7 +353,7 @@ func (p *PRUDPPacketV0) calculateChecksum(data []byte) uint32 {
 }
 
 // NewPRUDPPacketV0 creates and returns a new PacketV0 using the provided Client and stream
-func NewPRUDPPacketV0(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketV0, error) {
+func NewPRUDPPacketV0(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPacketV0, error) {
 	packet := &PRUDPPacketV0{
 		PRUDPPacket: PRUDPPacket{
 			sender:     client,
@@ -377,7 +377,7 @@ func NewPRUDPPacketV0(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketV0
 }
 
 // NewPRUDPPacketsV0 reads all possible PRUDPv0 packets from the stream
-func NewPRUDPPacketsV0(client *PRUDPClient, readStream *StreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsV0(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {

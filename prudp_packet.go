@@ -6,7 +6,7 @@ import "crypto/rc4"
 type PRUDPPacket struct {
 	server                *PRUDPServer
 	sender                *PRUDPClient
-	readStream            *StreamIn
+	readStream            *ByteStreamIn
 	sourceStreamType      uint8
 	sourcePort            uint8
 	destinationStreamType uint8

@@ -74,7 +74,7 @@ type KerberosTicket struct {
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
-func (kt *KerberosTicket) Encrypt(key []byte, stream *StreamOut) ([]byte, error) {
+func (kt *KerberosTicket) Encrypt(key []byte, stream *ByteStreamOut) ([]byte, error) {
 	encryption := NewKerberosEncryption(key)
 
 	stream.Grow(int64(len(kt.SessionKey)))
@@ -99,7 +99,7 @@ type KerberosTicketInternalData struct {
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
-func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]byte, error) {
+func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut) ([]byte, error) {
 	ti.Issued.WriteTo(stream)
 	ti.SourcePID.WriteTo(stream)
 
@@ -122,7 +122,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]
 
 		encrypted := encryption.Encrypt(data)
 
-		finalStream := NewStreamOut(stream.Server)
+		finalStream := NewByteStreamOut(stream.Server)
 
 		ticketBuffer := types.NewBuffer(ticketKey)
 		encryptedBuffer := types.NewBuffer(encrypted)
@@ -139,7 +139,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]
 }
 
 // Decrypt decrypts the given data and populates the struct
-func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) error {
+func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) error {
 	if stream.Server.(*PRUDPServer).kerberosTicketVersion == 1 {
 		ticketKey := types.NewBuffer(nil)
 		if err := ticketKey.ExtractFrom(stream); err != nil {
@@ -154,7 +154,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) erro
 		hash := md5.Sum(append(key, ticketKey.Value...))
 		key = hash[:]
 
-		stream = NewStreamIn(data.Value, stream.Server)
+		stream = NewByteStreamIn(data.Value, stream.Server)
 	}
 
 	encryption := NewKerberosEncryption(key)
@@ -164,7 +164,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *StreamIn, key []byte) erro
 		return fmt.Errorf("Failed to decrypt Kerberos ticket internal data. %s", err.Error())
 	}
 
-	stream = NewStreamIn(decrypted, stream.Server)
+	stream = NewByteStreamIn(decrypted, stream.Server)
 
 	timestamp := types.NewDateTime(0)
 	if err := timestamp.ExtractFrom(stream); err != nil {

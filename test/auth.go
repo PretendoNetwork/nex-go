@@ -49,7 +49,7 @@ func login(packet nex.PRUDPPacketInterface) {
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewStreamIn(parameters, authServer)
+	parametersStream := nex.NewByteStreamIn(parameters, authServer)
 
 	strUserName := types.NewString("")
 	if err := strUserName.ExtractFrom(parametersStream); err != nil {
@@ -73,7 +73,7 @@ func login(packet nex.PRUDPPacketInterface) {
 	pConnectionData.StationURLSpecialProtocols = types.NewStationURL("")
 	pConnectionData.Time = types.NewDateTime(0).Now()
 
-	responseStream := nex.NewStreamOut(authServer)
+	responseStream := nex.NewByteStreamOut(authServer)
 
 	retval.WriteTo(responseStream)
 	pidPrincipal.WriteTo(responseStream)
@@ -111,7 +111,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewStreamIn(parameters, authServer)
+	parametersStream := nex.NewByteStreamIn(parameters, authServer)
 
 	idSource := types.NewPID(0)
 	if err := idSource.ExtractFrom(parametersStream); err != nil {
@@ -126,7 +126,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	retval := types.NewResultSuccess(0x00010001)
 	pbufResponse := types.NewBuffer(generateTicket(idSource, idTarget))
 
-	responseStream := nex.NewStreamOut(authServer)
+	responseStream := nex.NewByteStreamOut(authServer)
 
 	retval.WriteTo(responseStream)
 	pbufResponse.WriteTo(responseStream)

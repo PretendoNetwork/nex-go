@@ -140,7 +140,7 @@ func (p *PRUDPPacketLite) decode() error {
 func (p *PRUDPPacketLite) Bytes() []byte {
 	options := p.encodeOptions()
 
-	stream := NewStreamOut(nil)
+	stream := NewByteStreamOut(nil)
 
 	stream.WritePrimitiveUInt8(0x80)
 	stream.WritePrimitiveUInt8(uint8(len(options)))
@@ -163,7 +163,7 @@ func (p *PRUDPPacketLite) Bytes() []byte {
 
 func (p *PRUDPPacketLite) decodeOptions() error {
 	data := p.readStream.ReadBytesNext(int64(p.optionsLength))
-	optionsStream := NewStreamIn(data, nil)
+	optionsStream := NewByteStreamIn(data, nil)
 
 	for optionsStream.Remaining() > 0 {
 		optionID, err := optionsStream.ReadPrimitiveUInt8()
@@ -223,7 +223,7 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 }
 
 func (p *PRUDPPacketLite) encodeOptions() []byte {
-	optionsStream := NewStreamOut(nil)
+	optionsStream := NewByteStreamOut(nil)
 
 	if p.packetType == SynPacket || p.packetType == ConnectPacket {
 		optionsStream.WritePrimitiveUInt8(0)
@@ -276,7 +276,7 @@ func (p *PRUDPPacketLite) calculateSignature(sessionKey, connectionSignature []b
 }
 
 // NewPRUDPPacketLite creates and returns a new PacketLite using the provided Client and stream
-func NewPRUDPPacketLite(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketLite, error) {
+func NewPRUDPPacketLite(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPacketLite, error) {
 	packet := &PRUDPPacketLite{
 		PRUDPPacket: PRUDPPacket{
 			sender:     client,
@@ -300,7 +300,7 @@ func NewPRUDPPacketLite(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacket
 }
 
 // NewPRUDPPacketsLite reads all possible PRUDPLite packets from the stream
-func NewPRUDPPacketsLite(client *PRUDPClient, readStream *StreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsLite(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {

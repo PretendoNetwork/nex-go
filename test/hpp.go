@@ -90,7 +90,7 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewStreamIn(parameters, hppServer)
+	parametersStream := nex.NewByteStreamIn(parameters, hppServer)
 
 	param := &dataStoreGetNotificationURLParam{}
 	param.PreviousURL = types.NewString("")
@@ -102,7 +102,7 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	fmt.Println("[HPP]", param.PreviousURL)
 
-	responseStream := nex.NewStreamOut(hppServer)
+	responseStream := nex.NewByteStreamOut(hppServer)
 
 	info := &dataStoreReqGetNotificationURLInfo{}
 	info.URL = types.NewString("https://example.com")

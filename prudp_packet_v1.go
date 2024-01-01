@@ -109,7 +109,7 @@ func (p *PRUDPPacketV1) Bytes() []byte {
 
 	header := p.encodeHeader()
 
-	stream := NewStreamOut(nil)
+	stream := NewByteStreamOut(nil)
 
 	stream.Grow(2)
 	stream.WriteBytesNext([]byte{0xEA, 0xD0})
@@ -200,7 +200,7 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 }
 
 func (p *PRUDPPacketV1) encodeHeader() []byte {
-	stream := NewStreamOut(nil)
+	stream := NewByteStreamOut(nil)
 
 	stream.WritePrimitiveUInt8(1) // * Version
 	stream.WritePrimitiveUInt8(p.optionsLength)
@@ -217,7 +217,7 @@ func (p *PRUDPPacketV1) encodeHeader() []byte {
 
 func (p *PRUDPPacketV1) decodeOptions() error {
 	data := p.readStream.ReadBytesNext(int64(p.optionsLength))
-	optionsStream := NewStreamIn(data, nil)
+	optionsStream := NewByteStreamIn(data, nil)
 
 	for optionsStream.Remaining() > 0 {
 		optionID, err := optionsStream.ReadPrimitiveUInt8()
@@ -271,7 +271,7 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 }
 
 func (p *PRUDPPacketV1) encodeOptions() []byte {
-	optionsStream := NewStreamOut(nil)
+	optionsStream := NewByteStreamOut(nil)
 
 	if p.packetType == SynPacket || p.packetType == ConnectPacket {
 		optionsStream.WritePrimitiveUInt8(0)
@@ -356,7 +356,7 @@ func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byt
 }
 
 // NewPRUDPPacketV1 creates and returns a new PacketV1 using the provided Client and stream
-func NewPRUDPPacketV1(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketV1, error) {
+func NewPRUDPPacketV1(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPacketV1, error) {
 	packet := &PRUDPPacketV1{
 		PRUDPPacket: PRUDPPacket{
 			sender:     client,
@@ -380,7 +380,7 @@ func NewPRUDPPacketV1(client *PRUDPClient, readStream *StreamIn) (*PRUDPPacketV1
 }
 
 // NewPRUDPPacketsV1 reads all possible PRUDPv1 packets from the stream
-func NewPRUDPPacketsV1(client *PRUDPClient, readStream *StreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsV1(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {

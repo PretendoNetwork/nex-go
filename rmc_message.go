@@ -56,7 +56,7 @@ func (rmc *RMCMessage) FromBytes(data []byte) error {
 }
 
 func (rmc *RMCMessage) decodePacked(data []byte) error {
-	stream := NewStreamIn(data, rmc.Server)
+	stream := NewByteStreamIn(data, rmc.Server)
 
 	length, err := stream.ReadPrimitiveUInt32LE()
 	if err != nil {
@@ -143,7 +143,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 }
 
 func (rmc *RMCMessage) decodeVerbose(data []byte) error {
-	stream := NewStreamIn(data, rmc.Server)
+	stream := NewByteStreamIn(data, rmc.Server)
 
 	length, err := stream.ReadPrimitiveUInt32LE()
 	if err != nil {
@@ -232,7 +232,7 @@ func (rmc *RMCMessage) Bytes() []byte {
 }
 
 func (rmc *RMCMessage) encodePacked() []byte {
-	stream := NewStreamOut(rmc.Server)
+	stream := NewByteStreamOut(rmc.Server)
 
 	// * RMC requests have their protocol IDs ORed with 0x80
 	var protocolIDFlag uint16 = 0x80
@@ -279,7 +279,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 
 	serialized := stream.Bytes()
 
-	message := NewStreamOut(rmc.Server)
+	message := NewByteStreamOut(rmc.Server)
 
 	message.WritePrimitiveUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
@@ -289,7 +289,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 }
 
 func (rmc *RMCMessage) encodeVerbose() []byte {
-	stream := NewStreamOut(rmc.Server)
+	stream := NewByteStreamOut(rmc.Server)
 
 	rmc.ProtocolName.WriteTo(stream)
 	stream.WritePrimitiveBool(rmc.IsRequest)
@@ -328,7 +328,7 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 
 	serialized := stream.Bytes()
 
-	message := NewStreamOut(rmc.Server)
+	message := NewByteStreamOut(rmc.Server)
 
 	message.WritePrimitiveUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))

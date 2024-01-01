@@ -88,7 +88,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewStreamIn(parameters, secureServer)
+	parametersStream := nex.NewByteStreamIn(parameters, secureServer)
 
 	vecMyURLs := types.NewList[*types.StationURL]()
 	vecMyURLs.Type = types.NewStationURL("")
@@ -111,7 +111,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	retval := types.NewResultSuccess(0x00010001)
 	localStationURL := types.NewString(localStation.EncodeToString())
 
-	responseStream := nex.NewStreamOut(secureServer)
+	responseStream := nex.NewByteStreamOut(secureServer)
 
 	retval.WriteTo(responseStream)
 	responseStream.WritePrimitiveUInt32LE(secureServer.ConnectionIDCounter().Next())
@@ -145,7 +145,7 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
 	response := nex.NewRMCMessage(secureServer)
 
-	responseStream := nex.NewStreamOut(secureServer)
+	responseStream := nex.NewByteStreamOut(secureServer)
 
 	(&principalPreference{
 		ShowOnlinePresence:  types.NewPrimitiveBool(true),
@@ -193,7 +193,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
 	response := nex.NewRMCMessage(secureServer)
 
-	responseStream := nex.NewStreamOut(secureServer)
+	responseStream := nex.NewByteStreamOut(secureServer)
 
 	responseStream.WritePrimitiveUInt8(0) // * Unknown
 
