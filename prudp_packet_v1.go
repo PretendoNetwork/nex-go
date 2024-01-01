@@ -361,6 +361,7 @@ func NewPRUDPPacketV1(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPack
 		PRUDPPacket: PRUDPPacket{
 			sender:     client,
 			readStream: readStream,
+			version:    1,
 		},
 	}
 

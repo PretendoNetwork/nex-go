@@ -56,7 +56,7 @@ func (p *PRUDPPacketV0) Copy() PRUDPPacketInterface {
 
 // Version returns the packets PRUDP version
 func (p *PRUDPPacketV0) Version() int {
-	return 0
+	return int(p.version)
 }
 
 func (p *PRUDPPacketV0) decode() error {
@@ -83,7 +83,7 @@ func (p *PRUDPPacketV0) decode() error {
 	p.destinationStreamType = destination >> 4
 	p.destinationPort = destination & 0xF
 
-	if server.IsQuazalMode {
+	if server.PRUDPV0Settings.IsQuazalMode {
 		typeAndFlags, err := p.readStream.ReadPrimitiveUInt8()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 type and flags. %s", err.Error())
@@ -149,7 +149,7 @@ func (p *PRUDPPacketV0) decode() error {
 		}
 	} else {
 		// * Some Quazal games use a 4 byte checksum. NEX uses 1 byte
-		if server.EnhancedChecksum {
+		if server.PRUDPV0Settings.UseEnhancedChecksum {
 			payloadSize = uint16(p.readStream.Remaining() - 4)
 		} else {
 			payloadSize = uint16(p.readStream.Remaining() - 1)
@@ -162,7 +162,7 @@ func (p *PRUDPPacketV0) decode() error {
 
 	p.payload = p.readStream.ReadBytesNext(int64(payloadSize))
 
-	if server.EnhancedChecksum && p.readStream.Remaining() < 4 {
+	if server.PRUDPV0Settings.UseEnhancedChecksum && p.readStream.Remaining() < 4 {
 		return errors.New("Failed to read PRUDPv0 checksum. Not have enough data")
 	} else if p.readStream.Remaining() < 1 {
 		return errors.New("Failed to read PRUDPv0 checksum. Not have enough data")
@@ -173,7 +173,7 @@ func (p *PRUDPPacketV0) decode() error {
 	var checksum uint32
 	var checksumU8 uint8
 
-	if server.EnhancedChecksum {
+	if server.PRUDPV0Settings.UseEnhancedChecksum {
 		checksum, err = p.readStream.ReadPrimitiveUInt32LE()
 	} else {
 		checksumU8, err = p.readStream.ReadPrimitiveUInt8()
@@ -184,7 +184,7 @@ func (p *PRUDPPacketV0) decode() error {
 		return fmt.Errorf("Failed to read PRUDPv0 checksum. %s", err.Error())
 	}
 
-	calculatedChecksum := p.calculateChecksum(checksumData)
+	calculatedChecksum := p.server.PRUDPV0Settings.ChecksumCalculator(p, checksumData)
 
 	if checksum != calculatedChecksum {
 		return errors.New("Invalid PRUDPv0 checksum")
@@ -201,7 +201,7 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	stream.WritePrimitiveUInt8(p.sourcePort | (p.sourceStreamType << 4))
 	stream.WritePrimitiveUInt8(p.destinationPort | (p.destinationStreamType << 4))
 
-	if server.IsQuazalMode {
+	if server.PRUDPV0Settings.IsQuazalMode {
 		stream.WritePrimitiveUInt8(uint8(p.packetType | (p.flags << 3)))
 	} else {
 		stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4))
@@ -230,15 +230,9 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 		stream.WriteBytesNext(p.payload)
 	}
 
-	var checksum uint32
+	checksum := p.server.PRUDPV0Settings.ChecksumCalculator(p, stream.Bytes())
 
-	if p.server.PRUDPv0CustomChecksumCalculator != nil {
-		checksum = p.server.PRUDPv0CustomChecksumCalculator(p, stream.Bytes())
-	} else {
-		checksum = p.calculateChecksum(stream.Bytes())
-	}
-
-	if server.EnhancedChecksum {
+	if server.PRUDPV0Settings.UseEnhancedChecksum {
 		stream.WritePrimitiveUInt32LE(checksum)
 	} else {
 		stream.WritePrimitiveUInt8(uint8(checksum))
@@ -248,108 +242,11 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 }
 
 func (p *PRUDPPacketV0) calculateConnectionSignature(addr net.Addr) ([]byte, error) {
-	var ip net.IP
-	var port int
-
-	switch v := addr.(type) {
-	case *net.UDPAddr:
-		ip = v.IP.To4()
-		port = v.Port
-	default:
-		return nil, fmt.Errorf("Unsupported network type: %T", addr)
-	}
-
-	portBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(portBytes, uint16(port))
-
-	data := append(ip, portBytes...)
-	hash := md5.Sum(data)
-	signatureBytes := hash[:4]
-
-	slices.Reverse(signatureBytes)
-
-	return signatureBytes, nil
+	return p.server.PRUDPV0Settings.ConnectionSignatureCalculator(p, addr)
 }
 
 func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byte) []byte {
-	if !p.server.IsQuazalMode {
-		if p.packetType == DataPacket {
-			return p.calculateDataSignature(sessionKey)
-		}
-
-		if p.packetType == DisconnectPacket && p.server.accessKey != "ridfebb9" {
-			return p.calculateDataSignature(sessionKey)
-		}
-	}
-
-	if len(connectionSignature) != 0 {
-		return connectionSignature
-	}
-
-	return make([]byte, 4)
-}
-
-func (p *PRUDPPacketV0) calculateDataSignature(sessionKey []byte) []byte {
-	server := p.server
-	data := p.payload
-
-	if server.AccessKey() != "ridfebb9" {
-		header := []byte{0, 0, p.fragmentID}
-		binary.LittleEndian.PutUint16(header[:2], p.sequenceID)
-
-		data = append(sessionKey, header...)
-		data = append(data, p.payload...)
-	}
-
-	if len(data) > 0 {
-		key := md5.Sum([]byte(server.AccessKey()))
-		mac := hmac.New(md5.New, key[:])
-
-		mac.Write(data)
-
-		digest := mac.Sum(nil)
-
-		return digest[:4]
-	}
-
-	return []byte{0x78, 0x56, 0x34, 0x12}
-}
-
-func (p *PRUDPPacketV0) calculateChecksum(data []byte) uint32 {
-	server := p.server
-	checksum := sum[byte, uint32]([]byte(server.AccessKey()))
-
-	if server.EnhancedChecksum {
-		padSize := (len(data) + 3) &^ 3
-		data = append(data, make([]byte, padSize-len(data))...)
-		words := make([]uint32, len(data)/4)
-
-		for i := 0; i < len(data)/4; i++ {
-			words[i] = binary.LittleEndian.Uint32(data[i*4 : (i+1)*4])
-		}
-
-		result := (checksum & 0xFF) + sum[uint32, uint32](words)
-
-		return result & 0xFFFFFFFF
-	} else {
-		words := make([]uint32, len(data)/4)
-
-		for i := 0; i < len(data)/4; i++ {
-			words[i] = binary.LittleEndian.Uint32(data[i*4 : (i+1)*4])
-		}
-
-		temp := sum[uint32, uint32](words) & 0xFFFFFFFF
-
-		checksum += sum[byte, uint32](data[len(data)&^3:])
-
-		tempBytes := make([]byte, 4)
-
-		binary.LittleEndian.PutUint32(tempBytes, temp)
-
-		checksum += sum[byte, uint32](tempBytes)
-
-		return checksum & 0xFF
-	}
+	return p.server.PRUDPV0Settings.SignatureCalculator(p, sessionKey, connectionSignature)
 }
 
 // NewPRUDPPacketV0 creates and returns a new PacketV0 using the provided Client and stream
@@ -358,6 +255,7 @@ func NewPRUDPPacketV0(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPack
 		PRUDPPacket: PRUDPPacket{
 			sender:     client,
 			readStream: readStream,
+			version:    0,
 		},
 	}
 
@@ -390,4 +288,109 @@ func NewPRUDPPacketsV0(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPa
 	}
 
 	return packets, nil
+}
+
+func defaultPRUDPv0ConnectionSignature(packet *PRUDPPacketV0, addr net.Addr) ([]byte, error) {
+	var ip net.IP
+	var port int
+
+	switch v := addr.(type) {
+	case *net.UDPAddr:
+		ip = v.IP.To4()
+		port = v.Port
+	default:
+		return nil, fmt.Errorf("Unsupported network type: %T", addr)
+	}
+
+	portBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(portBytes, uint16(port))
+
+	data := append(ip, portBytes...)
+	hash := md5.Sum(data)
+	signatureBytes := hash[:4]
+
+	slices.Reverse(signatureBytes)
+
+	return signatureBytes, nil
+}
+
+func defaultPRUDPv0CalculateSignature(packet *PRUDPPacketV0, sessionKey, connectionSignature []byte) []byte {
+	if !packet.server.PRUDPV0Settings.IsQuazalMode {
+		if packet.packetType == DataPacket {
+			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
+		}
+
+		if packet.packetType == DisconnectPacket && packet.server.accessKey != "ridfebb9" {
+			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
+		}
+	}
+
+	if len(connectionSignature) != 0 {
+		return connectionSignature
+	}
+
+	return make([]byte, 4)
+}
+
+func defaultPRUDPv0CalculateDataSignature(packet *PRUDPPacketV0, sessionKey []byte) []byte {
+	server := packet.server
+	data := packet.payload
+
+	if server.AccessKey() != "ridfebb9" {
+		header := []byte{0, 0, packet.fragmentID}
+		binary.LittleEndian.PutUint16(header[:2], packet.sequenceID)
+
+		data = append(sessionKey, header...)
+		data = append(data, packet.payload...)
+	}
+
+	if len(data) > 0 {
+		key := md5.Sum([]byte(server.AccessKey()))
+		mac := hmac.New(md5.New, key[:])
+
+		mac.Write(data)
+
+		digest := mac.Sum(nil)
+
+		return digest[:4]
+	}
+
+	return []byte{0x78, 0x56, 0x34, 0x12}
+}
+
+func defaultPRUDPv0CalculateChecksum(packet *PRUDPPacketV0, data []byte) uint32 {
+	server := packet.server
+	checksum := sum[byte, uint32]([]byte(server.AccessKey()))
+
+	if server.PRUDPV0Settings.UseEnhancedChecksum {
+		padSize := (len(data) + 3) &^ 3
+		data = append(data, make([]byte, padSize-len(data))...)
+		words := make([]uint32, len(data)/4)
+
+		for i := 0; i < len(data)/4; i++ {
+			words[i] = binary.LittleEndian.Uint32(data[i*4 : (i+1)*4])
+		}
+
+		result := (checksum & 0xFF) + sum[uint32, uint32](words)
+
+		return result & 0xFFFFFFFF
+	} else {
+		words := make([]uint32, len(data)/4)
+
+		for i := 0; i < len(data)/4; i++ {
+			words[i] = binary.LittleEndian.Uint32(data[i*4 : (i+1)*4])
+		}
+
+		temp := sum[uint32, uint32](words) & 0xFFFFFFFF
+
+		checksum += sum[byte, uint32](data[len(data)&^3:])
+
+		tempBytes := make([]byte, 4)
+
+		binary.LittleEndian.PutUint32(tempBytes, temp)
+
+		checksum += sum[byte, uint32](tempBytes)
+
+		return checksum & 0xFF
+	}
 }

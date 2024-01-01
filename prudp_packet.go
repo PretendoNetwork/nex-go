@@ -7,6 +7,7 @@ type PRUDPPacket struct {
 	server                *PRUDPServer
 	sender                *PRUDPClient
 	readStream            *ByteStreamIn
+	version               uint8
 	sourceStreamType      uint8
 	sourcePort            uint8
 	destinationStreamType uint8
@@ -153,7 +154,7 @@ func (p *PRUDPPacket) decryptPayload() []byte {
 		// * the RC4 stream is always reset to the default key
 		// * regardless if the client is connecting to a secure
 		// * server (prudps) or not
-		if p.sender.server.IsQuazalMode {
+		if p.version == 0 && p.sender.server.PRUDPV0Settings.IsQuazalMode {
 			substream.SetCipherKey([]byte("CD&ML"))
 		}
 
