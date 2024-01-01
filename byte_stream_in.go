@@ -16,8 +16,8 @@ type ByteStreamIn struct {
 func (bsi *ByteStreamIn) StringLengthSize() int {
 	size := 2
 
-	if bsi.Server != nil {
-		size = bsi.Server.StringLengthSize()
+	if bsi.Server != nil && bsi.Server.ByteStreamSettings() != nil {
+		size = bsi.Server.ByteStreamSettings().StringLengthSize
 	}
 
 	return size
@@ -27,8 +27,8 @@ func (bsi *ByteStreamIn) StringLengthSize() int {
 func (bsi *ByteStreamIn) PIDSize() int {
 	size := 4
 
-	if bsi.Server != nil && bsi.Server.LibraryVersion().GreaterOrEqual("4.0.0") {
-		size = 8
+	if bsi.Server != nil && bsi.Server.ByteStreamSettings() != nil {
+		size = bsi.Server.ByteStreamSettings().PIDSize
 	}
 
 	return size
@@ -38,13 +38,8 @@ func (bsi *ByteStreamIn) PIDSize() int {
 func (bsi *ByteStreamIn) UseStructureHeader() bool {
 	useStructureHeader := false
 
-	if bsi.Server != nil {
-		switch server := bsi.Server.(type) {
-		case *PRUDPServer: // * Support QRV versions
-			useStructureHeader = server.PRUDPMinorVersion >= 3
-		default:
-			useStructureHeader = server.LibraryVersion().GreaterOrEqual("3.5.0")
-		}
+	if bsi.Server != nil && bsi.Server.ByteStreamSettings() != nil {
+		useStructureHeader = bsi.Server.ByteStreamSettings().UseStructureHeader
 	}
 
 	return useStructureHeader

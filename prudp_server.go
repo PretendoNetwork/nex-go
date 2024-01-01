@@ -48,8 +48,8 @@ type PRUDPServer struct {
 	PRUDPv1ConnectionSignatureKey   []byte
 	EnhancedChecksum                bool
 	PRUDPv0CustomChecksumCalculator func(packet *PRUDPPacketV0, data []byte) uint32
-	stringLengthSize                int
 	CompressionAlgorithm            compression.Algorithm
+	byteStreamSettings              *ByteStreamSettings
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -1026,14 +1026,14 @@ func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (s
 	s.passwordFromPIDHandler = handler
 }
 
-// StringLengthSize returns the size of the length field used for Quazal::String types
-func (s *PRUDPServer) StringLengthSize() int {
-	return s.stringLengthSize
+// ByteStreamSettings returns the settings to be used for ByteStreams
+func (s *PRUDPServer) ByteStreamSettings() *ByteStreamSettings {
+	return s.byteStreamSettings
 }
 
-// SetStringLengthSize sets the size of the length field used for Quazal::String types
-func (s *PRUDPServer) SetStringLengthSize(size int) {
-	s.stringLengthSize = size
+// SetByteStreamSettings sets the settings to be used for ByteStreams
+func (s *PRUDPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings) {
+	s.byteStreamSettings = byteStreamSettings
 }
 
 // NewPRUDPServer will return a new PRUDP server
@@ -1048,7 +1048,7 @@ func NewPRUDPServer() *PRUDPServer {
 		prudpEventHandlers:       make(map[string][]func(PacketInterface)),
 		connectionIDCounter:      NewCounter[uint32](10),
 		pingTimeout:              time.Second * 15,
-		stringLengthSize:         2,
 		CompressionAlgorithm:     compression.NewDummyCompression(),
+		byteStreamSettings:       NewByteStreamSettings(),
 	}
 }

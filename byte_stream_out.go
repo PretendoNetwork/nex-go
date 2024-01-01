@@ -15,8 +15,8 @@ type ByteStreamOut struct {
 func (bso *ByteStreamOut) StringLengthSize() int {
 	size := 2
 
-	if bso.Server != nil {
-		size = bso.Server.StringLengthSize()
+	if bso.Server != nil && bso.Server.ByteStreamSettings() != nil {
+		size = bso.Server.ByteStreamSettings().StringLengthSize
 	}
 
 	return size
@@ -26,8 +26,8 @@ func (bso *ByteStreamOut) StringLengthSize() int {
 func (bso *ByteStreamOut) PIDSize() int {
 	size := 4
 
-	if bso.Server != nil && bso.Server.LibraryVersion().GreaterOrEqual("4.0.0") {
-		size = 8
+	if bso.Server != nil && bso.Server.ByteStreamSettings() != nil {
+		size = bso.Server.ByteStreamSettings().PIDSize
 	}
 
 	return size
@@ -37,13 +37,8 @@ func (bso *ByteStreamOut) PIDSize() int {
 func (bso *ByteStreamOut) UseStructureHeader() bool {
 	useStructureHeader := false
 
-	if bso.Server != nil {
-		switch server := bso.Server.(type) {
-		case *PRUDPServer: // * Support QRV versions
-			useStructureHeader = server.PRUDPMinorVersion >= 3
-		default:
-			useStructureHeader = server.LibraryVersion().GreaterOrEqual("3.5.0")
-		}
+	if bso.Server != nil && bso.Server.ByteStreamSettings() != nil {
+		useStructureHeader = bso.Server.ByteStreamSettings().UseStructureHeader
 	}
 
 	return useStructureHeader
