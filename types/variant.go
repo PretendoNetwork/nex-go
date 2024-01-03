@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 )
 
 // VariantTypes holds a mapping of RVTypes that are accessible in a Variant
@@ -63,6 +64,26 @@ func (v *Variant) Equals(o RVType) bool {
 	}
 
 	return v.Type.Equals(other.Type)
+}
+
+// String returns a string representation of the struct
+func (v *Variant) String() string {
+	return v.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (v *Variant) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("Variant{\n")
+	b.WriteString(fmt.Sprintf("%TypeID: %s,\n", indentationValues, v.TypeID))
+	b.WriteString(fmt.Sprintf("%Type: %s\n", indentationValues, v.Type))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?

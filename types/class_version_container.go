@@ -1,5 +1,10 @@
 package types
 
+import (
+	"fmt"
+	"strings"
+)
+
 // ClassVersionContainer contains version info for Structures used in verbose RMC messages
 type ClassVersionContainer struct {
 	Structure
@@ -31,6 +36,26 @@ func (cvc *ClassVersionContainer) Equals(o RVType) bool {
 	}
 
 	return cvc.ClassVersions.Equals(o)
+}
+
+// String returns a string representation of the struct
+func (cvc *ClassVersionContainer) String() string {
+	return cvc.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (cvc *ClassVersionContainer) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("ClassVersionContainer{\n")
+	b.WriteString(fmt.Sprintf("%sStructureVersion: %d,\n", indentationValues, cvc.StructureVersion))
+	b.WriteString(fmt.Sprintf("%sClassVersions: %s\n", indentationValues, cvc.ClassVersions))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewClassVersionContainer returns a new ClassVersionContainer

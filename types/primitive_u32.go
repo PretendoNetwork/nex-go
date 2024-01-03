@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveU32 is a struct of uint32 with receiver methods to conform to RVType
 type PrimitiveU32 struct {
 	Value uint32
@@ -34,6 +36,11 @@ func (u32 *PrimitiveU32) Equals(o RVType) bool {
 	}
 
 	return u32.Value == o.(*PrimitiveU32).Value
+}
+
+// String returns a string representation of the struct
+func (u32 *PrimitiveU32) String() string {
+	return fmt.Sprintf("%d", u32.Value)
 }
 
 // NewPrimitiveU32 returns a new PrimitiveU32

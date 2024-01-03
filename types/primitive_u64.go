@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveU64 is a struct of uint64 with receiver methods to conform to RVType
 type PrimitiveU64 struct {
 	Value uint64
@@ -34,6 +36,11 @@ func (u64 *PrimitiveU64) Equals(o RVType) bool {
 	}
 
 	return u64.Value == o.(*PrimitiveU64).Value
+}
+
+// String returns a string representation of the struct
+func (u64 *PrimitiveU64) String() string {
+	return fmt.Sprintf("%d", u64.Value)
 }
 
 // NewPrimitiveU64 returns a new PrimitiveU64

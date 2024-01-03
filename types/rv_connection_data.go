@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 )
 
 // RVConnectionData is a class which holds data about a Rendez-Vous connection
@@ -111,6 +112,29 @@ func (rvcd *RVConnectionData) Equals(o RVType) bool {
 	}
 
 	return true
+}
+
+// String returns a string representation of the struct
+func (rvcd *RVConnectionData) String() string {
+	return rvcd.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (rvcd *RVConnectionData) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("RVConnectionData{\n")
+	b.WriteString(fmt.Sprintf("%sStructureVersion: %d,\n", indentationValues, rvcd.StructureVersion))
+	b.WriteString(fmt.Sprintf("%sStationURL: %s,\n", indentationValues, rvcd.StationURL.FormatToString(indentationLevel+1)))
+	b.WriteString(fmt.Sprintf("%sSpecialProtocols: %s,\n", indentationValues, rvcd.SpecialProtocols))
+	b.WriteString(fmt.Sprintf("%sStationURLSpecialProtocols: %s,\n", indentationValues, rvcd.StationURLSpecialProtocols.FormatToString(indentationLevel+1)))
+	b.WriteString(fmt.Sprintf("%sTime: %s\n", indentationValues, rvcd.Time.FormatToString(indentationLevel+1)))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewRVConnectionData returns a new RVConnectionData

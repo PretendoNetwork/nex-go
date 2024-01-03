@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveU16 is a struct of uint16 with receiver methods to conform to RVType
 type PrimitiveU16 struct {
 	Value uint16
@@ -34,6 +36,11 @@ func (u16 *PrimitiveU16) Equals(o RVType) bool {
 	}
 
 	return u16.Value == o.(*PrimitiveU16).Value
+}
+
+// String returns a string representation of the struct
+func (u16 *PrimitiveU16) String() string {
+	return fmt.Sprintf("%d", u16.Value)
 }
 
 // NewPrimitiveU16 returns a new PrimitiveU16

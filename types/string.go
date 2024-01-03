@@ -74,6 +74,11 @@ func (s *String) Equals(o RVType) bool {
 	return s.Value == o.(*String).Value
 }
 
+// String returns a string representation of the struct
+func (s *String) String() string {
+	return fmt.Sprintf("%q", s.Value)
+}
+
 // NewString returns a new String
 func NewString(str string) *String {
 	return &String{Value: str}

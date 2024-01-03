@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 
 // PrimitiveU8 is a struct of uint8 with receiver methods to conform to RVType
 type PrimitiveU8 struct {
@@ -35,6 +37,11 @@ func (u8 *PrimitiveU8) Equals(o RVType) bool {
 	}
 
 	return u8.Value == o.(*PrimitiveU8).Value
+}
+
+// String returns a string representation of the struct
+func (u8 *PrimitiveU8) String() string {
+	return fmt.Sprintf("%d", u8.Value)
 }
 
 // NewPrimitiveU8 returns a new PrimitiveU8

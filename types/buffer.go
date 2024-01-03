@@ -52,6 +52,11 @@ func (b *Buffer) Equals(o RVType) bool {
 	return bytes.Equal(b.Value, o.(*Buffer).Value)
 }
 
+// String returns a string representation of the struct
+func (b *Buffer) String() string {
+	return fmt.Sprintf("%x", b.Value)
+}
+
 // NewBuffer returns a new Buffer
 func NewBuffer(data []byte) *Buffer {
 	return &Buffer{Value: data}

@@ -1,6 +1,9 @@
 package types
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // List represents a Quazal Rendez-Vous/NEX List type
 type List[T RVType] struct {
@@ -91,6 +94,11 @@ func (l *List[T]) Get(index int) (T, error) {
 // SetFromData sets the List's internal slice to the input data
 func (l *List[T]) SetFromData(data []T) {
 	l.real = data
+}
+
+// String returns a string representation of the struct
+func (l *List[T]) String() string {
+	return fmt.Sprintf("%v", l.real)
 }
 
 // NewList returns a new List of the provided type

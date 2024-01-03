@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveF64 is a struct of float64 with receiver methods to conform to RVType
 type PrimitiveF64 struct {
 	Value float64
@@ -34,6 +36,11 @@ func (f64 *PrimitiveF64) Equals(o RVType) bool {
 	}
 
 	return *f64 == *o.(*PrimitiveF64)
+}
+
+// String returns a string representation of the struct
+func (f64 *PrimitiveF64) String() string {
+	return fmt.Sprintf("%f", f64.Value)
 }
 
 // NewPrimitiveF64 returns a new PrimitiveF64

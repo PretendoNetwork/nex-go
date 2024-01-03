@@ -52,6 +52,11 @@ func (qb *QBuffer) Equals(o RVType) bool {
 	return bytes.Equal(qb.Value, o.(*QBuffer).Value)
 }
 
+// String returns a string representation of the struct
+func (qb *QBuffer) String() string {
+	return fmt.Sprintf("%x", qb.Value)
+}
+
 // NewQBuffer returns a new QBuffer
 func NewQBuffer(data []byte) *QBuffer {
 	return &QBuffer{Value: data}

@@ -1,5 +1,10 @@
 package types
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Map represents a Quazal Rendez-Vous/NEX Map type
 type Map[K RVType, V RVType] struct {
 	// * Rendez-Vous/NEX MapMap types can have ANY value for the key, but Go requires
@@ -140,6 +145,34 @@ func (m *Map[K, V]) Get(key K) (V, bool) {
 // Size returns the length of the Map
 func (m *Map[K, V]) Size() int {
 	return len(m.keys)
+}
+
+// String returns a string representation of the struct
+func (m *Map[K, V]) String() string {
+	return m.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (m *Map[K, V]) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	if len(m.keys) == 0 {
+		b.WriteString(fmt.Sprintf("{}\n"))
+	} else {
+		b.WriteString(fmt.Sprintf("{\n"))
+
+		for i := 0; i < len(m.keys); i++ {
+			// TODO - Special handle the the last item to not add the comma on last item
+			b.WriteString(fmt.Sprintf("%s%v: %v,\n", indentationValues, m.keys[i], m.values[i]))
+		}
+
+		b.WriteString(fmt.Sprintf("%s}\n", indentationEnd))
+	}
+
+	return b.String()
 }
 
 // NewMap returns a new Map of the provided type

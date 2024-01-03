@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 )
 
 // AnyDataHolderObjects holds a mapping of RVTypes that are accessible in a AnyDataHolder
@@ -103,6 +104,29 @@ func (adh *AnyDataHolder) Equals(o RVType) bool {
 	}
 
 	return adh.ObjectData.Equals(other.ObjectData)
+}
+
+// String returns a string representation of the struct
+func (adh *AnyDataHolder) String() string {
+	return adh.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (adh *AnyDataHolder) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("AnyDataHolder{\n")
+	b.WriteString(fmt.Sprintf("%sTypeName: %s,\n", indentationValues, adh.TypeName))
+	b.WriteString(fmt.Sprintf("%sLength1: %s,\n", indentationValues, adh.Length1))
+	b.WriteString(fmt.Sprintf("%sLength2: %s,\n", indentationValues, adh.Length2))
+	b.WriteString(fmt.Sprintf("%sObjectData: %s\n", indentationValues, adh.ObjectData))
+
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?

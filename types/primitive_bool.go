@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveBool is a struct of bool with receiver methods to conform to RVType
 type PrimitiveBool struct {
 	Value bool
@@ -34,6 +36,11 @@ func (b *PrimitiveBool) Equals(o RVType) bool {
 	}
 
 	return b.Value == o.(*PrimitiveBool).Value
+}
+
+// String returns a string representation of the struct
+func (b *PrimitiveBool) String() string {
+	return fmt.Sprintf("%t", b.Value)
 }
 
 // NewPrimitiveBool returns a new PrimitiveBool

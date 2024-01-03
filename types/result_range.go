@@ -2,6 +2,7 @@ package types
 
 import (
 	"fmt"
+	"strings"
 )
 
 // ResultRange class which holds information about how to make queries
@@ -74,6 +75,27 @@ func (rr *ResultRange) Equals(o RVType) bool {
 	}
 
 	return rr.Length.Equals(other.Length)
+}
+
+// String returns a string representation of the struct
+func (rr *ResultRange) String() string {
+	return rr.FormatToString(0)
+}
+
+// FormatToString pretty-prints the struct data using the provided indentation level
+func (rr *ResultRange) FormatToString(indentationLevel int) string {
+	indentationValues := strings.Repeat("\t", indentationLevel+1)
+	indentationEnd := strings.Repeat("\t", indentationLevel)
+
+	var b strings.Builder
+
+	b.WriteString("ResultRange{\n")
+	b.WriteString(fmt.Sprintf("%sStructureVersion: %d,\n", indentationValues, rr.StructureVersion))
+	b.WriteString(fmt.Sprintf("%sOffset: %s,\n", indentationValues, rr.Offset))
+	b.WriteString(fmt.Sprintf("%sLength: %s\n", indentationValues, rr.Length))
+	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
+
+	return b.String()
 }
 
 // NewResultRange returns a new ResultRange

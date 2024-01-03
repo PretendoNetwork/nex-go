@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveS64 is a struct of int64 with receiver methods to conform to RVType
 type PrimitiveS64 struct {
 	Value int64
@@ -34,6 +36,11 @@ func (s64 *PrimitiveS64) Equals(o RVType) bool {
 	}
 
 	return s64.Value == o.(*PrimitiveS64).Value
+}
+
+// String returns a string representation of the struct
+func (s64 *PrimitiveS64) String() string {
+	return fmt.Sprintf("%d", s64.Value)
 }
 
 // NewPrimitiveS64 returns a new PrimitiveS64

@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 // PrimitiveS32 is a struct of int32 with receiver methods to conform to RVType
 type PrimitiveS32 struct {
 	Value int32
@@ -34,6 +36,11 @@ func (s32 *PrimitiveS32) Equals(o RVType) bool {
 	}
 
 	return s32.Value == o.(*PrimitiveS32).Value
+}
+
+// String returns a string representation of the struct
+func (s32 *PrimitiveS32) String() string {
+	return fmt.Sprintf("%d", s32.Value)
 }
 
 // NewPrimitiveS32 returns a new PrimitiveS32
