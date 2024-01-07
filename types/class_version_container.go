@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// ClassVersionContainer contains version info for Structures used in verbose RMC messages
+// ClassVersionContainer is an implementation of rdv::ClassVersionContainer.
+// Contains version info for Structures used in verbose RMC messages.
 type ClassVersionContainer struct {
 	Structure
 	ClassVersions *Map[*String, *PrimitiveU16]

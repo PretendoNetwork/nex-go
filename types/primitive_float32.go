@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveF32 is a struct of float32 with receiver methods to conform to RVType
+// PrimitiveF32 is wrapper around a Go primitive float32 with receiver methods to conform to RVType
 type PrimitiveF32 struct {
 	Value float32
 }

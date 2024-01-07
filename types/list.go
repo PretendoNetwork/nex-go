@@ -5,13 +5,17 @@ import (
 	"fmt"
 )
 
-// List represents a Quazal Rendez-Vous/NEX List type
+// List is an implementation of rdv::qList.
+// This data type holds an array of other types.
+//
+// Unlike Buffer and qBuffer, which use the same data type with differing size field lengths,
+// there does not seem to be an official rdv::List type
 type List[T RVType] struct {
 	real []T
 	Type T
 }
 
-// WriteTo writes the bool to the given writable
+// WriteTo writes the List to the given writable
 func (l *List[T]) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt32LE(uint32(len(l.real)))
 
@@ -20,7 +24,7 @@ func (l *List[T]) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the bool from the given readable
+// ExtractFrom extracts the List from the given readable
 func (l *List[T]) ExtractFrom(readable Readable) error {
 	length, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {
@@ -43,7 +47,7 @@ func (l *List[T]) ExtractFrom(readable Readable) error {
 	return nil
 }
 
-// Copy returns a pointer to a copy of the List[T]. Requires type assertion when used
+// Copy returns a pointer to a copy of the List. Requires type assertion when used
 func (l *List[T]) Copy() RVType {
 	copied := NewList[T]()
 	copied.real = make([]T, len(l.real))

@@ -2,8 +2,7 @@ package types
 
 import "fmt"
 
-
-// PrimitiveU8 is a struct of uint8 with receiver methods to conform to RVType
+// PrimitiveU8 is wrapper around a Go primitive uint8 with receiver methods to conform to RVType
 type PrimitiveU8 struct {
 	Value uint8
 }

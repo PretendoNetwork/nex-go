@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveU64 is a struct of uint64 with receiver methods to conform to RVType
+// PrimitiveU64 is wrapper around a Go primitive uint64 with receiver methods to conform to RVType
 type PrimitiveU64 struct {
 	Value uint64
 }

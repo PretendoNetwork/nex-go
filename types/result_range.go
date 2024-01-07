@@ -5,11 +5,12 @@ import (
 	"strings"
 )
 
-// ResultRange class which holds information about how to make queries
+// ResultRange is an implementation of rdv::ResultRange.
+// Holds information about how to make queries which may return large data.
 type ResultRange struct {
 	Structure
-	Offset *PrimitiveU32
-	Length *PrimitiveU32
+	Offset *PrimitiveU32 // Offset into the dataset
+	Length *PrimitiveU32 // Number of items to return
 }
 
 // WriteTo writes the ResultRange to the given writable

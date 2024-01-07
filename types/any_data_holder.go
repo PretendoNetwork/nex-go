@@ -13,13 +13,14 @@ func RegisterDataHolderType(name string, rvType RVType) {
 	AnyDataHolderObjects[name] = rvType
 }
 
-// AnyDataHolder is a class which can contain any Structure. These Structures usually inherit from at least one
-// other Structure. Typically this base class is the empty `Data` Structure, but this is not always the case.
-// The contained Structures name & length are sent with the Structure body, so the receiver can properly decode it
+// AnyDataHolder is a class which can contain any Structure. The official type name and namespace is unknown.
+// These Structures usually inherit from at least one other Structure. Typically this base class is the empty
+// `Data` Structure, but this is not always the case. The contained Structures name & length are sent with the
+// Structure body, so the receiver can properly decode it.
 type AnyDataHolder struct {
 	TypeName   *String
-	Length1    *PrimitiveU32
-	Length2    *PrimitiveU32
+	Length1    *PrimitiveU32 // Length of ObjectData + Length2
+	Length2    *PrimitiveU32 // Length of ObjectData
 	ObjectData RVType
 }
 
@@ -71,7 +72,7 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 	return nil
 }
 
-// Copy returns a new copied instance of DataHolder
+// Copy returns a new copied instance of AnyDataHolder
 func (adh *AnyDataHolder) Copy() RVType {
 	copied := NewAnyDataHolder()
 
@@ -129,12 +130,11 @@ func (adh *AnyDataHolder) FormatToString(indentationLevel int) string {
 	return b.String()
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewAnyDataHolder returns a new AnyDataHolder
 func NewAnyDataHolder() *AnyDataHolder {
 	return &AnyDataHolder{
 		TypeName: NewString(""),
-		Length1: NewPrimitiveU32(0),
-		Length2: NewPrimitiveU32(0),
+		Length1:  NewPrimitiveU32(0),
+		Length2:  NewPrimitiveU32(0),
 	}
 }

@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveU32 is a struct of uint32 with receiver methods to conform to RVType
+// PrimitiveU32 is wrapper around a Go primitive uint32 with receiver methods to conform to RVType
 type PrimitiveU32 struct {
 	Value uint32
 }

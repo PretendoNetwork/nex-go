@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveS8 is a struct of int8 with receiver methods to conform to RVType
+// PrimitiveS8 is wrapper around a Go primitive int8 with receiver methods to conform to RVType
 type PrimitiveS8 struct {
 	Value int8
 }

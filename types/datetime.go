@@ -6,7 +6,8 @@ import (
 	"time"
 )
 
-// DateTime represents a NEX DateTime type
+// DateTime is an implementation of rdv::DateTime.
+// The underlying value is a uint64 bit field containing date and time information.
 type DateTime struct {
 	value uint64
 }

@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// RVConnectionData is a class which holds data about a Rendez-Vous connection
+// RVConnectionData is an implementation of rdv::RVConnectionData.
+// Contains the locations and data of Rendez-Vous connection.
 type RVConnectionData struct {
 	Structure
 	StationURL                 *StationURL
@@ -140,10 +141,10 @@ func (rvcd *RVConnectionData) FormatToString(indentationLevel int) string {
 // NewRVConnectionData returns a new RVConnectionData
 func NewRVConnectionData() *RVConnectionData {
 	rvcd := &RVConnectionData{
-		StationURL: NewStationURL(""),
-		SpecialProtocols: NewList[*PrimitiveU8](),
+		StationURL:                 NewStationURL(""),
+		SpecialProtocols:           NewList[*PrimitiveU8](),
 		StationURLSpecialProtocols: NewStationURL(""),
-		Time: NewDateTime(0),
+		Time:                       NewDateTime(0),
 	}
 
 	rvcd.SpecialProtocols.Type = NewPrimitiveU8(0)

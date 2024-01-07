@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveBool is a struct of bool with receiver methods to conform to RVType
+// PrimitiveBool is wrapper around a Go primitive bool with receiver methods to conform to RVType
 type PrimitiveBool struct {
 	Value bool
 }

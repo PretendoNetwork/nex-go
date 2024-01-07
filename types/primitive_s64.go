@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveS64 is a struct of int64 with receiver methods to conform to RVType
+// PrimitiveS64 is wrapper around a Go primitive int64 with receiver methods to conform to RVType
 type PrimitiveS64 struct {
 	Value int64
 }

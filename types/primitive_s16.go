@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveS16 is a struct of int16 with receiver methods to conform to RVType
+// PrimitiveS16 is wrapper around a Go primitive int16 with receiver methods to conform to RVType
 type PrimitiveS16 struct {
 	Value int16
 }

@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-// String is a struct of string with receiver methods to conform to RVType
+// String is an implementation of rdv::String.
+// Wraps a primitive Go string.
 type String struct {
 	Value string
 }

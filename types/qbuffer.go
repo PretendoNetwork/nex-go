@@ -5,7 +5,9 @@ import (
 	"fmt"
 )
 
-// QBuffer is a struct of []byte with receiver methods to conform to RVType
+// QBuffer is an implementation of rdv::qBuffer.
+// Wraps a primitive Go byte slice.
+// Same as Buffer but with a uint16 length field.
 type QBuffer struct {
 	Value []byte
 }

@@ -13,7 +13,8 @@ func RegisterVariantType(id uint8, rvType RVType) {
 	VariantTypes[id] = rvType
 }
 
-// Variant is a type which can old many other types
+// Variant is an implementation of rdv::Variant.
+// This type can hold many other types, denoted by a type ID.
 type Variant struct {
 	TypeID *PrimitiveU8
 	Type   RVType
@@ -86,7 +87,6 @@ func (v *Variant) FormatToString(indentationLevel int) string {
 	return b.String()
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewVariant returns a new Variant
 func NewVariant() *Variant {
 	return &Variant{

@@ -8,7 +8,8 @@ import (
 	"strings"
 )
 
-// QUUID represents a QRV qUUID type. This type encodes a UUID in little-endian byte order
+// QUUID is an implementation of rdv::qUUID.
+// Encodes a UUID in little-endian byte order.
 type QUUID struct {
 	Data []byte
 }

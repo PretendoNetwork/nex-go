@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-// Map represents a Quazal Rendez-Vous/NEX Map type
+// Map represents a Quazal Rendez-Vous/NEX Map type.
+//
+// There is not an official type in either the rdv or nn::nex namespaces.
+// The data is stored as an array of key-value pairs.
 type Map[K RVType, V RVType] struct {
 	// * Rendez-Vous/NEX MapMap types can have ANY value for the key, but Go requires
 	// * map keys to implement the "comparable" constraint. This is not possible with
@@ -17,7 +20,7 @@ type Map[K RVType, V RVType] struct {
 	ValueType V
 }
 
-// WriteTo writes the bool to the given writable
+// WriteTo writes the Map to the given writable
 func (m *Map[K, V]) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt32LE(uint32(m.Size()))
 
@@ -27,7 +30,7 @@ func (m *Map[K, V]) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the bool from the given readable
+// ExtractFrom extracts the Map from the given readable
 func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 	length, err := readable.ReadPrimitiveUInt32LE()
 	if err != nil {
@@ -58,7 +61,7 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 	return nil
 }
 
-// Copy returns a pointer to a copy of the Map[K, V]. Requires type assertion when used
+// Copy returns a pointer to a copy of the Map. Requires type assertion when used
 func (m *Map[K, V]) Copy() RVType {
 	copied := NewMap[K, V]()
 	copied.keys = make([]K, len(m.keys))

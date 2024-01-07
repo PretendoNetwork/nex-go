@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveS32 is a struct of int32 with receiver methods to conform to RVType
+// PrimitiveS32 is wrapper around a Go primitive int32 with receiver methods to conform to RVType
 type PrimitiveS32 struct {
 	Value int32
 }

@@ -5,12 +5,14 @@ import (
 	"fmt"
 )
 
-// Buffer is a struct of []byte with receiver methods to conform to RVType
+// Buffer is an implementation of rdv::Buffer.
+// Wraps a primitive Go byte slice.
+// Same as QBuffer but with a uint32 length field.
 type Buffer struct {
 	Value []byte
 }
 
-// WriteTo writes the []byte to the given writable
+// WriteTo writes the Buffer to the given writable
 func (b *Buffer) WriteTo(writable Writable) {
 	length := len(b.Value)
 

@@ -2,7 +2,7 @@ package types
 
 import "fmt"
 
-// PrimitiveF64 is a struct of float64 with receiver methods to conform to RVType
+// PrimitiveF64 is wrapper around a Go primitive float64 with receiver methods to conform to RVType
 type PrimitiveF64 struct {
 	Value float64
 }

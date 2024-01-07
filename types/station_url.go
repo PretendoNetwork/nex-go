@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// StationURL contains the data for a NEX station URL
+// StationURL is an implementation of rdv::StationURL.
+// Contains location of a station to connect to, with data about how to connect.
 type StationURL struct {
 	local  bool // * Not part of the data structure. Used for easier lookups elsewhere
 	public bool // * Not part of the data structure. Used for easier lookups elsewhere
@@ -156,7 +157,6 @@ func (s *StationURL) FormatToString(indentationLevel int) string {
 	return b.String()
 }
 
-// TODO - Should this take in a default value, or take in nothing and have a "SetFromData"-kind of method?
 // NewStationURL returns a new StationURL
 func NewStationURL(str string) *StationURL {
 	stationURL := &StationURL{

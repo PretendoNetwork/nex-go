@@ -7,9 +7,11 @@ import (
 
 var errorMask = 1 << 31
 
-// Result is sent in methods which query large objects
+// Result is an implementation of nn::Result.
+// Determines the result of an operation.
+// If the MSB is set the result is an error, otherwise success
 type Result struct {
-	Code uint32 // TODO - Replace this with PrimitiveU32?
+	Code uint32
 }
 
 // WriteTo writes the Result to the given writable

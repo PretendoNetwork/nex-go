@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// Data is the base class for many other structures. The structure itself has no fields
+// Data is an implementation of rdv::Data.
+// This structure has no data, and instead acts as the base class for many other structures.
 type Data struct {
 	Structure
 }

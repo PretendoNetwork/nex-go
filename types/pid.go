@@ -5,7 +5,8 @@ import (
 	"strings"
 )
 
-// PID represents a unique number to identify a user
+// PID represents a unique number to identify a user.
+// The official library treats this as a primitive integer.
 //
 // The true size of this value depends on the client version.
 // Legacy clients (WiiU/3DS) use a uint32, whereas modern clients (Nintendo Switch) use a uint64.
@@ -14,7 +15,7 @@ type PID struct {
 	pid uint64
 }
 
-// WriteTo writes the bool to the given writable
+// WriteTo writes the PID to the given writable
 func (p *PID) WriteTo(writable Writable) {
 	if writable.PIDSize() == 8 {
 		writable.WritePrimitiveUInt64LE(p.pid)
@@ -23,7 +24,7 @@ func (p *PID) WriteTo(writable Writable) {
 	}
 }
 
-// ExtractFrom extracts the bool from the given readable
+// ExtractFrom extracts the PID from the given readable
 func (p *PID) ExtractFrom(readable Readable) error {
 	var pid uint64
 	var err error
