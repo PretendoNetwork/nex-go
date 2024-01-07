@@ -35,7 +35,7 @@ func (f64 *PrimitiveF64) Equals(o RVType) bool {
 		return false
 	}
 
-	return *f64 == *o.(*PrimitiveF64)
+	return f64.Value == o.(*PrimitiveF64).Value
 }
 
 // String returns a string representation of the struct

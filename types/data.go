@@ -39,7 +39,13 @@ func (d *Data) Equals(o RVType) bool {
 		return false
 	}
 
-	return (*d).StructureVersion == (*o.(*Data)).StructureVersion
+	other := o.(*Data)
+
+	if d.StructureVersion == other.StructureVersion {
+		return false
+	}
+
+	return d.StructureContentLength == other.StructureContentLength
 }
 
 // String returns a string representation of the struct
