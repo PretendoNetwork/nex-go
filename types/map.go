@@ -163,9 +163,9 @@ func (m *Map[K, V]) FormatToString(indentationLevel int) string {
 	var b strings.Builder
 
 	if len(m.keys) == 0 {
-		b.WriteString(fmt.Sprintf("{}\n"))
+		b.WriteString("{}\n")
 	} else {
-		b.WriteString(fmt.Sprintf("{\n"))
+		b.WriteString("{\n")
 
 		for i := 0; i < len(m.keys); i++ {
 			// TODO - Special handle the the last item to not add the comma on last item
