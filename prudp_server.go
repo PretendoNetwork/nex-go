@@ -102,7 +102,6 @@ func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
 // ListenWebSocket starts a PRUDP server on a given port using a WebSocket server
 func (s *PRUDPServer) ListenWebSocket(port int) {
 	s.initPRUDPv1ConnectionSignatureKey()
-	//s.initVirtualPorts()
 
 	s.websocketServer = &WebSocketServer{
 		prudpServer: s,
@@ -114,7 +113,6 @@ func (s *PRUDPServer) ListenWebSocket(port int) {
 // ListenWebSocketSecure starts a PRUDP server on a given port using a secure (TLS) WebSocket server
 func (s *PRUDPServer) ListenWebSocketSecure(port int, certFile, keyFile string) {
 	s.initPRUDPv1ConnectionSignatureKey()
-	//s.initVirtualPorts()
 
 	s.websocketServer = &WebSocketServer{
 		prudpServer: s,
