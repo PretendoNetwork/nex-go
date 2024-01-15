@@ -59,23 +59,37 @@ import (
 )
 
 func main() {
-	nexServer := nex.NewPRUDPServer()
-	nexServer.PRUDPVersion = 0
-	nexServer.SetFragmentSize(962)
-	nexServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
-	nexServer.SetKerberosPassword([]byte("password"))
-	nexServer.SetKerberosKeySize(16)
-	nexServer.SetAccessKey("ridfebb9")
+	// Skeleton of a WiiU/3DS Friends server running on PRUDPv0 with a single endpoint
 
-	nexServer.OnData(func(packet nex.PacketInterface) {
-		request := packet.RMCMessage()
+	authServer := nex.NewPRUDPServer() // The main PRUDP server
+	endpoint := nex.NewPRUDPEndPoint(1) // A PRUDP endpoint for PRUDP connections to connect to. Bound to StreamID 1
 
-		fmt.Println("==Friends - Auth==")
-		fmt.Printf("Protocol ID: %#v\n", request.ProtocolID)
-		fmt.Printf("Method ID: %#v\n", request.MethodID)
-		fmt.Println("==================")
+	// Setup event handlers for the endpoint
+	endpoint.OnData(func(packet nex.PacketInterface) {
+		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
+			request := packet.RMCMessage()
+
+			fmt.Println("[AUTH]", request.ProtocolID, request.MethodID)
+
+			if request.ProtocolID == 0xA { // TicketGrantingProtocol
+				if request.MethodID == 0x1 { // TicketGrantingProtocol::Login
+					handleLogin(packet)
+				}
+
+				if request.MethodID == 0x3 { // TicketGrantingProtocol::RequestTicket
+					handleRequestTicket(packet)
+				}
+			}
+		}
 	})
 
-	nexServer.Listen(60000)
+	// Bind the endpoint to the server and configure it's settings
+	authServer.BindPRUDPEndPoint(endpoint)
+	authServer.SetFragmentSize(962)
+	authServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
+	authServer.SetKerberosPassword([]byte("password"))
+	authServer.SetKerberosKeySize(16)
+	authServer.SetAccessKey("ridfebb9")
+	authServer.Listen(60000)
 }
 ```
