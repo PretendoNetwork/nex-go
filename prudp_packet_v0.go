@@ -17,15 +17,13 @@ type PRUDPPacketV0 struct {
 
 // Copy copies the packet into a new PRUDPPacketV0
 //
-// Retains the same PRUDPClient pointer
+// Retains the same PRUDPConnection pointer
 func (p *PRUDPPacketV0) Copy() PRUDPPacketInterface {
 	copied, _ := NewPRUDPPacketV0(p.sender, nil)
 
 	copied.server = p.server
-	copied.sourceStreamType = p.sourceStreamType
-	copied.sourcePort = p.sourcePort
-	copied.destinationStreamType = p.destinationStreamType
-	copied.destinationPort = p.destinationPort
+	copied.sourceVirtualPort = p.sourceVirtualPort
+	copied.destinationVirtualPort = p.destinationVirtualPort
 	copied.packetType = p.packetType
 	copied.flags = p.flags
 	copied.sessionID = p.sessionID
@@ -73,15 +71,14 @@ func (p *PRUDPPacketV0) decode() error {
 		return fmt.Errorf("Failed to read PRUDPv0 source. %s", err.Error())
 	}
 
+	p.sourceVirtualPort = VirtualPort(source)
+
 	destination, err := p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 destination. %s", err.Error())
 	}
 
-	p.sourceStreamType = source >> 4
-	p.sourcePort = source & 0xF
-	p.destinationStreamType = destination >> 4
-	p.destinationPort = destination & 0xF
+	p.destinationVirtualPort = VirtualPort(destination)
 
 	if server.PRUDPV0Settings.IsQuazalMode {
 		typeAndFlags, err := p.readStream.ReadPrimitiveUInt8()
@@ -198,8 +195,8 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	server := p.server
 	stream := NewByteStreamOut(server)
 
-	stream.WritePrimitiveUInt8(p.sourcePort | (p.sourceStreamType << 4))
-	stream.WritePrimitiveUInt8(p.destinationPort | (p.destinationStreamType << 4))
+	stream.WritePrimitiveUInt8(uint8(p.sourceVirtualPort))
+	stream.WritePrimitiveUInt8(uint8(p.destinationVirtualPort))
 
 	if server.PRUDPV0Settings.IsQuazalMode {
 		stream.WritePrimitiveUInt8(uint8(p.packetType | (p.flags << 3)))
@@ -250,10 +247,10 @@ func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byt
 }
 
 // NewPRUDPPacketV0 creates and returns a new PacketV0 using the provided Client and stream
-func NewPRUDPPacketV0(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPacketV0, error) {
+func NewPRUDPPacketV0(connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketV0, error) {
 	packet := &PRUDPPacketV0{
 		PRUDPPacket: PRUDPPacket{
-			sender:     client,
+			sender:     connection,
 			readStream: readStream,
 			version:    0,
 		},
@@ -267,19 +264,19 @@ func NewPRUDPPacketV0(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPack
 		}
 	}
 
-	if client != nil {
-		packet.server = client.server
+	if connection != nil {
+		packet.server = connection.Endpoint.Server
 	}
 
 	return packet, nil
 }
 
 // NewPRUDPPacketsV0 reads all possible PRUDPv0 packets from the stream
-func NewPRUDPPacketsV0(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsV0(connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {
-		packet, err := NewPRUDPPacketV0(client, readStream)
+		packet, err := NewPRUDPPacketV0(connection, readStream)
 		if err != nil {
 			return packets, err
 		}

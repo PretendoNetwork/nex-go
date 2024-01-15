@@ -77,6 +77,11 @@ func (z *Zlib) Decompress(payload []byte) ([]byte, error) {
 	return decompressedBytes, nil
 }
 
+// Copy returns a copy of the algorithm
+func (z *Zlib) Copy() Algorithm {
+	return NewZlibCompression()
+}
+
 // NewZlibCompression returns a new instance of the Zlib compression
 func NewZlibCompression() *Zlib {
 	return &Zlib{}

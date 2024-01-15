@@ -11,25 +11,69 @@ import (
 // PRUDPPacketLite represents a PRUDPLite packet
 type PRUDPPacketLite struct {
 	PRUDPPacket
-	optionsLength               uint8
-	minorVersion                uint32
-	supportedFunctions          uint32
-	maximumSubstreamID          uint8
-	initialUnreliableSequenceID uint16
-	liteSignature               []byte
+	sourceVirtualPortStreamType      StreamType
+	sourceVirtualPortStreamID        uint8
+	destinationVirtualPortStreamType StreamType
+	destinationVirtualPortStreamID   uint8
+	optionsLength                    uint8
+	minorVersion                     uint32
+	supportedFunctions               uint32
+	maximumSubstreamID               uint8
+	initialUnreliableSequenceID      uint16
+	liteSignature                    []byte
+}
+
+// SetSourceVirtualPortStreamType sets the packets source VirtualPort StreamType
+func (p *PRUDPPacketLite) SetSourceVirtualPortStreamType(streamType StreamType) {
+	p.sourceVirtualPortStreamType = streamType
+}
+
+// SourceVirtualPortStreamType returns the packets source VirtualPort StreamType
+func (p *PRUDPPacketLite) SourceVirtualPortStreamType() StreamType {
+	return p.sourceVirtualPortStreamType
+}
+
+// SetSourceVirtualPortStreamID sets the packets source VirtualPort port number
+func (p *PRUDPPacketLite) SetSourceVirtualPortStreamID(port uint8) {
+	p.sourceVirtualPortStreamID = port
+}
+
+// SourceVirtualPortStreamID returns the packets source VirtualPort port number
+func (p *PRUDPPacketLite) SourceVirtualPortStreamID() uint8 {
+	return p.sourceVirtualPort.StreamID()
+}
+
+// SetDestinationVirtualPortStreamType sets the packets destination VirtualPort StreamType
+func (p *PRUDPPacketLite) SetDestinationVirtualPortStreamType(streamType StreamType) {
+	p.destinationVirtualPortStreamType = streamType
+}
+
+// DestinationVirtualPortStreamType returns the packets destination VirtualPort StreamType
+func (p *PRUDPPacketLite) DestinationVirtualPortStreamType() StreamType {
+	return p.destinationVirtualPortStreamType
+}
+
+// SetDestinationVirtualPortStreamID sets the packets destination VirtualPort port number
+func (p *PRUDPPacketLite) SetDestinationVirtualPortStreamID(port uint8) {
+	p.destinationVirtualPortStreamID = port
+}
+
+// DestinationVirtualPortStreamID returns the packets destination VirtualPort port number
+func (p *PRUDPPacketLite) DestinationVirtualPortStreamID() uint8 {
+	return p.destinationVirtualPortStreamID
 }
 
 // Copy copies the packet into a new PRUDPPacketLite
 //
-// Retains the same PRUDPClient pointer
+// Retains the same PRUDPConnection pointer
 func (p *PRUDPPacketLite) Copy() PRUDPPacketInterface {
 	copied, _ := NewPRUDPPacketLite(p.sender, nil)
 
 	copied.server = p.server
-	copied.sourceStreamType = p.sourceStreamType
-	copied.sourcePort = p.sourcePort
-	copied.destinationStreamType = p.destinationStreamType
-	copied.destinationPort = p.destinationPort
+	copied.sourceVirtualPortStreamType = p.sourceVirtualPortStreamType
+	copied.sourceVirtualPortStreamID = p.sourceVirtualPortStreamID
+	copied.destinationVirtualPortStreamType = p.destinationVirtualPortStreamType
+	copied.destinationVirtualPortStreamID = p.destinationVirtualPortStreamID
 	copied.packetType = p.packetType
 	copied.flags = p.flags
 	copied.sessionID = p.sessionID
@@ -95,15 +139,15 @@ func (p *PRUDPPacketLite) decode() error {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual ports stream types. %s", err.Error())
 	}
 
-	p.sourceStreamType = streamTypes >> 4
-	p.destinationStreamType = streamTypes & 0xF
+	p.sourceVirtualPortStreamType = StreamType(streamTypes >> 4)
+	p.destinationVirtualPortStreamType = StreamType(streamTypes & 0xF)
 
-	p.sourcePort, err = p.readStream.ReadPrimitiveUInt8()
+	p.sourceVirtualPortStreamID, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual source port. %s", err.Error())
 	}
 
-	p.destinationPort, err = p.readStream.ReadPrimitiveUInt8()
+	p.destinationVirtualPortStreamID, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual destination port. %s", err.Error())
 	}
@@ -145,9 +189,9 @@ func (p *PRUDPPacketLite) Bytes() []byte {
 	stream.WritePrimitiveUInt8(0x80)
 	stream.WritePrimitiveUInt8(uint8(len(options)))
 	stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
-	stream.WritePrimitiveUInt8((p.sourceStreamType << 4) | p.destinationStreamType)
-	stream.WritePrimitiveUInt8(p.sourcePort)
-	stream.WritePrimitiveUInt8(p.destinationPort)
+	stream.WritePrimitiveUInt8(uint8((p.sourceVirtualPortStreamType << 4) | p.destinationVirtualPortStreamType))
+	stream.WritePrimitiveUInt8(p.sourceVirtualPortStreamID)
+	stream.WritePrimitiveUInt8(p.destinationVirtualPortStreamID)
 	stream.WritePrimitiveUInt8(p.fragmentID)
 	stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4))
 	stream.WritePrimitiveUInt16LE(p.sequenceID)
@@ -276,10 +320,10 @@ func (p *PRUDPPacketLite) calculateSignature(sessionKey, connectionSignature []b
 }
 
 // NewPRUDPPacketLite creates and returns a new PacketLite using the provided Client and stream
-func NewPRUDPPacketLite(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPacketLite, error) {
+func NewPRUDPPacketLite(connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketLite, error) {
 	packet := &PRUDPPacketLite{
 		PRUDPPacket: PRUDPPacket{
-			sender:     client,
+			sender:     connection,
 			readStream: readStream,
 		},
 	}
@@ -292,19 +336,19 @@ func NewPRUDPPacketLite(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPa
 		}
 	}
 
-	if client != nil {
-		packet.server = client.server
+	if connection != nil {
+		packet.server = connection.Endpoint.Server
 	}
 
 	return packet, nil
 }
 
 // NewPRUDPPacketsLite reads all possible PRUDPLite packets from the stream
-func NewPRUDPPacketsLite(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsLite(connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {
-		packet, err := NewPRUDPPacketLite(client, readStream)
+		packet, err := NewPRUDPPacketLite(connection, readStream)
 		if err != nil {
 			return packets, err
 		}

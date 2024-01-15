@@ -16,7 +16,6 @@ type ServerInterface interface {
 	NATTraversalProtocolVersion() *LibraryVersion
 	SetDefaultLibraryVersion(version *LibraryVersion)
 	Send(packet PacketInterface)
-	OnData(handler func(packet PacketInterface))
 	PasswordFromPID(pid *types.PID) (string, uint32)
 	SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32))
 	ByteStreamSettings() *ByteStreamSettings

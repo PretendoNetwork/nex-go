@@ -46,7 +46,10 @@ func startSecureServer() {
 
 	secureServer = nex.NewPRUDPServer()
 
-	secureServer.OnData(func(packet nex.PacketInterface) {
+	endpoint := nex.NewPRUDPEndPoint(1)
+	endpoint.IsSecureEndpoint = true
+
+	endpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
 			request := packet.RMCMessage()
 
@@ -72,19 +75,19 @@ func startSecureServer() {
 		}
 	})
 
-	secureServer.SecureVirtualServerPorts = []uint8{1}
-	//secureServer.PRUDPVersion = 1
 	secureServer.SetFragmentSize(962)
 	secureServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
 	secureServer.SetKerberosPassword([]byte("password"))
 	secureServer.SetKerberosKeySize(16)
 	secureServer.SetAccessKey("ridfebb9")
+	secureServer.BindPRUDPEndPoint(endpoint)
 	secureServer.Listen(60001)
 }
 
 func registerEx(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
 	response := nex.NewRMCMessage(secureServer)
+	connection := packet.Sender().(*nex.PRUDPConnection)
 
 	parameters := request.Parameters
 
@@ -114,7 +117,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	responseStream := nex.NewByteStreamOut(secureServer)
 
 	retval.WriteTo(responseStream)
-	responseStream.WritePrimitiveUInt32LE(secureServer.ConnectionIDCounter().Next())
+	responseStream.WritePrimitiveUInt32LE(connection.ID)
 	localStationURL.WriteTo(responseStream)
 
 	response.IsSuccess = true
@@ -125,16 +128,16 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPClient), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(connection, nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
 	responsePacket.AddFlag(nex.FlagReliable)
 	responsePacket.AddFlag(nex.FlagNeedsAck)
-	responsePacket.SetSourceStreamType(packet.DestinationStreamType())
-	responsePacket.SetSourcePort(packet.DestinationPort())
-	responsePacket.SetDestinationStreamType(packet.SourceStreamType())
-	responsePacket.SetDestinationPort(packet.SourcePort())
+	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
+	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
+	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
+	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
 
@@ -173,16 +176,16 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPClient), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
 	responsePacket.AddFlag(nex.FlagReliable)
 	responsePacket.AddFlag(nex.FlagNeedsAck)
-	responsePacket.SetSourceStreamType(packet.DestinationStreamType())
-	responsePacket.SetSourcePort(packet.DestinationPort())
-	responsePacket.SetDestinationStreamType(packet.SourceStreamType())
-	responsePacket.SetDestinationPort(packet.SourcePort())
+	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
+	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
+	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
+	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
 
@@ -205,16 +208,16 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPClient), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
 	responsePacket.AddFlag(nex.FlagReliable)
 	responsePacket.AddFlag(nex.FlagNeedsAck)
-	responsePacket.SetSourceStreamType(packet.DestinationStreamType())
-	responsePacket.SetSourcePort(packet.DestinationPort())
-	responsePacket.SetDestinationStreamType(packet.SourceStreamType())
-	responsePacket.SetDestinationPort(packet.SourcePort())
+	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
+	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
+	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
+	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
 
@@ -232,16 +235,16 @@ func updatePresence(packet nex.PRUDPPacketInterface) {
 	response.CallID = request.CallID
 	response.MethodID = request.MethodID
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPClient), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
 	responsePacket.AddFlag(nex.FlagReliable)
 	responsePacket.AddFlag(nex.FlagNeedsAck)
-	responsePacket.SetSourceStreamType(packet.DestinationStreamType())
-	responsePacket.SetSourcePort(packet.DestinationPort())
-	responsePacket.SetDestinationStreamType(packet.SourceStreamType())
-	responsePacket.SetDestinationPort(packet.SourcePort())
+	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
+	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
+	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
+	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
 

@@ -79,3 +79,13 @@ func (l *LZO) Decompress(payload []byte) ([]byte, error) {
 
 	return decompressedBytes, nil
 }
+
+// Copy returns a copy of the algorithm
+func (l *LZO) Copy() Algorithm {
+	return NewLZOCompression()
+}
+
+// NewLZOCompression returns a new instance of the LZO compression
+func NewLZOCompression() *LZO {
+	return &LZO{}
+}

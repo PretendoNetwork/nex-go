@@ -14,14 +14,14 @@ type PRUDPPacketInterface interface {
 	AddFlag(flag uint16)
 	SetType(packetType uint16)
 	Type() uint16
-	SetSourceStreamType(sourceStreamType uint8)
-	SourceStreamType() uint8
-	SetSourcePort(sourcePort uint8)
-	SourcePort() uint8
-	SetDestinationStreamType(destinationStreamType uint8)
-	DestinationStreamType() uint8
-	SetDestinationPort(destinationPort uint8)
-	DestinationPort() uint8
+	SetSourceVirtualPortStreamType(streamType StreamType)
+	SourceVirtualPortStreamType() StreamType
+	SetSourceVirtualPortStreamID(port uint8)
+	SourceVirtualPortStreamID() uint8
+	SetDestinationVirtualPortStreamType(streamType StreamType)
+	DestinationVirtualPortStreamType() StreamType
+	SetDestinationVirtualPortStreamID(port uint8)
+	DestinationVirtualPortStreamID() uint8
 	SessionID() uint8
 	SetSessionID(sessionID uint8)
 	SubstreamID() uint8

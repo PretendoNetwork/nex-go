@@ -16,7 +16,9 @@ func startAuthenticationServer() {
 
 	authServer = nex.NewPRUDPServer()
 
-	authServer.OnData(func(packet nex.PacketInterface) {
+	endpoint := nex.NewPRUDPEndPoint(1)
+
+	endpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
 			request := packet.RMCMessage()
 
@@ -35,11 +37,11 @@ func startAuthenticationServer() {
 	})
 
 	authServer.SetFragmentSize(962)
-	//authServer.PRUDPVersion = 1
 	authServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
 	authServer.SetKerberosPassword([]byte("password"))
 	authServer.SetKerberosKeySize(16)
 	authServer.SetAccessKey("ridfebb9")
+	authServer.BindPRUDPEndPoint(endpoint)
 	authServer.Listen(60000)
 }
 
@@ -89,16 +91,16 @@ func login(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPClient), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
 	responsePacket.AddFlag(nex.FlagReliable)
 	responsePacket.AddFlag(nex.FlagNeedsAck)
-	responsePacket.SetSourceStreamType(packet.DestinationStreamType())
-	responsePacket.SetSourcePort(packet.DestinationPort())
-	responsePacket.SetDestinationStreamType(packet.SourceStreamType())
-	responsePacket.SetDestinationPort(packet.SourcePort())
+	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
+	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
+	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
+	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
 
@@ -139,16 +141,16 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPClient), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
 	responsePacket.AddFlag(nex.FlagReliable)
 	responsePacket.AddFlag(nex.FlagNeedsAck)
-	responsePacket.SetSourceStreamType(packet.DestinationStreamType())
-	responsePacket.SetSourcePort(packet.DestinationPort())
-	responsePacket.SetDestinationStreamType(packet.SourceStreamType())
-	responsePacket.SetDestinationPort(packet.SourcePort())
+	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
+	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
+	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
+	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
 

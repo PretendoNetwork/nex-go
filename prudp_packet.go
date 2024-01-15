@@ -4,29 +4,27 @@ import "crypto/rc4"
 
 // PRUDPPacket holds all the fields each packet should have in all PRUDP versions
 type PRUDPPacket struct {
-	server                *PRUDPServer
-	sender                *PRUDPClient
-	readStream            *ByteStreamIn
-	version               uint8
-	sourceStreamType      uint8
-	sourcePort            uint8
-	destinationStreamType uint8
-	destinationPort       uint8
-	packetType            uint16
-	flags                 uint16
-	sessionID             uint8
-	substreamID           uint8
-	signature             []byte
-	sequenceID            uint16
-	connectionSignature   []byte
-	fragmentID            uint8
-	payload               []byte
-	message               *RMCMessage
+	server                 *PRUDPServer
+	sender                 *PRUDPConnection
+	readStream             *ByteStreamIn
+	version                uint8
+	sourceVirtualPort      VirtualPort
+	destinationVirtualPort VirtualPort
+	packetType             uint16
+	flags                  uint16
+	sessionID              uint8
+	substreamID            uint8
+	signature              []byte
+	sequenceID             uint16
+	connectionSignature    []byte
+	fragmentID             uint8
+	payload                []byte
+	message                *RMCMessage
 }
 
 // SetSender sets the Client who sent the packet
 func (p *PRUDPPacket) SetSender(sender ClientInterface) {
-	p.sender = sender.(*PRUDPClient)
+	p.sender = sender.(*PRUDPConnection)
 }
 
 // Sender returns the Client who sent the packet
@@ -59,44 +57,44 @@ func (p *PRUDPPacket) Type() uint16 {
 	return p.packetType
 }
 
-// SetSourceStreamType sets the packet virtual source stream type
-func (p *PRUDPPacket) SetSourceStreamType(sourceStreamType uint8) {
-	p.sourceStreamType = sourceStreamType
+// SetSourceVirtualPortStreamType sets the packets source VirtualPort StreamType
+func (p *PRUDPPacket) SetSourceVirtualPortStreamType(streamType StreamType) {
+	p.sourceVirtualPort.SetStreamType(streamType)
 }
 
-// SourceStreamType returns the packet virtual source stream type
-func (p *PRUDPPacket) SourceStreamType() uint8 {
-	return p.sourceStreamType
+// SourceVirtualPortStreamType returns the packets source VirtualPort StreamType
+func (p *PRUDPPacket) SourceVirtualPortStreamType() StreamType {
+	return p.sourceVirtualPort.StreamType()
 }
 
-// SetSourcePort sets the packet virtual source stream type
-func (p *PRUDPPacket) SetSourcePort(sourcePort uint8) {
-	p.sourcePort = sourcePort
+// SetSourceVirtualPortStreamID sets the packets source VirtualPort port number
+func (p *PRUDPPacket) SetSourceVirtualPortStreamID(port uint8) {
+	p.sourceVirtualPort.SetStreamID(port)
 }
 
-// SourcePort returns the packet virtual source stream type
-func (p *PRUDPPacket) SourcePort() uint8 {
-	return p.sourcePort
+// SourceVirtualPortStreamID returns the packets source VirtualPort port number
+func (p *PRUDPPacket) SourceVirtualPortStreamID() uint8 {
+	return p.sourceVirtualPort.StreamID()
 }
 
-// SetDestinationStreamType sets the packet virtual destination stream type
-func (p *PRUDPPacket) SetDestinationStreamType(destinationStreamType uint8) {
-	p.destinationStreamType = destinationStreamType
+// SetDestinationVirtualPortStreamType sets the packets destination VirtualPort StreamType
+func (p *PRUDPPacket) SetDestinationVirtualPortStreamType(streamType StreamType) {
+	p.destinationVirtualPort.SetStreamType(streamType)
 }
 
-// DestinationStreamType returns the packet virtual destination stream type
-func (p *PRUDPPacket) DestinationStreamType() uint8 {
-	return p.destinationStreamType
+// DestinationVirtualPortStreamType returns the packets destination VirtualPort StreamType
+func (p *PRUDPPacket) DestinationVirtualPortStreamType() StreamType {
+	return p.destinationVirtualPort.StreamType()
 }
 
-// SetDestinationPort sets the packet virtual destination port
-func (p *PRUDPPacket) SetDestinationPort(destinationPort uint8) {
-	p.destinationPort = destinationPort
+// SetDestinationVirtualPortStreamID sets the packets destination VirtualPort port number
+func (p *PRUDPPacket) SetDestinationVirtualPortStreamID(port uint8) {
+	p.destinationVirtualPort.SetStreamID(port)
 }
 
-// DestinationPort returns the packet virtual destination port
-func (p *PRUDPPacket) DestinationPort() uint8 {
-	return p.destinationPort
+// DestinationVirtualPortStreamID returns the packets destination VirtualPort port number
+func (p *PRUDPPacket) DestinationVirtualPortStreamID() uint8 {
+	return p.destinationVirtualPort.StreamID()
 }
 
 // SessionID returns the packets session ID
@@ -148,17 +146,17 @@ func (p *PRUDPPacket) decryptPayload() []byte {
 
 	// TODO - This assumes a reliable DATA packet. Handle unreliable here? Or do that in a different method?
 	if p.packetType == DataPacket {
-		substream := p.sender.reliableSubstream(p.SubstreamID())
+		slidingWindow := p.sender.SlidingWindow(p.SubstreamID())
 
 		// * According to other Quazal server implementations,
 		// * the RC4 stream is always reset to the default key
 		// * regardless if the client is connecting to a secure
 		// * server (prudps) or not
-		if p.version == 0 && p.sender.server.PRUDPV0Settings.IsQuazalMode {
-			substream.SetCipherKey([]byte("CD&ML"))
+		if p.version == 0 && p.sender.Endpoint.Server.PRUDPV0Settings.IsQuazalMode {
+			slidingWindow.SetCipherKey([]byte("CD&ML"))
 		}
 
-		payload = substream.Decrypt(payload)
+		payload, _ = slidingWindow.streamSettings.EncryptionAlgorithm.Decrypt(payload)
 	}
 
 	return payload
@@ -193,7 +191,7 @@ func (p *PRUDPPacket) SetRMCMessage(message *RMCMessage) {
 func (p *PRUDPPacket) processUnreliableCrypto() []byte {
 	// * Since unreliable DATA packets can come in out of
 	// * order, each packet uses a dedicated RC4 stream
-	uniqueKey := p.sender.unreliableBaseKey[:]
+	uniqueKey := p.sender.UnreliablePacketBaseKey[:]
 	uniqueKey[0] = byte((uint16(uniqueKey[0]) + p.sequenceID) & 0xFF)
 	uniqueKey[1] = byte((uint16(uniqueKey[1]) + (p.sequenceID >> 8)) & 0xFF)
 	uniqueKey[31] = byte((uniqueKey[31] + p.sessionID) & 0xFF)

@@ -23,15 +23,13 @@ type PRUDPPacketV1 struct {
 
 // Copy copies the packet into a new PRUDPPacketV1
 //
-// Retains the same PRUDPClient pointer
+// Retains the same PRUDPConnection pointer
 func (p *PRUDPPacketV1) Copy() PRUDPPacketInterface {
 	copied, _ := NewPRUDPPacketV1(p.sender, nil)
 
 	copied.server = p.server
-	copied.sourceStreamType = p.sourceStreamType
-	copied.sourcePort = p.sourcePort
-	copied.destinationStreamType = p.destinationStreamType
-	copied.destinationPort = p.destinationPort
+	copied.sourceVirtualPort = p.sourceVirtualPort
+	copied.destinationVirtualPort = p.destinationVirtualPort
 	copied.packetType = p.packetType
 	copied.flags = p.flags
 	copied.sessionID = p.sessionID
@@ -158,15 +156,14 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 		return fmt.Errorf("Failed to read PRUDPv1 source. %s", err.Error())
 	}
 
+	p.sourceVirtualPort = VirtualPort(source)
+
 	destination, err := p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 destination. %s", err.Error())
 	}
 
-	p.sourceStreamType = source >> 4
-	p.sourcePort = source & 0xF
-	p.destinationStreamType = destination >> 4
-	p.destinationPort = destination & 0xF
+	p.destinationVirtualPort = VirtualPort(destination)
 
 	// TODO - Does QRV also encode it this way in PRUDPv1?
 	typeAndFlags, err := p.readStream.ReadPrimitiveUInt16LE()
@@ -205,8 +202,8 @@ func (p *PRUDPPacketV1) encodeHeader() []byte {
 	stream.WritePrimitiveUInt8(1) // * Version
 	stream.WritePrimitiveUInt8(p.optionsLength)
 	stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
-	stream.WritePrimitiveUInt8(p.sourcePort | (p.sourceStreamType << 4))
-	stream.WritePrimitiveUInt8(p.destinationPort | (p.destinationStreamType << 4))
+	stream.WritePrimitiveUInt8(uint8(p.sourceVirtualPort))
+	stream.WritePrimitiveUInt8(uint8(p.destinationVirtualPort))
 	stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4)) // TODO - Does QRV also encode it this way in PRUDPv1?
 	stream.WritePrimitiveUInt8(p.sessionID)
 	stream.WritePrimitiveUInt8(p.substreamID)
@@ -356,10 +353,10 @@ func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byt
 }
 
 // NewPRUDPPacketV1 creates and returns a new PacketV1 using the provided Client and stream
-func NewPRUDPPacketV1(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPacketV1, error) {
+func NewPRUDPPacketV1(connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketV1, error) {
 	packet := &PRUDPPacketV1{
 		PRUDPPacket: PRUDPPacket{
-			sender:     client,
+			sender:     connection,
 			readStream: readStream,
 			version:    1,
 		},
@@ -373,19 +370,19 @@ func NewPRUDPPacketV1(client *PRUDPClient, readStream *ByteStreamIn) (*PRUDPPack
 		}
 	}
 
-	if client != nil {
-		packet.server = client.server
+	if connection != nil {
+		packet.server = connection.Endpoint.Server
 	}
 
 	return packet, nil
 }
 
 // NewPRUDPPacketsV1 reads all possible PRUDPv1 packets from the stream
-func NewPRUDPPacketsV1(client *PRUDPClient, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsV1(connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {
-		packet, err := NewPRUDPPacketV1(client, readStream)
+		packet, err := NewPRUDPPacketV1(connection, readStream)
 		if err != nil {
 			return packets, err
 		}

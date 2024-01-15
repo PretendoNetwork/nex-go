@@ -5,11 +5,13 @@ import (
 	"time"
 )
 
+// TODO - REMOVE THIS ENTIRELY AND REPLACE IT WITH AN IMPLEMENTATION OF rdv::Timeout AND rdv::TimeoutManager AND USE MORE STREAM SETTINGS!
+
 // PendingPacket represends a packet scheduled to be resent
 type PendingPacket struct {
 	packet         PRUDPPacketInterface
 	lastSendTime   time.Time
-	resendCount    int
+	resendCount    uint32
 	isAcknowledged bool
 	interval       time.Duration
 	ticker         *time.Ticker
@@ -32,10 +34,9 @@ func (pi *PendingPacket) startResendTimer() {
 
 // ResendScheduler manages the resending of reliable PRUDP packets
 type ResendScheduler struct {
-	packets        *MutexMap[uint16, *PendingPacket]
-	MaxResendCount int
-	Interval       time.Duration
-	Increase       time.Duration
+	packets  *MutexMap[uint16, *PendingPacket]
+	Interval time.Duration
+	Increase time.Duration
 }
 
 // Stop kills the resend scheduler and stops all pending packets
@@ -87,29 +88,29 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 	}
 
 	packet := pendingPacket.packet
-	client := packet.Sender().(*PRUDPClient)
+	connection := packet.Sender().(*PRUDPConnection)
+	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
 
-	if pendingPacket.resendCount >= rs.MaxResendCount {
-		// * The maximum resend count has been reached, consider the client dead.
+	if pendingPacket.resendCount >= slidingWindow.streamSettings.MaxPacketRetransmissions {
+		// * The maximum resend count has been reached, consider the connection dead.
 		pendingPacket.ticker.Stop()
 		rs.packets.Delete(packet.SequenceID())
-		client.cleanup() // * "removed" event is dispatched here
+		connection.cleanup() // * "removed" event is dispatched here
 
-		virtualServer, _ := client.server.virtualServers.Get(client.DestinationPort)
-		virtualServerStream, _ := virtualServer.Get(client.DestinationStreamType)
+		streamType := packet.SourceVirtualPortStreamType()
+		streamID := packet.SourceVirtualPortStreamID()
+		discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
 
-		discriminator := fmt.Sprintf("%s-%d-%d", client.address.String(), client.SourcePort, client.SourceStreamType)
-
-		virtualServerStream.Delete(discriminator)
+		connection.Endpoint.Connections.Delete(discriminator)
 
 		return
 	}
 
 	if time.Since(pendingPacket.lastSendTime) >= rs.Interval {
-		// * Resend the packet to the client
-		server := client.server
+		// * Resend the packet to the connection
+		server := connection.Endpoint.Server
 		data := packet.Bytes()
-		server.sendRaw(client, data)
+		server.sendRaw(connection.Socket, data)
 
 		pendingPacket.interval += rs.Increase
 		pendingPacket.ticker.Reset(pendingPacket.interval)
@@ -125,9 +126,8 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 // after the 1st, and the 3rd will take place 11 seconds after the 2nd
 func NewResendScheduler(maxResendCount int, interval, increase time.Duration) *ResendScheduler {
 	return &ResendScheduler{
-		packets:        NewMutexMap[uint16, *PendingPacket](),
-		MaxResendCount: maxResendCount,
-		Interval:       interval,
-		Increase:       increase,
+		packets:  NewMutexMap[uint16, *PendingPacket](),
+		Interval: interval,
+		Increase: increase,
 	}
 }
