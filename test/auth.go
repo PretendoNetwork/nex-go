@@ -63,7 +63,7 @@ func login(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	retval := types.NewResultSuccess(0x00010001)
+	retval := types.NewQResultSuccess(0x00010001)
 	pidPrincipal := types.NewPID(uint64(converted))
 	pbufResponse := types.NewBuffer(generateTicket(pidPrincipal, types.NewPID(2)))
 	pConnectionData := types.NewRVConnectionData()
@@ -125,7 +125,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	retval := types.NewResultSuccess(0x00010001)
+	retval := types.NewQResultSuccess(0x00010001)
 	pbufResponse := types.NewBuffer(generateTicket(idSource, idTarget))
 
 	responseStream := nex.NewByteStreamOut(authServer)

@@ -46,7 +46,7 @@ func startSecureServer() {
 
 	secureServer = nex.NewPRUDPServer()
 
-	endpoint := nex.NewPRUDPEndPoint(1)
+	endpoint := nex.NewPRUDPEndPoint(2)
 	endpoint.IsSecureEndpoint = true
 
 	endpoint.OnData(func(packet nex.PacketInterface) {
@@ -111,7 +111,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	localStation.Fields["address"] = address
 	localStation.Fields["port"] = strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port)
 
-	retval := types.NewResultSuccess(0x00010001)
+	retval := types.NewQResultSuccess(0x00010001)
 	localStationURL := types.NewString(localStation.EncodeToString())
 
 	responseStream := nex.NewByteStreamOut(secureServer)
