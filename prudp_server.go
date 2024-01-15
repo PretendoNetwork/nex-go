@@ -268,14 +268,6 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 				logger.Error(err.Error())
 			}
 
-			// * According to other Quazal server implementations,
-			// * the RC4 stream is always reset to the default key
-			// * regardless if the client is connecting to a secure
-			// * server (prudps) or not
-			if packet.Version() == 0 && s.PRUDPV0Settings.IsQuazalMode {
-				slidingWindow.SetCipherKey([]byte("CD&ML"))
-			}
-
 			encryptedPayload, err := slidingWindow.streamSettings.EncryptionAlgorithm.Encrypt(compressedPayload)
 			if err != nil {
 				logger.Error(err.Error())

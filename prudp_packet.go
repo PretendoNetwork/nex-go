@@ -148,14 +148,6 @@ func (p *PRUDPPacket) decryptPayload() []byte {
 	if p.packetType == DataPacket {
 		slidingWindow := p.sender.SlidingWindow(p.SubstreamID())
 
-		// * According to other Quazal server implementations,
-		// * the RC4 stream is always reset to the default key
-		// * regardless if the client is connecting to a secure
-		// * server (prudps) or not
-		if p.version == 0 && p.sender.Endpoint.Server.PRUDPV0Settings.IsQuazalMode {
-			slidingWindow.SetCipherKey([]byte("CD&ML"))
-		}
-
 		payload, _ = slidingWindow.streamSettings.EncryptionAlgorithm.Decrypt(payload)
 	}
 
