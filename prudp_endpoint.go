@@ -58,6 +58,9 @@ func (pep *PRUDPEndPoint) emit(name string, packet PRUDPPacketInterface) {
 			go handler(packet)
 		}
 	}
+
+	// * propagate the event up to the PRUDP server
+	pep.Server.emit(name, packet)
 }
 
 func (pep *PRUDPEndPoint) emitConnectionEnded(connection *PRUDPConnection) {

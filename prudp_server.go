@@ -37,6 +37,7 @@ type PRUDPServer struct {
 	PRUDPv1ConnectionSignatureKey []byte
 	byteStreamSettings            *ByteStreamSettings
 	PRUDPV0Settings               *PRUDPV0Settings
+	packetEventHandlers           map[string][]func(packet PacketInterface)
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server
@@ -470,15 +471,38 @@ func (s *PRUDPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettin
 	s.byteStreamSettings = byteStreamSettings
 }
 
+// OnData adds an event handler which is fired when a new DATA packet is received
+func (s *PRUDPServer) OnData(handler func(packet PacketInterface)) {
+	s.on("data", handler)
+}
+
+func (s *PRUDPServer) on(name string, handler func(packet PacketInterface)) {
+	if _, ok := s.packetEventHandlers[name]; !ok {
+		s.packetEventHandlers[name] = make([]func(packet PacketInterface), 0)
+	}
+
+	s.packetEventHandlers[name] = append(s.packetEventHandlers[name], handler)
+}
+
+// emit emits an event to all relevant listeners. These events fire after the PRUDPEndPoint event handlers
+func (s *PRUDPServer) emit(name string, packet PRUDPPacketInterface) {
+	if handlers, ok := s.packetEventHandlers[name]; ok {
+		for _, handler := range handlers {
+			go handler(packet)
+		}
+	}
+}
+
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
-		Endpoints:          NewMutexMap[uint8, *PRUDPEndPoint](),
-		Connections:        NewMutexMap[string, *SocketConnection](),
-		kerberosKeySize:    32,
-		FragmentSize:       1300,
-		pingTimeout:        time.Second * 15,
-		byteStreamSettings: NewByteStreamSettings(),
-		PRUDPV0Settings:    NewPRUDPV0Settings(),
+		Endpoints:           NewMutexMap[uint8, *PRUDPEndPoint](),
+		Connections:         NewMutexMap[string, *SocketConnection](),
+		kerberosKeySize:     32,
+		FragmentSize:        1300,
+		pingTimeout:         time.Second * 15,
+		byteStreamSettings:  NewByteStreamSettings(),
+		PRUDPV0Settings:     NewPRUDPV0Settings(),
+		packetEventHandlers: make(map[string][]func(PacketInterface)),
 	}
 }
