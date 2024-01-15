@@ -41,24 +41,24 @@ type PRUDPServer struct {
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server
-func (s *PRUDPServer) BindPRUDPEndPoint(endpoint *PRUDPEndPoint) {
-	if s.Endpoints.Has(endpoint.StreamID) {
+func (ps *PRUDPServer) BindPRUDPEndPoint(endpoint *PRUDPEndPoint) {
+	if ps.Endpoints.Has(endpoint.StreamID) {
 		logger.Warningf("Tried to bind already existing PRUDPEndPoint %d", endpoint.StreamID)
 		return
 	}
 
-	endpoint.Server = s
-	s.Endpoints.Set(endpoint.StreamID, endpoint)
+	endpoint.Server = ps
+	ps.Endpoints.Set(endpoint.StreamID, endpoint)
 }
 
 // Listen is an alias of ListenUDP. Implemented to conform to the ServerInterface
-func (s *PRUDPServer) Listen(port int) {
-	s.ListenUDP(port)
+func (ps *PRUDPServer) Listen(port int) {
+	ps.ListenUDP(port)
 }
 
 // ListenUDP starts a PRUDP server on a given port using a UDP server
-func (s *PRUDPServer) ListenUDP(port int) {
-	s.initPRUDPv1ConnectionSignatureKey()
+func (ps *PRUDPServer) ListenUDP(port int) {
+	ps.initPRUDPv1ConnectionSignatureKey()
 
 	udpAddress, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -70,18 +70,18 @@ func (s *PRUDPServer) ListenUDP(port int) {
 		panic(err)
 	}
 
-	s.udpSocket = socket
+	ps.udpSocket = socket
 
 	quit := make(chan struct{})
 
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go s.listenDatagram(quit)
+		go ps.listenDatagram(quit)
 	}
 
 	<-quit
 }
 
-func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
+func (ps *PRUDPServer) listenDatagram(quit chan struct{}) {
 	var err error
 
 	for err == nil {
@@ -89,10 +89,10 @@ func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
 		var read int
 		var addr *net.UDPAddr
 
-		read, addr, err = s.udpSocket.ReadFromUDP(buffer)
+		read, addr, err = ps.udpSocket.ReadFromUDP(buffer)
 		packetData := buffer[:read]
 
-		err = s.handleSocketMessage(packetData, addr, nil)
+		err = ps.handleSocketMessage(packetData, addr, nil)
 	}
 
 	quit <- struct{}{}
@@ -101,40 +101,40 @@ func (s *PRUDPServer) listenDatagram(quit chan struct{}) {
 }
 
 // ListenWebSocket starts a PRUDP server on a given port using a WebSocket server
-func (s *PRUDPServer) ListenWebSocket(port int) {
-	s.initPRUDPv1ConnectionSignatureKey()
+func (ps *PRUDPServer) ListenWebSocket(port int) {
+	ps.initPRUDPv1ConnectionSignatureKey()
 
-	s.websocketServer = &WebSocketServer{
-		prudpServer: s,
+	ps.websocketServer = &WebSocketServer{
+		prudpServer: ps,
 	}
 
-	s.websocketServer.listen(port)
+	ps.websocketServer.listen(port)
 }
 
 // ListenWebSocketSecure starts a PRUDP server on a given port using a secure (TLS) WebSocket server
-func (s *PRUDPServer) ListenWebSocketSecure(port int, certFile, keyFile string) {
-	s.initPRUDPv1ConnectionSignatureKey()
+func (ps *PRUDPServer) ListenWebSocketSecure(port int, certFile, keyFile string) {
+	ps.initPRUDPv1ConnectionSignatureKey()
 
-	s.websocketServer = &WebSocketServer{
-		prudpServer: s,
+	ps.websocketServer = &WebSocketServer{
+		prudpServer: ps,
 	}
 
-	s.websocketServer.listenSecure(port, certFile, keyFile)
+	ps.websocketServer.listenSecure(port, certFile, keyFile)
 }
 
-func (s *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
+func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 	// * Ensure the server has a key for PRUDPv1 connection signatures
-	if len(s.PRUDPv1ConnectionSignatureKey) != 16 {
-		s.PRUDPv1ConnectionSignatureKey = make([]byte, 16)
-		_, err := rand.Read(s.PRUDPv1ConnectionSignatureKey)
+	if len(ps.PRUDPv1ConnectionSignatureKey) != 16 {
+		ps.PRUDPv1ConnectionSignatureKey = make([]byte, 16)
+		_, err := rand.Read(ps.PRUDPv1ConnectionSignatureKey)
 		if err != nil {
 			panic(err)
 		}
 	}
 }
 
-func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
-	readStream := NewByteStreamIn(packetData, s)
+func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
+	readStream := NewByteStreamIn(packetData, ps)
 
 	var packets []PRUDPPacketInterface
 
@@ -142,7 +142,7 @@ func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, w
 	// * with that same type. Also keep reading from the stream
 	// * until no more data is left, to account for multiple
 	// * packets being sent at once
-	if s.websocketServer != nil && packetData[0] == 0x80 {
+	if ps.websocketServer != nil && packetData[0] == 0x80 {
 		packets, _ = NewPRUDPPacketsLite(nil, readStream)
 	} else if bytes.Equal(packetData[:2], []byte{0xEA, 0xD0}) {
 		packets, _ = NewPRUDPPacketsV1(nil, readStream)
@@ -151,19 +151,19 @@ func (s *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, w
 	}
 
 	for _, packet := range packets {
-		go s.processPacket(packet, address, webSocketConnection)
+		go ps.processPacket(packet, address, webSocketConnection)
 	}
 
 	return nil
 }
 
-func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *gws.Conn) {
-	if !s.Endpoints.Has(packet.DestinationVirtualPortStreamID()) {
+func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *gws.Conn) {
+	if !ps.Endpoints.Has(packet.DestinationVirtualPortStreamID()) {
 		logger.Warningf("Client %s trying to connect to unbound PRUDPEndPoint %d", address.String(), packet.DestinationVirtualPortStreamID())
 		return
 	}
 
-	endpoint, ok := s.Endpoints.Get(packet.DestinationVirtualPortStreamID())
+	endpoint, ok := ps.Endpoints.Get(packet.DestinationVirtualPortStreamID())
 	if !ok {
 		logger.Warningf("Client %s trying to connect to unbound PRUDPEndPoint %d", address.String(), packet.DestinationVirtualPortStreamID())
 		return
@@ -201,40 +201,40 @@ func (s *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Add
 	}
 
 	discriminator := address.String()
-	socket, ok := s.Connections.Get(discriminator)
+	socket, ok := ps.Connections.Get(discriminator)
 	if !ok {
-		socket = NewSocketConnection(s, address, webSocketConnection)
-		s.Connections.Set(discriminator, socket)
+		socket = NewSocketConnection(ps, address, webSocketConnection)
+		ps.Connections.Set(discriminator, socket)
 	}
 
 	endpoint.processPacket(packet, socket)
 }
 
 // Send sends the packet to the packets sender
-func (s *PRUDPServer) Send(packet PacketInterface) {
+func (ps *PRUDPServer) Send(packet PacketInterface) {
 	if packet, ok := packet.(PRUDPPacketInterface); ok {
 		data := packet.Payload()
-		fragments := int(len(data) / s.FragmentSize)
+		fragments := int(len(data) / ps.FragmentSize)
 
 		var fragmentID uint8 = 1
 		for i := 0; i <= fragments; i++ {
-			if len(data) < s.FragmentSize {
+			if len(data) < ps.FragmentSize {
 				packet.SetPayload(data)
 				packet.setFragmentID(0)
 			} else {
-				packet.SetPayload(data[:s.FragmentSize])
+				packet.SetPayload(data[:ps.FragmentSize])
 				packet.setFragmentID(fragmentID)
 
-				data = data[s.FragmentSize:]
+				data = data[ps.FragmentSize:]
 				fragmentID++
 			}
 
-			s.sendPacket(packet)
+			ps.sendPacket(packet)
 		}
 	}
 }
 
-func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
+func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	// * PRUDPServer.Send will send fragments as the same packet,
 	// * just with different fields. In order to prevent modifying
 	// * multiple packets at once, due to the same pointer being
@@ -288,17 +288,17 @@ func (s *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		slidingWindow.ResendScheduler.AddPacket(packetCopy)
 	}
 
-	s.sendRaw(packetCopy.Sender().(*PRUDPConnection).Socket, packetCopy.Bytes())
+	ps.sendRaw(packetCopy.Sender().(*PRUDPConnection).Socket, packetCopy.Bytes())
 }
 
 // sendRaw will send the given socket the provided packet
-func (s *PRUDPServer) sendRaw(socket *SocketConnection, data []byte) {
+func (ps *PRUDPServer) sendRaw(socket *SocketConnection, data []byte) {
 	// TODO - Should this return the error too?
 
 	var err error
 
-	if address, ok := socket.Address.(*net.UDPAddr); ok && s.udpSocket != nil {
-		_, err = s.udpSocket.WriteToUDP(data, address)
+	if address, ok := socket.Address.(*net.UDPAddr); ok && ps.udpSocket != nil {
+		_, err = ps.udpSocket.WriteToUDP(data, address)
 	} else if socket.WebSocketConnection != nil {
 		err = socket.WebSocketConnection.WriteMessage(gws.OpcodeBinary, data)
 	}
@@ -309,27 +309,27 @@ func (s *PRUDPServer) sendRaw(socket *SocketConnection, data []byte) {
 }
 
 // AccessKey returns the servers sandbox access key
-func (s *PRUDPServer) AccessKey() string {
-	return s.accessKey
+func (ps *PRUDPServer) AccessKey() string {
+	return ps.accessKey
 }
 
 // SetAccessKey sets the servers sandbox access key
-func (s *PRUDPServer) SetAccessKey(accessKey string) {
-	s.accessKey = accessKey
+func (ps *PRUDPServer) SetAccessKey(accessKey string) {
+	ps.accessKey = accessKey
 }
 
 // KerberosPassword returns the server kerberos password
-func (s *PRUDPServer) KerberosPassword() []byte {
-	return s.kerberosPassword
+func (ps *PRUDPServer) KerberosPassword() []byte {
+	return ps.kerberosPassword
 }
 
 // SetKerberosPassword sets the server kerberos password
-func (s *PRUDPServer) SetKerberosPassword(kerberosPassword []byte) {
-	s.kerberosPassword = kerberosPassword
+func (ps *PRUDPServer) SetKerberosPassword(kerberosPassword []byte) {
+	ps.kerberosPassword = kerberosPassword
 }
 
 // SetFragmentSize sets the max size for a packets payload
-func (s *PRUDPServer) SetFragmentSize(fragmentSize int) {
+func (ps *PRUDPServer) SetFragmentSize(fragmentSize int) {
 	// TODO - Derive this value from the MTU
 	// * From the wiki:
 	// *
@@ -341,152 +341,152 @@ func (s *PRUDPServer) SetFragmentSize(fragmentSize int) {
 	// *
 	// * Later, the MTU was increased to 1364, and the maximum payload
 	// * size is seems to be 1300 bytes, unless PRUDP v0 is used, in which case it’s 1264 bytes.
-	s.FragmentSize = fragmentSize
+	ps.FragmentSize = fragmentSize
 }
 
 // SetKerberosTicketVersion sets the version used when handling kerberos tickets
-func (s *PRUDPServer) SetKerberosTicketVersion(kerberosTicketVersion int) {
-	s.kerberosTicketVersion = kerberosTicketVersion
+func (ps *PRUDPServer) SetKerberosTicketVersion(kerberosTicketVersion int) {
+	ps.kerberosTicketVersion = kerberosTicketVersion
 }
 
 // KerberosKeySize gets the size for the kerberos session key
-func (s *PRUDPServer) KerberosKeySize() int {
-	return s.kerberosKeySize
+func (ps *PRUDPServer) KerberosKeySize() int {
+	return ps.kerberosKeySize
 }
 
 // SetKerberosKeySize sets the size for the kerberos session key
-func (s *PRUDPServer) SetKerberosKeySize(kerberosKeySize int) {
-	s.kerberosKeySize = kerberosKeySize
+func (ps *PRUDPServer) SetKerberosKeySize(kerberosKeySize int) {
+	ps.kerberosKeySize = kerberosKeySize
 }
 
 // LibraryVersion returns the server NEX version
-func (s *PRUDPServer) LibraryVersion() *LibraryVersion {
-	return s.version
+func (ps *PRUDPServer) LibraryVersion() *LibraryVersion {
+	return ps.version
 }
 
 // SetDefaultLibraryVersion sets the default NEX protocol versions
-func (s *PRUDPServer) SetDefaultLibraryVersion(version *LibraryVersion) {
-	s.version = version
-	s.datastoreProtocolVersion = version.Copy()
-	s.matchMakingProtocolVersion = version.Copy()
-	s.rankingProtocolVersion = version.Copy()
-	s.ranking2ProtocolVersion = version.Copy()
-	s.messagingProtocolVersion = version.Copy()
-	s.utilityProtocolVersion = version.Copy()
-	s.natTraversalProtocolVersion = version.Copy()
+func (ps *PRUDPServer) SetDefaultLibraryVersion(version *LibraryVersion) {
+	ps.version = version
+	ps.datastoreProtocolVersion = version.Copy()
+	ps.matchMakingProtocolVersion = version.Copy()
+	ps.rankingProtocolVersion = version.Copy()
+	ps.ranking2ProtocolVersion = version.Copy()
+	ps.messagingProtocolVersion = version.Copy()
+	ps.utilityProtocolVersion = version.Copy()
+	ps.natTraversalProtocolVersion = version.Copy()
 }
 
 // DataStoreProtocolVersion returns the servers DataStore protocol version
-func (s *PRUDPServer) DataStoreProtocolVersion() *LibraryVersion {
-	return s.datastoreProtocolVersion
+func (ps *PRUDPServer) DataStoreProtocolVersion() *LibraryVersion {
+	return ps.datastoreProtocolVersion
 }
 
 // SetDataStoreProtocolVersion sets the servers DataStore protocol version
-func (s *PRUDPServer) SetDataStoreProtocolVersion(version *LibraryVersion) {
-	s.datastoreProtocolVersion = version
+func (ps *PRUDPServer) SetDataStoreProtocolVersion(version *LibraryVersion) {
+	ps.datastoreProtocolVersion = version
 }
 
 // MatchMakingProtocolVersion returns the servers MatchMaking protocol version
-func (s *PRUDPServer) MatchMakingProtocolVersion() *LibraryVersion {
-	return s.matchMakingProtocolVersion
+func (ps *PRUDPServer) MatchMakingProtocolVersion() *LibraryVersion {
+	return ps.matchMakingProtocolVersion
 }
 
 // SetMatchMakingProtocolVersion sets the servers MatchMaking protocol version
-func (s *PRUDPServer) SetMatchMakingProtocolVersion(version *LibraryVersion) {
-	s.matchMakingProtocolVersion = version
+func (ps *PRUDPServer) SetMatchMakingProtocolVersion(version *LibraryVersion) {
+	ps.matchMakingProtocolVersion = version
 }
 
 // RankingProtocolVersion returns the servers Ranking protocol version
-func (s *PRUDPServer) RankingProtocolVersion() *LibraryVersion {
-	return s.rankingProtocolVersion
+func (ps *PRUDPServer) RankingProtocolVersion() *LibraryVersion {
+	return ps.rankingProtocolVersion
 }
 
 // SetRankingProtocolVersion sets the servers Ranking protocol version
-func (s *PRUDPServer) SetRankingProtocolVersion(version *LibraryVersion) {
-	s.rankingProtocolVersion = version
+func (ps *PRUDPServer) SetRankingProtocolVersion(version *LibraryVersion) {
+	ps.rankingProtocolVersion = version
 }
 
 // Ranking2ProtocolVersion returns the servers Ranking2 protocol version
-func (s *PRUDPServer) Ranking2ProtocolVersion() *LibraryVersion {
-	return s.ranking2ProtocolVersion
+func (ps *PRUDPServer) Ranking2ProtocolVersion() *LibraryVersion {
+	return ps.ranking2ProtocolVersion
 }
 
 // SetRanking2ProtocolVersion sets the servers Ranking2 protocol version
-func (s *PRUDPServer) SetRanking2ProtocolVersion(version *LibraryVersion) {
-	s.ranking2ProtocolVersion = version
+func (ps *PRUDPServer) SetRanking2ProtocolVersion(version *LibraryVersion) {
+	ps.ranking2ProtocolVersion = version
 }
 
 // MessagingProtocolVersion returns the servers Messaging protocol version
-func (s *PRUDPServer) MessagingProtocolVersion() *LibraryVersion {
-	return s.messagingProtocolVersion
+func (ps *PRUDPServer) MessagingProtocolVersion() *LibraryVersion {
+	return ps.messagingProtocolVersion
 }
 
 // SetMessagingProtocolVersion sets the servers Messaging protocol version
-func (s *PRUDPServer) SetMessagingProtocolVersion(version *LibraryVersion) {
-	s.messagingProtocolVersion = version
+func (ps *PRUDPServer) SetMessagingProtocolVersion(version *LibraryVersion) {
+	ps.messagingProtocolVersion = version
 }
 
 // UtilityProtocolVersion returns the servers Utility protocol version
-func (s *PRUDPServer) UtilityProtocolVersion() *LibraryVersion {
-	return s.utilityProtocolVersion
+func (ps *PRUDPServer) UtilityProtocolVersion() *LibraryVersion {
+	return ps.utilityProtocolVersion
 }
 
 // SetUtilityProtocolVersion sets the servers Utility protocol version
-func (s *PRUDPServer) SetUtilityProtocolVersion(version *LibraryVersion) {
-	s.utilityProtocolVersion = version
+func (ps *PRUDPServer) SetUtilityProtocolVersion(version *LibraryVersion) {
+	ps.utilityProtocolVersion = version
 }
 
 // SetNATTraversalProtocolVersion sets the servers NAT Traversal protocol version
-func (s *PRUDPServer) SetNATTraversalProtocolVersion(version *LibraryVersion) {
-	s.natTraversalProtocolVersion = version
+func (ps *PRUDPServer) SetNATTraversalProtocolVersion(version *LibraryVersion) {
+	ps.natTraversalProtocolVersion = version
 }
 
 // NATTraversalProtocolVersion returns the servers NAT Traversal protocol version
-func (s *PRUDPServer) NATTraversalProtocolVersion() *LibraryVersion {
-	return s.natTraversalProtocolVersion
+func (ps *PRUDPServer) NATTraversalProtocolVersion() *LibraryVersion {
+	return ps.natTraversalProtocolVersion
 }
 
 // PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
-func (s *PRUDPServer) PasswordFromPID(pid *types.PID) (string, uint32) {
-	if s.passwordFromPIDHandler == nil {
+func (ps *PRUDPServer) PasswordFromPID(pid *types.PID) (string, uint32) {
+	if ps.passwordFromPIDHandler == nil {
 		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
 		return "", Errors.Core.NotImplemented
 	}
 
-	return s.passwordFromPIDHandler(pid)
+	return ps.passwordFromPIDHandler(pid)
 }
 
 // SetPasswordFromPIDFunction sets the function for the auth server to get a NEX password using the PID
-func (s *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32)) {
-	s.passwordFromPIDHandler = handler
+func (ps *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32)) {
+	ps.passwordFromPIDHandler = handler
 }
 
 // ByteStreamSettings returns the settings to be used for ByteStreams
-func (s *PRUDPServer) ByteStreamSettings() *ByteStreamSettings {
-	return s.byteStreamSettings
+func (ps *PRUDPServer) ByteStreamSettings() *ByteStreamSettings {
+	return ps.byteStreamSettings
 }
 
 // SetByteStreamSettings sets the settings to be used for ByteStreams
-func (s *PRUDPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings) {
-	s.byteStreamSettings = byteStreamSettings
+func (ps *PRUDPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings) {
+	ps.byteStreamSettings = byteStreamSettings
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
-func (s *PRUDPServer) OnData(handler func(packet PacketInterface)) {
-	s.on("data", handler)
+func (ps *PRUDPServer) OnData(handler func(packet PacketInterface)) {
+	ps.on("data", handler)
 }
 
-func (s *PRUDPServer) on(name string, handler func(packet PacketInterface)) {
-	if _, ok := s.packetEventHandlers[name]; !ok {
-		s.packetEventHandlers[name] = make([]func(packet PacketInterface), 0)
+func (ps *PRUDPServer) on(name string, handler func(packet PacketInterface)) {
+	if _, ok := ps.packetEventHandlers[name]; !ok {
+		ps.packetEventHandlers[name] = make([]func(packet PacketInterface), 0)
 	}
 
-	s.packetEventHandlers[name] = append(s.packetEventHandlers[name], handler)
+	ps.packetEventHandlers[name] = append(ps.packetEventHandlers[name], handler)
 }
 
 // emit emits an event to all relevant listeners. These events fire after the PRUDPEndPoint event handlers
-func (s *PRUDPServer) emit(name string, packet PRUDPPacketInterface) {
-	if handlers, ok := s.packetEventHandlers[name]; ok {
+func (ps *PRUDPServer) emit(name string, packet PRUDPPacketInterface) {
+	if handlers, ok := ps.packetEventHandlers[name]; ok {
 		for _, handler := range handlers {
 			go handler(packet)
 		}
