@@ -4,7 +4,7 @@ import (
 	"crypto/rc4"
 )
 
-// RC4 does no encryption. Payloads are returned as-is
+// RC4 encrypts data with RC4
 type RC4 struct {
 	key             []byte
 	cipher          *rc4.Cipher
