@@ -1,7 +1,5 @@
 package nex
 
-// TODO - Should this be moved to the types module?
-
 // VirtualPort in an implementation of rdv::VirtualPort.
 // PRUDP will reuse a single physical socket connection for many virtual PRUDP connections.
 // VirtualPorts are a byte which represents a stream for a virtual PRUDP connection.
