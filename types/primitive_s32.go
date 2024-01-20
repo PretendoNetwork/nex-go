@@ -43,6 +43,76 @@ func (s32 *PrimitiveS32) String() string {
 	return fmt.Sprintf("%d", s32.Value)
 }
 
+// AND runs a bitwise AND operation on the PrimitiveS32 value. Consumes and returns a NEX primitive
+func (s32 *PrimitiveS32) AND(other *PrimitiveS32) *PrimitiveS32 {
+	return NewPrimitiveS32(s32.PAND(other.Value))
+}
+
+// PAND (Primitive AND) runs a bitwise AND operation on the PrimitiveS32 value. Consumes and returns a Go primitive
+func (s32 *PrimitiveS32) PAND(value int32) int32 {
+	return s32.Value & value
+}
+
+// OR runs a bitwise OR operation on the PrimitiveS32 value. Consumes and returns a NEX primitive
+func (s32 *PrimitiveS32) OR(other *PrimitiveS32) *PrimitiveS32 {
+	return NewPrimitiveS32(s32.POR(other.Value))
+}
+
+// POR (Primitive OR) runs a bitwise OR operation on the PrimitiveS32 value. Consumes and returns a Go primitive
+func (s32 *PrimitiveS32) POR(value int32) int32 {
+	return s32.Value | value
+}
+
+// XOR runs a bitwise XOR operation on the PrimitiveS32 value. Consumes and returns a NEX primitive
+func (s32 *PrimitiveS32) XOR(other *PrimitiveS32) *PrimitiveS32 {
+	return NewPrimitiveS32(s32.PXOR(other.Value))
+}
+
+// PXOR (Primitive XOR) runs a bitwise XOR operation on the PrimitiveS32 value. Consumes and returns a Go primitive
+func (s32 *PrimitiveS32) PXOR(value int32) int32 {
+	return s32.Value ^ value
+}
+
+// NOT runs a bitwise NOT operation on the PrimitiveS32 value. Returns a NEX primitive
+func (s32 *PrimitiveS32) NOT() *PrimitiveS32 {
+	return NewPrimitiveS32(s32.PNOT())
+}
+
+// PNOT (Primitive NOT) runs a bitwise NOT operation on the PrimitiveS32 value. Returns a Go primitive
+func (s32 *PrimitiveS32) PNOT() int32 {
+	return ^s32.Value
+}
+
+// ANDNOT runs a bitwise ANDNOT operation on the PrimitiveS32 value. Consumes and returns a NEX primitive
+func (s32 *PrimitiveS32) ANDNOT(other *PrimitiveS32) *PrimitiveS32 {
+	return NewPrimitiveS32(s32.PANDNOT(other.Value))
+}
+
+// PANDNOT (Primitive AND-NOT) runs a bitwise AND-NOT operation on the PrimitiveS32 value. Consumes and returns a Go primitive
+func (s32 *PrimitiveS32) PANDNOT(value int32) int32 {
+	return s32.Value &^ value
+}
+
+// LShift runs a left shift operation on the PrimitiveS32 value. Consumes and returns a NEX primitive
+func (s32 *PrimitiveS32) LShift(other *PrimitiveS32) *PrimitiveS32 {
+	return NewPrimitiveS32(s32.PLShift(other.Value))
+}
+
+// PLShift (Primitive Left Shift) runs a left shift operation on the PrimitiveS32 value. Consumes and returns a Go primitive
+func (s32 *PrimitiveS32) PLShift(value int32) int32 {
+	return s32.Value &^ value
+}
+
+// RShift runs a right shift operation on the PrimitiveS32 value. Consumes and returns a NEX primitive
+func (s32 *PrimitiveS32) RShift(other *PrimitiveS32) *PrimitiveS32 {
+	return NewPrimitiveS32(s32.PRShift(other.Value))
+}
+
+// PRShift (Primitive Right Shift) runs a right shift operation on the PrimitiveS32 value. Consumes and returns a Go primitive
+func (s32 *PrimitiveS32) PRShift(value int32) int32 {
+	return s32.Value &^ value
+}
+
 // NewPrimitiveS32 returns a new PrimitiveS32
 func NewPrimitiveS32(i32 int32) *PrimitiveS32 {
 	return &PrimitiveS32{Value: i32}

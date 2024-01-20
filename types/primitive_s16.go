@@ -43,6 +43,76 @@ func (s16 *PrimitiveS16) String() string {
 	return fmt.Sprintf("%d", s16.Value)
 }
 
+// AND runs a bitwise AND operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
+func (s16 *PrimitiveS16) AND(other *PrimitiveS16) *PrimitiveS16 {
+	return NewPrimitiveS16(s16.PAND(other.Value))
+}
+
+// PAND (Primitive AND) runs a bitwise AND operation on the PrimitiveS16 value. Consumes and returns a Go primitive
+func (s16 *PrimitiveS16) PAND(value int16) int16 {
+	return s16.Value & value
+}
+
+// OR runs a bitwise OR operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
+func (s16 *PrimitiveS16) OR(other *PrimitiveS16) *PrimitiveS16 {
+	return NewPrimitiveS16(s16.POR(other.Value))
+}
+
+// POR (Primitive OR) runs a bitwise OR operation on the PrimitiveS16 value. Consumes and returns a Go primitive
+func (s16 *PrimitiveS16) POR(value int16) int16 {
+	return s16.Value | value
+}
+
+// XOR runs a bitwise XOR operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
+func (s16 *PrimitiveS16) XOR(other *PrimitiveS16) *PrimitiveS16 {
+	return NewPrimitiveS16(s16.PXOR(other.Value))
+}
+
+// PXOR (Primitive XOR) runs a bitwise XOR operation on the PrimitiveS16 value. Consumes and returns a Go primitive
+func (s16 *PrimitiveS16) PXOR(value int16) int16 {
+	return s16.Value ^ value
+}
+
+// NOT runs a bitwise NOT operation on the PrimitiveS16 value. Returns a NEX primitive
+func (s16 *PrimitiveS16) NOT() *PrimitiveS16 {
+	return NewPrimitiveS16(s16.PNOT())
+}
+
+// PNOT (Primitive NOT) runs a bitwise NOT operation on the PrimitiveS16 value. Returns a Go primitive
+func (s16 *PrimitiveS16) PNOT() int16 {
+	return ^s16.Value
+}
+
+// ANDNOT runs a bitwise ANDNOT operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
+func (s16 *PrimitiveS16) ANDNOT(other *PrimitiveS16) *PrimitiveS16 {
+	return NewPrimitiveS16(s16.PANDNOT(other.Value))
+}
+
+// PANDNOT (Primitive AND-NOT) runs a bitwise AND-NOT operation on the PrimitiveS16 value. Consumes and returns a Go primitive
+func (s16 *PrimitiveS16) PANDNOT(value int16) int16 {
+	return s16.Value &^ value
+}
+
+// LShift runs a left shift operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
+func (s16 *PrimitiveS16) LShift(other *PrimitiveS16) *PrimitiveS16 {
+	return NewPrimitiveS16(s16.PLShift(other.Value))
+}
+
+// PLShift (Primitive Left Shift) runs a left shift operation on the PrimitiveS16 value. Consumes and returns a Go primitive
+func (s16 *PrimitiveS16) PLShift(value int16) int16 {
+	return s16.Value &^ value
+}
+
+// RShift runs a right shift operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
+func (s16 *PrimitiveS16) RShift(other *PrimitiveS16) *PrimitiveS16 {
+	return NewPrimitiveS16(s16.PRShift(other.Value))
+}
+
+// PRShift (Primitive Right Shift) runs a right shift operation on the PrimitiveS16 value. Consumes and returns a Go primitive
+func (s16 *PrimitiveS16) PRShift(value int16) int16 {
+	return s16.Value &^ value
+}
+
 // NewPrimitiveS16 returns a new PrimitiveS16
 func NewPrimitiveS16(i16 int16) *PrimitiveS16 {
 	return &PrimitiveS16{Value: i16}
