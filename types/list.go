@@ -100,6 +100,11 @@ func (l *List[T]) SetFromData(data []T) {
 	l.real = data
 }
 
+// Length returns the number of elements in the List
+func (l *List[T]) Length() int {
+	return len(l.real)
+}
+
 // String returns a string representation of the struct
 func (l *List[T]) String() string {
 	return fmt.Sprintf("%v", l.real)
