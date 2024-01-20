@@ -105,6 +105,19 @@ func (l *List[T]) Length() int {
 	return len(l.real)
 }
 
+// Each runs a callback function for every element in the List
+// The List should not be modified inside the callback function
+// Returns true if the loop was terminated early
+func (l *List[T]) Each(callback func(i int, value T) bool) bool {
+	for i, value := range l.real {
+		if callback(i, value) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // String returns a string representation of the struct
 func (l *List[T]) String() string {
 	return fmt.Sprintf("%v", l.real)
