@@ -81,6 +81,11 @@ func (l *List[T]) Equals(o RVType) bool {
 	return true
 }
 
+// Slice returns the real underlying slice for the List
+func (l *List[T]) Slice() []T {
+	return l.real
+}
+
 // Append appends an element to the List internal slice
 func (l *List[T]) Append(value T) {
 	l.real = append(l.real, value)
