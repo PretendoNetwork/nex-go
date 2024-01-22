@@ -561,7 +561,7 @@ func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {
 }
 
 // FindConnectionByID returns the PRUDP client connected with the given connection ID
-func (pep *PRUDPEndPoint) FindConnectionByID(serverPort, serverStreamType uint8, connectedID uint32) *PRUDPConnection {
+func (pep *PRUDPEndPoint) FindConnectionByID(connectedID uint32) *PRUDPConnection {
 	var connection *PRUDPConnection
 
 	pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
@@ -577,7 +577,7 @@ func (pep *PRUDPEndPoint) FindConnectionByID(serverPort, serverStreamType uint8,
 }
 
 // FindConnectionByPID returns the PRUDP client connected with the given PID
-func (pep *PRUDPEndPoint) FindConnectionByPID(serverPort, serverStreamType uint8, pid uint64) *PRUDPConnection {
+func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 	var connection *PRUDPConnection
 
 	pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
