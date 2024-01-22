@@ -118,6 +118,23 @@ func (l *List[T]) Each(callback func(i int, value T) bool) bool {
 	return false
 }
 
+// Contains checks if the provided value exists in the List
+func (l *List[T]) Contains(checkValue T) bool {
+	contains := false
+
+	l.Each(func(_ int, value T) bool {
+		if value.Equals(checkValue) {
+			contains = true
+
+			return true
+		}
+
+		return false
+	})
+
+	return contains
+}
+
 // String returns a string representation of the struct
 func (l *List[T]) String() string {
 	return fmt.Sprintf("%v", l.real)
