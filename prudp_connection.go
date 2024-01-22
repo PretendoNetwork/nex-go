@@ -32,6 +32,7 @@ type PRUDPConnection struct {
 	outgoingPingSequenceIDCounter       *Counter[uint16]
 	heartbeatTimer                      *time.Timer
 	pingKickTimer                       *time.Timer
+	StationURLs                         *types.List[*types.StationURL]
 }
 
 // Server returns the PRUDP server the connections socket is connected to
@@ -208,11 +209,16 @@ func (pc *PRUDPConnection) stopHeartbeatTimers() {
 
 // NewPRUDPConnection creates a new PRUDPConnection for a given socket
 func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
-	return &PRUDPConnection{
+	pc := &PRUDPConnection{
 		Socket:                              socket,
 		pid:                                 types.NewPID(0),
 		slidingWindows:                      NewMutexMap[uint8, *SlidingWindow](),
 		outgoingUnreliableSequenceIDCounter: NewCounter[uint16](1),
 		outgoingPingSequenceIDCounter:       NewCounter[uint16](0),
+		StationURLs:                         types.NewList[*types.StationURL](),
 	}
+
+	pc.StationURLs.Type = types.NewStationURL("")
+
+	return pc
 }
