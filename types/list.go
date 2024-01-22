@@ -100,6 +100,27 @@ func (l *List[T]) Get(index int) (T, error) {
 	return l.real[index], nil
 }
 
+// DeleteIndex deletes an element at the given index. Returns an error if the index is OOB
+func (l *List[T]) DeleteIndex(index int) error {
+	if index < 0 || index >= len(l.real) {
+		return errors.New("Index out of bounds")
+	}
+
+	l.real = append(l.real[:index], l.real[index+1:]...)
+
+	return nil
+}
+
+// Remove removes the first occurance of the input from the List. Returns an error if the index is OOB
+func (l *List[T]) Remove(check T) {
+	for i, value := range l.real {
+		if value.Equals(check) {
+			l.DeleteIndex(i)
+			return
+		}
+	}
+}
+
 // SetFromData sets the List's internal slice to the input data
 func (l *List[T]) SetFromData(data []T) {
 	l.real = data
