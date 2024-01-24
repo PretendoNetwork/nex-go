@@ -22,8 +22,8 @@ type PRUDPEndPoint struct {
 	connectionEndedEventHandlers []func(connection *PRUDPConnection)
 	ConnectionIDCounter          *Counter[uint32]
 	ServerAccount                *Account
-	AccountDetailsByPID          func(pid *types.PID) (*Account, uint32)
-	AccountDetailsByUsername     func(username string) (*Account, uint32)
+	AccountDetailsByPID          func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByUsername     func(username string) (*Account, *Error)
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received

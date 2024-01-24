@@ -13,36 +13,36 @@ var authenticationServerAccount *nex.Account
 var secureServerAccount *nex.Account
 var testUserAccount *nex.Account
 
-func accountDetailsByPID(pid *types.PID) (*nex.Account, uint32) {
+func accountDetailsByPID(pid *types.PID) (*nex.Account, *nex.Error) {
 	if pid.Equals(authenticationServerAccount.PID) {
-		return authenticationServerAccount, 0
+		return authenticationServerAccount, nil
 	}
 
 	if pid.Equals(secureServerAccount.PID) {
-		return secureServerAccount, 0
+		return secureServerAccount, nil
 	}
 
 	if pid.Equals(testUserAccount.PID) {
-		return testUserAccount, 0
+		return testUserAccount, nil
 	}
 
-	return nil, nex.ResultCodes.RendezVous.InvalidPID
+	return nil, nex.NewError(nex.ResultCodes.RendezVous.InvalidPID, "Invalid PID")
 }
 
-func accountDetailsByUsername(username string) (*nex.Account, uint32) {
+func accountDetailsByUsername(username string) (*nex.Account, *nex.Error) {
 	if username == authenticationServerAccount.Username {
-		return authenticationServerAccount, 0
+		return authenticationServerAccount, nil
 	}
 
 	if username == secureServerAccount.Username {
-		return secureServerAccount, 0
+		return secureServerAccount, nil
 	}
 
 	if username == testUserAccount.Username {
-		return testUserAccount, 0
+		return testUserAccount, nil
 	}
 
-	return nil, nex.ResultCodes.RendezVous.InvalidUsername
+	return nil, nex.NewError(nex.ResultCodes.RendezVous.InvalidPID, "Invalid username")
 }
 
 func main() {

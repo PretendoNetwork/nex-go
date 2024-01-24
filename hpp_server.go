@@ -24,8 +24,8 @@ type HPPServer struct {
 	natTraversalProtocolVersion *LibraryVersion
 	dataHandlers                []func(packet PacketInterface)
 	byteStreamSettings          *ByteStreamSettings
-	AccountDetailsByPID         func(pid *types.PID) (*Account, uint32)
-	AccountDetailsByUsername    func(username string) (*Account, uint32)
+	AccountDetailsByPID         func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByUsername    func(username string) (*Account, *Error)
 }
 
 // OnData adds an event handler which is fired when a new HPP request is received
