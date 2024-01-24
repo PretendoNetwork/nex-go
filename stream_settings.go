@@ -13,7 +13,7 @@ import (
 // Not all values are used at this time, and only exist to future-proof for a later time.
 type StreamSettings struct {
 	ExtraRestransmitTimeoutTrigger   uint32                // * Unused. The number of times a packet can be retransmitted before ExtraRetransmitTimeoutMultiplier is used
-	MaxPacketRetransmissions         uint32                // *The number of times a packet can be retransmitted before the timeout time is checked
+	MaxPacketRetransmissions         uint32                // * The number of times a packet can be retransmitted before the timeout time is checked
 	KeepAliveTimeout                 uint32                // * Unused. Presumably the time a packet can be alive for without acknowledgement? Milliseconds?
 	ChecksumBase                     uint32                // * Unused. The base value for PRUDPv0 checksum calculations
 	FaultDetectionEnabled            bool                  // * Unused. Presumably used to detect PIA faults?
