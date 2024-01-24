@@ -23,7 +23,10 @@ type Variant struct {
 // WriteTo writes the Variant to the given writable
 func (v *Variant) WriteTo(writable Writable) {
 	v.TypeID.WriteTo(writable)
-	v.Type.WriteTo(writable)
+
+	if v.Type != nil {
+		v.Type.WriteTo(writable)
+	}
 }
 
 // ExtractFrom extracts the Variant from the given readable
@@ -31,6 +34,11 @@ func (v *Variant) ExtractFrom(readable Readable) error {
 	err := v.TypeID.ExtractFrom(readable)
 	if err != nil {
 		return fmt.Errorf("Failed to read Variant type ID. %s", err.Error())
+	}
+
+	// * Type ID of 0 is a "None" type. There is no data
+	if v.TypeID.Value == 0 {
+		return nil
 	}
 
 	if _, ok := VariantTypes[v.TypeID.Value]; !ok {
@@ -47,7 +55,10 @@ func (v *Variant) Copy() RVType {
 	copied := NewVariant()
 
 	copied.TypeID = v.TypeID.Copy().(*PrimitiveU8)
-	copied.Type = v.Type.Copy()
+
+	if v.Type != nil {
+		copied.Type = v.Type.Copy()
+	}
 
 	return copied
 }
@@ -64,7 +75,11 @@ func (v *Variant) Equals(o RVType) bool {
 		return false
 	}
 
-	return v.Type.Equals(other.Type)
+	if v.Type != nil {
+		return v.Type.Equals(other.Type)
+	}
+
+	return true
 }
 
 // String returns a string representation of the struct
@@ -80,8 +95,14 @@ func (v *Variant) FormatToString(indentationLevel int) string {
 	var b strings.Builder
 
 	b.WriteString("Variant{\n")
-	b.WriteString(fmt.Sprintf("%TypeID: %s,\n", indentationValues, v.TypeID))
-	b.WriteString(fmt.Sprintf("%Type: %s\n", indentationValues, v.Type))
+	b.WriteString(fmt.Sprintf("%sTypeID: %s,\n", indentationValues, v.TypeID))
+
+	if v.Type != nil {
+		b.WriteString(fmt.Sprintf("%sType: %s\n", indentationValues, v.Type))
+	} else {
+		b.WriteString(fmt.Sprintf("%sType: None\n", indentationValues))
+	}
+
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
@@ -89,7 +110,9 @@ func (v *Variant) FormatToString(indentationLevel int) string {
 
 // NewVariant returns a new Variant
 func NewVariant() *Variant {
+	// * Type ID of 0 is a "None" type. There is no data
 	return &Variant{
 		TypeID: NewPrimitiveU8(0),
+		Type:   nil,
 	}
 }
