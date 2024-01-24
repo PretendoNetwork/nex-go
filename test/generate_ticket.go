@@ -7,11 +7,10 @@ import (
 	"github.com/PretendoNetwork/nex-go/types"
 )
 
-// func generateTicket(userPID *types.PID, targetPID *types.PID) []byte {
-func generateTicket(source *nex.Account, target *nex.Account) []byte {
+func generateTicket(source *nex.Account, target *nex.Account, sessionKeyLength int) []byte {
 	sourceKey := nex.DeriveKerberosKey(source.PID, []byte(source.Password))
 	targetKey := nex.DeriveKerberosKey(target.PID, []byte(target.Password))
-	sessionKey := make([]byte, authServer.KerberosKeySize())
+	sessionKey := make([]byte, sessionKeyLength)
 
 	_, err := rand.Read(sessionKey)
 	if err != nil {

@@ -80,7 +80,7 @@ func startSecureServer() {
 
 	secureServer.SetFragmentSize(962)
 	secureServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
-	secureServer.SetKerberosKeySize(16)
+	secureServer.SessionKeyLength = 16
 	secureServer.SetAccessKey("ridfebb9")
 	secureServer.BindPRUDPEndPoint(endpoint)
 	secureServer.Listen(60001)

@@ -41,7 +41,7 @@ func startAuthenticationServer() {
 
 	authServer.SetFragmentSize(962)
 	authServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
-	authServer.SetKerberosKeySize(16)
+	authServer.SessionKeyLength = 16
 	authServer.SetAccessKey("ridfebb9")
 	authServer.BindPRUDPEndPoint(endpoint)
 	authServer.Listen(60000)
@@ -65,7 +65,7 @@ func login(packet nex.PRUDPPacketInterface) {
 
 	retval := types.NewQResultSuccess(0x00010001)
 	pidPrincipal := sourceAccount.PID
-	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount))
+	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount, authServer.SessionKeyLength))
 	pConnectionData := types.NewRVConnectionData()
 	strReturnMsg := types.NewString("Test Build")
 
@@ -129,7 +129,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	targetAccount, _ := accountDetailsByPID(idTarget)
 
 	retval := types.NewQResultSuccess(0x00010001)
-	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount))
+	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount, authServer.SessionKeyLength))
 
 	responseStream := nex.NewByteStreamOut(authServer)
 

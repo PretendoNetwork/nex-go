@@ -19,7 +19,7 @@ type PRUDPServer struct {
 	Connections                   *MutexMap[string, *SocketConnection]
 	SupportedFunctions            uint32
 	accessKey                     string
-	kerberosTicketVersion         int
+	KerberosTicketVersion         int
 	SessionKeyLength              int
 	FragmentSize                  int
 	version                       *LibraryVersion
@@ -329,21 +329,6 @@ func (ps *PRUDPServer) SetFragmentSize(fragmentSize int) {
 	// * Later, the MTU was increased to 1364, and the maximum payload
 	// * size is seems to be 1300 bytes, unless PRUDP v0 is used, in which case it’s 1264 bytes.
 	ps.FragmentSize = fragmentSize
-}
-
-// SetKerberosTicketVersion sets the version used when handling kerberos tickets
-func (ps *PRUDPServer) SetKerberosTicketVersion(kerberosTicketVersion int) {
-	ps.kerberosTicketVersion = kerberosTicketVersion
-}
-
-// KerberosKeySize gets the size for the kerberos session key
-func (ps *PRUDPServer) KerberosKeySize() int {
-	return ps.SessionKeyLength
-}
-
-// SetKerberosKeySize sets the size for the kerberos session key
-func (ps *PRUDPServer) SetKerberosKeySize(kerberosKeySize int) {
-	ps.SessionKeyLength = kerberosKeySize
 }
 
 // LibraryVersion returns the server NEX version

@@ -108,7 +108,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut)
 
 	data := stream.Bytes()
 
-	if stream.Server.(*PRUDPServer).kerberosTicketVersion == 1 {
+	if stream.Server.(*PRUDPServer).KerberosTicketVersion == 1 {
 		ticketKey := make([]byte, 16)
 		_, err := rand.Read(ticketKey)
 		if err != nil {
@@ -140,7 +140,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut)
 
 // Decrypt decrypts the given data and populates the struct
 func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) error {
-	if stream.Server.(*PRUDPServer).kerberosTicketVersion == 1 {
+	if stream.Server.(*PRUDPServer).KerberosTicketVersion == 1 {
 		ticketKey := types.NewBuffer(nil)
 		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data key. %s", err.Error())
