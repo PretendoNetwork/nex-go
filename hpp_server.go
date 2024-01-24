@@ -23,8 +23,9 @@ type HPPServer struct {
 	utilityProtocolVersion      *LibraryVersion
 	natTraversalProtocolVersion *LibraryVersion
 	dataHandlers                []func(packet PacketInterface)
-	passwordFromPIDHandler      func(pid *types.PID) (string, uint32)
 	byteStreamSettings          *ByteStreamSettings
+	AccountDetailsByPID         func(pid *types.PID) (*Account, uint32)
+	AccountDetailsByUsername    func(username string) (*Account, uint32)
 }
 
 // OnData adds an event handler which is fired when a new HPP request is received
@@ -256,21 +257,6 @@ func (s *HPPServer) SetNATTraversalProtocolVersion(version *LibraryVersion) {
 // NATTraversalProtocolVersion returns the servers NAT Traversal protocol version
 func (s *HPPServer) NATTraversalProtocolVersion() *LibraryVersion {
 	return s.natTraversalProtocolVersion
-}
-
-// PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
-func (s *HPPServer) PasswordFromPID(pid *types.PID) (string, uint32) {
-	if s.passwordFromPIDHandler == nil {
-		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
-		return "", Errors.Core.NotImplemented
-	}
-
-	return s.passwordFromPIDHandler(pid)
-}
-
-// SetPasswordFromPIDFunction sets the function for HPP to get a NEX password using the PID
-func (s *HPPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32)) {
-	s.passwordFromPIDHandler = handler
 }
 
 // ByteStreamSettings returns the settings to be used for ByteStreams

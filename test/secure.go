@@ -46,8 +46,11 @@ func startSecureServer() {
 
 	secureServer = nex.NewPRUDPServer()
 
-	endpoint := nex.NewPRUDPEndPoint(2)
-	endpoint.IsSecureEndpoint = true
+	endpoint := nex.NewPRUDPEndPoint(1)
+
+	endpoint.AccountDetailsByPID = accountDetailsByPID
+	endpoint.AccountDetailsByUsername = accountDetailsByUsername
+	endpoint.ServerAccount = secureServerAccount
 
 	endpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
@@ -77,7 +80,6 @@ func startSecureServer() {
 
 	secureServer.SetFragmentSize(962)
 	secureServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
-	secureServer.SetKerberosPassword([]byte("password"))
 	secureServer.SetKerberosKeySize(16)
 	secureServer.SetAccessKey("ridfebb9")
 	secureServer.BindPRUDPEndPoint(endpoint)

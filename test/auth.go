@@ -3,7 +3,6 @@ package main
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/PretendoNetwork/nex-go"
 	"github.com/PretendoNetwork/nex-go/types"
@@ -17,6 +16,10 @@ func startAuthenticationServer() {
 	authServer = nex.NewPRUDPServer()
 
 	endpoint := nex.NewPRUDPEndPoint(1)
+
+	endpoint.AccountDetailsByPID = accountDetailsByPID
+	endpoint.AccountDetailsByUsername = accountDetailsByUsername
+	endpoint.ServerAccount = authenticationServerAccount
 
 	endpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
@@ -38,7 +41,6 @@ func startAuthenticationServer() {
 
 	authServer.SetFragmentSize(962)
 	authServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
-	authServer.SetKerberosPassword([]byte("password"))
 	authServer.SetKerberosKeySize(16)
 	authServer.SetAccessKey("ridfebb9")
 	authServer.BindPRUDPEndPoint(endpoint)
@@ -58,14 +60,12 @@ func login(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	converted, err := strconv.Atoi(strUserName.Value)
-	if err != nil {
-		panic(err)
-	}
+	sourceAccount, _ := accountDetailsByUsername(strUserName.Value)
+	targetAccount, _ := accountDetailsByUsername(secureServerAccount.Username)
 
 	retval := types.NewQResultSuccess(0x00010001)
-	pidPrincipal := types.NewPID(uint64(converted))
-	pbufResponse := types.NewBuffer(generateTicket(pidPrincipal, types.NewPID(2)))
+	pidPrincipal := sourceAccount.PID
+	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount))
 	pConnectionData := types.NewRVConnectionData()
 	strReturnMsg := types.NewString("Test Build")
 
@@ -125,8 +125,11 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
+	sourceAccount, _ := accountDetailsByPID(idSource)
+	targetAccount, _ := accountDetailsByPID(idTarget)
+
 	retval := types.NewQResultSuccess(0x00010001)
-	pbufResponse := types.NewBuffer(generateTicket(idSource, idTarget))
+	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount))
 
 	responseStream := nex.NewByteStreamOut(authServer)
 

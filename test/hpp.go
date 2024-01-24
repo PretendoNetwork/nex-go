@@ -79,7 +79,8 @@ func startHPPServer() {
 
 	hppServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(2, 4, 1))
 	hppServer.SetAccessKey("76f26496")
-	hppServer.SetPasswordFromPIDFunction(passwordFromPID)
+	hppServer.AccountDetailsByPID = accountDetailsByPID
+	hppServer.AccountDetailsByUsername = accountDetailsByUsername
 
 	hppServer.Listen(12345)
 }

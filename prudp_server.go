@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/PretendoNetwork/nex-go/types"
 	"github.com/lxzan/gws"
 )
 
@@ -20,9 +19,8 @@ type PRUDPServer struct {
 	Connections                   *MutexMap[string, *SocketConnection]
 	SupportedFunctions            uint32
 	accessKey                     string
-	kerberosPassword              []byte
 	kerberosTicketVersion         int
-	kerberosKeySize               int
+	SessionKeyLength              int
 	FragmentSize                  int
 	version                       *LibraryVersion
 	datastoreProtocolVersion      *LibraryVersion
@@ -33,7 +31,6 @@ type PRUDPServer struct {
 	utilityProtocolVersion        *LibraryVersion
 	natTraversalProtocolVersion   *LibraryVersion
 	pingTimeout                   time.Duration
-	passwordFromPIDHandler        func(pid *types.PID) (string, uint32)
 	PRUDPv1ConnectionSignatureKey []byte
 	byteStreamSettings            *ByteStreamSettings
 	PRUDPV0Settings               *PRUDPV0Settings
@@ -318,16 +315,6 @@ func (ps *PRUDPServer) SetAccessKey(accessKey string) {
 	ps.accessKey = accessKey
 }
 
-// KerberosPassword returns the server kerberos password
-func (ps *PRUDPServer) KerberosPassword() []byte {
-	return ps.kerberosPassword
-}
-
-// SetKerberosPassword sets the server kerberos password
-func (ps *PRUDPServer) SetKerberosPassword(kerberosPassword []byte) {
-	ps.kerberosPassword = kerberosPassword
-}
-
 // SetFragmentSize sets the max size for a packets payload
 func (ps *PRUDPServer) SetFragmentSize(fragmentSize int) {
 	// TODO - Derive this value from the MTU
@@ -351,12 +338,12 @@ func (ps *PRUDPServer) SetKerberosTicketVersion(kerberosTicketVersion int) {
 
 // KerberosKeySize gets the size for the kerberos session key
 func (ps *PRUDPServer) KerberosKeySize() int {
-	return ps.kerberosKeySize
+	return ps.SessionKeyLength
 }
 
 // SetKerberosKeySize sets the size for the kerberos session key
 func (ps *PRUDPServer) SetKerberosKeySize(kerberosKeySize int) {
-	ps.kerberosKeySize = kerberosKeySize
+	ps.SessionKeyLength = kerberosKeySize
 }
 
 // LibraryVersion returns the server NEX version
@@ -446,21 +433,6 @@ func (ps *PRUDPServer) NATTraversalProtocolVersion() *LibraryVersion {
 	return ps.natTraversalProtocolVersion
 }
 
-// PasswordFromPID calls the function set with SetPasswordFromPIDFunction and returns the result
-func (ps *PRUDPServer) PasswordFromPID(pid *types.PID) (string, uint32) {
-	if ps.passwordFromPIDHandler == nil {
-		logger.Errorf("Missing PasswordFromPID handler. Set with SetPasswordFromPIDFunction")
-		return "", Errors.Core.NotImplemented
-	}
-
-	return ps.passwordFromPIDHandler(pid)
-}
-
-// SetPasswordFromPIDFunction sets the function for the auth server to get a NEX password using the PID
-func (ps *PRUDPServer) SetPasswordFromPIDFunction(handler func(pid *types.PID) (string, uint32)) {
-	ps.passwordFromPIDHandler = handler
-}
-
 // ByteStreamSettings returns the settings to be used for ByteStreams
 func (ps *PRUDPServer) ByteStreamSettings() *ByteStreamSettings {
 	return ps.byteStreamSettings
@@ -498,7 +470,7 @@ func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
 		Endpoints:           NewMutexMap[uint8, *PRUDPEndPoint](),
 		Connections:         NewMutexMap[string, *SocketConnection](),
-		kerberosKeySize:     32,
+		SessionKeyLength:    32,
 		FragmentSize:        1300,
 		pingTimeout:         time.Second * 15,
 		byteStreamSettings:  NewByteStreamSettings(),

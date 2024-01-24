@@ -91,13 +91,14 @@ func (p *HPPPacket) validatePasswordSignature(signature string) error {
 }
 
 func (p *HPPPacket) calculatePasswordSignature() ([]byte, error) {
-	pid := p.Sender().PID()
-	password, _ := p.Sender().Server().PasswordFromPID(pid)
-	if password == "" {
+	sender := p.Sender()
+	pid := sender.PID()
+	account, _ := sender.Server().(*HPPServer).AccountDetailsByPID(pid)
+	if account == nil {
 		return nil, errors.New("PID does not exist")
 	}
 
-	key := DeriveKerberosKey(pid, []byte(password))
+	key := DeriveKerberosKey(pid, []byte(account.Password))
 
 	signature, err := p.calculateSignature(p.payload, key)
 	if err != nil {

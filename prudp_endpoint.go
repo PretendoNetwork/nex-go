@@ -21,7 +21,9 @@ type PRUDPEndPoint struct {
 	packetEventHandlers          map[string][]func(packet PacketInterface)
 	connectionEndedEventHandlers []func(connection *PRUDPConnection)
 	ConnectionIDCounter          *Counter[uint32]
-	IsSecureEndpoint             bool // TODO - Remove this? Assume if CONNECT packet has a body, it's the secure server?
+	ServerAccount                *Account
+	AccountDetailsByPID          func(pid *types.PID) (*Account, uint32)
+	AccountDetailsByUsername     func(username string) (*Account, uint32)
 }
 
 // OnData adds an event handler which is fired when a new DATA packet is received
@@ -285,7 +287,7 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 
 	payload := make([]byte, 0)
 
-	if pep.IsSecureEndpoint {
+	if len(packet.Payload()) != 0 {
 		sessionKey, pid, checkValue, err := pep.readKerberosTicket(packet.Payload())
 		if err != nil {
 			logger.Error(err.Error())
@@ -358,7 +360,17 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 		return nil, nil, 0, err
 	}
 
-	serverKey := DeriveKerberosKey(types.NewPID(2), pep.Server.kerberosPassword)
+	// * Sanity checks
+	serverAccount, _ := pep.AccountDetailsByUsername(pep.ServerAccount.Username)
+	if serverAccount == nil {
+		return nil, nil, 0, errors.New("Failed to find endpoint server account")
+	}
+
+	if serverAccount.Password != pep.ServerAccount.Password {
+		return nil, nil, 0, errors.New("Password for endpoint server account does not match the records from AccountDetailsByUsername")
+	}
+
+	serverKey := DeriveKerberosKey(serverAccount.PID, []byte(serverAccount.Password))
 
 	ticket := NewKerberosTicketInternalData()
 	if err := ticket.Decrypt(NewByteStreamIn(ticketData.Value, pep.Server), serverKey); err != nil {
@@ -601,6 +613,5 @@ func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 		packetEventHandlers:          make(map[string][]func(PacketInterface)),
 		connectionEndedEventHandlers: make([]func(connection *PRUDPConnection), 0),
 		ConnectionIDCounter:          NewCounter[uint32](0),
-		IsSecureEndpoint:             false,
 	}
 }

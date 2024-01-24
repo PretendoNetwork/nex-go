@@ -178,7 +178,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 
 	ti.Issued = timestamp
 	ti.SourcePID = userPID
-	ti.SessionKey = stream.ReadBytesNext(int64(stream.Server.(*PRUDPServer).kerberosKeySize))
+	ti.SessionKey = stream.ReadBytesNext(int64(stream.Server.(*PRUDPServer).SessionKeyLength))
 
 	return nil
 }
