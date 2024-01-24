@@ -34,7 +34,6 @@ type PRUDPServer struct {
 	PRUDPv1ConnectionSignatureKey []byte
 	byteStreamSettings            *ByteStreamSettings
 	PRUDPV0Settings               *PRUDPV0Settings
-	packetEventHandlers           map[string][]func(packet PacketInterface)
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server
@@ -428,38 +427,15 @@ func (ps *PRUDPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSetti
 	ps.byteStreamSettings = byteStreamSettings
 }
 
-// OnData adds an event handler which is fired when a new DATA packet is received
-func (ps *PRUDPServer) OnData(handler func(packet PacketInterface)) {
-	ps.on("data", handler)
-}
-
-func (ps *PRUDPServer) on(name string, handler func(packet PacketInterface)) {
-	if _, ok := ps.packetEventHandlers[name]; !ok {
-		ps.packetEventHandlers[name] = make([]func(packet PacketInterface), 0)
-	}
-
-	ps.packetEventHandlers[name] = append(ps.packetEventHandlers[name], handler)
-}
-
-// emit emits an event to all relevant listeners. These events fire after the PRUDPEndPoint event handlers
-func (ps *PRUDPServer) emit(name string, packet PRUDPPacketInterface) {
-	if handlers, ok := ps.packetEventHandlers[name]; ok {
-		for _, handler := range handlers {
-			go handler(packet)
-		}
-	}
-}
-
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
-		Endpoints:           NewMutexMap[uint8, *PRUDPEndPoint](),
-		Connections:         NewMutexMap[string, *SocketConnection](),
-		SessionKeyLength:    32,
-		FragmentSize:        1300,
-		pingTimeout:         time.Second * 15,
-		byteStreamSettings:  NewByteStreamSettings(),
-		PRUDPV0Settings:     NewPRUDPV0Settings(),
-		packetEventHandlers: make(map[string][]func(PacketInterface)),
+		Endpoints:          NewMutexMap[uint8, *PRUDPEndPoint](),
+		Connections:        NewMutexMap[string, *SocketConnection](),
+		SessionKeyLength:   32,
+		FragmentSize:       1300,
+		pingTimeout:        time.Second * 15,
+		byteStreamSettings: NewByteStreamSettings(),
+		PRUDPV0Settings:    NewPRUDPV0Settings(),
 	}
 }

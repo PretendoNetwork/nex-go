@@ -28,6 +28,11 @@ type HPPServer struct {
 	AccountDetailsByUsername    func(username string) (*Account, *Error)
 }
 
+// RegisterServiceProtocol registers a NEX service with the HPP server
+func (s *HPPServer) RegisterServiceProtocol(protocol ServiceProtocol) {
+	s.OnData(protocol.HandlePacket)
+}
+
 // OnData adds an event handler which is fired when a new HPP request is received
 func (s *HPPServer) OnData(handler func(packet PacketInterface)) {
 	s.dataHandlers = append(s.dataHandlers, handler)

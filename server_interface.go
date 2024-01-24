@@ -14,7 +14,6 @@ type ServerInterface interface {
 	NATTraversalProtocolVersion() *LibraryVersion
 	SetDefaultLibraryVersion(version *LibraryVersion)
 	Send(packet PacketInterface)
-	OnData(handler func(packet PacketInterface))
 	ByteStreamSettings() *ByteStreamSettings
 	SetByteStreamSettings(settings *ByteStreamSettings)
 }

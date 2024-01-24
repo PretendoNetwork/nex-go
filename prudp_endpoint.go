@@ -26,6 +26,11 @@ type PRUDPEndPoint struct {
 	AccountDetailsByUsername     func(username string) (*Account, *Error)
 }
 
+// RegisterServiceProtocol registers a NEX service with the endpoint
+func (pep *PRUDPEndPoint) RegisterServiceProtocol(protocol ServiceProtocol) {
+	pep.OnData(protocol.HandlePacket)
+}
+
 // OnData adds an event handler which is fired when a new DATA packet is received
 func (pep *PRUDPEndPoint) OnData(handler func(packet PacketInterface)) {
 	pep.on("data", handler)
@@ -60,9 +65,6 @@ func (pep *PRUDPEndPoint) emit(name string, packet PRUDPPacketInterface) {
 			go handler(packet)
 		}
 	}
-
-	// * propagate the event up to the PRUDP server
-	pep.Server.emit(name, packet)
 }
 
 func (pep *PRUDPEndPoint) emitConnectionEnded(connection *PRUDPConnection) {
