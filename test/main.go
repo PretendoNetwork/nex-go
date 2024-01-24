@@ -26,7 +26,7 @@ func accountDetailsByPID(pid *types.PID) (*nex.Account, uint32) {
 		return testUserAccount, 0
 	}
 
-	return nil, nex.Errors.RendezVous.InvalidPID
+	return nil, nex.ResultCodes.RendezVous.InvalidPID
 }
 
 func accountDetailsByUsername(username string) (*nex.Account, uint32) {
@@ -42,7 +42,7 @@ func accountDetailsByUsername(username string) (*nex.Account, uint32) {
 		return testUserAccount, 0
 	}
 
-	return nil, nex.Errors.RendezVous.InvalidUsername
+	return nil, nex.ResultCodes.RendezVous.InvalidUsername
 }
 
 func main() {

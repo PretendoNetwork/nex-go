@@ -8,7 +8,7 @@ import (
 var logger = plogger.NewLogger()
 
 func init() {
-	initErrorsData()
+	initResultCodes()
 
 	types.RegisterVariantType(1, types.NewPrimitiveS64(0))
 	types.RegisterVariantType(2, types.NewPrimitiveF64(0))
