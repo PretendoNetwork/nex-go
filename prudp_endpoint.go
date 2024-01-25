@@ -16,7 +16,7 @@ import (
 type PRUDPEndPoint struct {
 	Server                       *PRUDPServer
 	StreamID                     uint8
-	DefaultstreamSettings        *StreamSettings
+	DefaultStreamSettings        *StreamSettings
 	Connections                  *MutexMap[string, *PRUDPConnection]
 	packetEventHandlers          map[string][]func(packet PacketInterface)
 	connectionEndedEventHandlers []func(connection *PRUDPConnection)
@@ -86,7 +86,7 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 		connection.DefaultPRUDPVersion = packet.Version()
 		connection.StreamType = streamType
 		connection.StreamID = streamID
-		connection.StreamSettings = pep.DefaultstreamSettings.Copy()
+		connection.StreamSettings = pep.DefaultStreamSettings.Copy()
 		connection.startHeartbeat()
 
 		// * Fail-safe. If the server reboots, then
@@ -610,7 +610,7 @@ func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 	return &PRUDPEndPoint{
 		StreamID:                     streamID,
-		DefaultstreamSettings:        NewStreamSettings(),
+		DefaultStreamSettings:        NewStreamSettings(),
 		Connections:                  NewMutexMap[string, *PRUDPConnection](),
 		packetEventHandlers:          make(map[string][]func(PacketInterface)),
 		connectionEndedEventHandlers: make([]func(connection *PRUDPConnection), 0),
