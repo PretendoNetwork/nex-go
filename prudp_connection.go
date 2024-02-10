@@ -14,7 +14,7 @@ import (
 // A single network socket may be used to open multiple PRUDP virtual connections
 type PRUDPConnection struct {
 	Socket                              *SocketConnection                // * The connections parent socket
-	Endpoint                            *PRUDPEndPoint                   // * The PRUDP endpoint the connection is connected to
+	endpoint                            *PRUDPEndPoint                   // * The PRUDP endpoint the connection is connected to
 	ID                                  uint32                           // * Connection ID
 	SessionID                           uint8                            // * Random value generated at the start of the session. Client and server IDs do not need to match
 	ServerSessionID                     uint8                            // * Random value generated at the start of the session. Client and server IDs do not need to match
@@ -36,8 +36,8 @@ type PRUDPConnection struct {
 }
 
 // Server returns the PRUDP server the connections socket is connected to
-func (pc *PRUDPConnection) Server() ServerInterface {
-	return pc.Socket.Server
+func (pc *PRUDPConnection) Endpoint() EndpointInterface {
+	return pc.endpoint
 }
 
 // Address returns the socket address of the connection
@@ -76,11 +76,11 @@ func (pc *PRUDPConnection) cleanup() {
 
 	pc.Socket.Connections.Delete(pc.SessionID)
 
-	pc.Endpoint.emitConnectionEnded(pc)
+	pc.endpoint.emitConnectionEnded(pc)
 
 	if pc.Socket.Connections.Size() == 0 {
 		// * No more PRUDP connections, assume the socket connection is also closed
-		pc.Endpoint.Server.Connections.Delete(pc.Socket.Address.String())
+		pc.endpoint.Server.Connections.Delete(pc.Socket.Address.String())
 		// TODO - Is there any other cleanup that needs to happen here?
 		// TODO - Should we add an event for when a socket closes too?
 	}
@@ -168,12 +168,12 @@ func (pc *PRUDPConnection) resetHeartbeat() {
 	}
 
 	if pc.heartbeatTimer != nil {
-		pc.heartbeatTimer.Reset(pc.Endpoint.Server.pingTimeout) // TODO - This is part of StreamSettings
+		pc.heartbeatTimer.Reset(pc.endpoint.Server.pingTimeout) // TODO - This is part of StreamSettings
 	}
 }
 
 func (pc *PRUDPConnection) startHeartbeat() {
-	endpoint := pc.Endpoint
+	endpoint := pc.endpoint
 	server := endpoint.Server
 
 	// * Every time a packet is sent, connection.resetHeartbeat()

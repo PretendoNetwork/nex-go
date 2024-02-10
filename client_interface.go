@@ -9,7 +9,7 @@ import (
 
 // ClientInterface defines all the methods a client should have regardless of server type
 type ClientInterface interface {
-	Server() ServerInterface
+	Endpoint() EndpointInterface
 	Address() net.Addr
 	PID() *types.PID
 	SetPID(pid *types.PID)

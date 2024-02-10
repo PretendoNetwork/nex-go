@@ -101,14 +101,14 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		streamID := packet.SourceVirtualPortStreamID()
 		discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
 
-		connection.Endpoint.Connections.Delete(discriminator)
+		connection.endpoint.Connections.Delete(discriminator)
 
 		return
 	}
 
 	if time.Since(pendingPacket.lastSendTime) >= rs.Interval {
 		// * Resend the packet to the connection
-		server := connection.Endpoint.Server
+		server := connection.endpoint.Server
 		data := packet.Bytes()
 		server.sendRaw(connection.Socket, data)
 

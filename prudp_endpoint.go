@@ -81,7 +81,7 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 
 	if !ok {
 		connection = NewPRUDPConnection(socket)
-		connection.Endpoint = pep
+		connection.endpoint = pep
 		connection.ID = pep.ConnectionIDCounter.Next()
 		connection.DefaultPRUDPVersion = packet.Version()
 		connection.StreamType = streamType
@@ -149,7 +149,7 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 
 func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-	stream := NewByteStreamIn(packet.Payload(), pep.Server)
+	stream := NewByteStreamIn(packet.Payload(), pep.Server.LibraryVersions, pep.ByteStreamSettings())
 	sequenceIDs := make([]uint16, 0)
 	var baseSequenceID uint16
 	var slidingWindow *SlidingWindow
@@ -201,11 +201,11 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	var ack PRUDPPacketInterface
 
 	if packet.Version() == 2 {
-		ack, _ = NewPRUDPPacketLite(connection, nil)
+		ack, _ = NewPRUDPPacketLite(pep.Server, connection, nil)
 	} else if packet.Version() == 1 {
-		ack, _ = NewPRUDPPacketV1(connection, nil)
+		ack, _ = NewPRUDPPacketV1(pep.Server, connection, nil)
 	} else {
-		ack, _ = NewPRUDPPacketV0(connection, nil)
+		ack, _ = NewPRUDPPacketV0(pep.Server, connection, nil)
 	}
 
 	connectionSignature, err := packet.calculateConnectionSignature(connection.Socket.Address)
@@ -244,11 +244,11 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	var ack PRUDPPacketInterface
 
 	if packet.Version() == 2 {
-		ack, _ = NewPRUDPPacketLite(connection, nil)
+		ack, _ = NewPRUDPPacketLite(pep.Server, connection, nil)
 	} else if packet.Version() == 1 {
-		ack, _ = NewPRUDPPacketV1(connection, nil)
+		ack, _ = NewPRUDPPacketV1(pep.Server, connection, nil)
 	} else {
-		ack, _ = NewPRUDPPacketV0(connection, nil)
+		ack, _ = NewPRUDPPacketV0(pep.Server, connection, nil)
 	}
 
 	connection.ServerConnectionSignature = packet.getConnectionSignature()
@@ -304,7 +304,7 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 		binary.LittleEndian.PutUint32(responseCheckValueBytes, responseCheckValue)
 
 		checkValueResponse := types.NewBuffer(responseCheckValueBytes)
-		stream := NewByteStreamOut(pep.Server)
+		stream := NewByteStreamOut(pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 		checkValueResponse.WriteTo(stream)
 
@@ -350,7 +350,7 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
-	stream := NewByteStreamIn(payload, pep.Server)
+	stream := NewByteStreamIn(payload, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	ticketData := types.NewBuffer(nil)
 	if err := ticketData.ExtractFrom(stream); err != nil {
@@ -374,8 +374,8 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 
 	serverKey := DeriveKerberosKey(serverAccount.PID, []byte(serverAccount.Password))
 
-	ticket := NewKerberosTicketInternalData()
-	if err := ticket.Decrypt(NewByteStreamIn(ticketData.Value, pep.Server), serverKey); err != nil {
+	ticket := NewKerberosTicketInternalData(pep.Server)
+	if err := ticket.Decrypt(NewByteStreamIn(ticketData.Value, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -395,7 +395,7 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 		return nil, nil, 0, err
 	}
 
-	checkDataStream := NewByteStreamIn(decryptedRequestData, pep.Server)
+	checkDataStream := NewByteStreamIn(decryptedRequestData, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	userPID := types.NewPID(0)
 	if err := userPID.ExtractFrom(checkDataStream); err != nil {
@@ -419,11 +419,11 @@ func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
 	var ack PRUDPPacketInterface
 
 	if packet.Version() == 2 {
-		ack, _ = NewPRUDPPacketLite(packet.Sender().(*PRUDPConnection), nil)
+		ack, _ = NewPRUDPPacketLite(pep.Server, packet.Sender().(*PRUDPConnection), nil)
 	} else if packet.Version() == 1 {
-		ack, _ = NewPRUDPPacketV1(packet.Sender().(*PRUDPConnection), nil)
+		ack, _ = NewPRUDPPacketV1(pep.Server, packet.Sender().(*PRUDPConnection), nil)
 	} else {
-		ack, _ = NewPRUDPPacketV0(packet.Sender().(*PRUDPConnection), nil)
+		ack, _ = NewPRUDPPacketV0(pep.Server, packet.Sender().(*PRUDPConnection), nil)
 	}
 
 	ack.SetType(packet.Type())
@@ -473,7 +473,7 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 			payload := slidingWindow.AddFragment(decompressedPayload)
 
 			if packet.getFragmentID() == 0 {
-				message := NewRMCMessage(pep.Server)
+				message := NewRMCMessage(pep)
 				err := message.FromBytes(payload)
 				if err != nil {
 					// TODO - Should this return the error too?
@@ -539,7 +539,7 @@ func (pep *PRUDPEndPoint) handleUnreliable(packet PRUDPPacketInterface) {
 
 	payload := packet.processUnreliableCrypto()
 
-	message := NewRMCMessage(pep.Server)
+	message := NewRMCMessage(pep)
 	err := message.FromBytes(payload)
 	if err != nil {
 		// TODO - Should this return the error too?
@@ -556,11 +556,11 @@ func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {
 
 	switch connection.DefaultPRUDPVersion {
 	case 0:
-		ping, _ = NewPRUDPPacketV0(connection, nil)
+		ping, _ = NewPRUDPPacketV0(pep.Server, connection, nil)
 	case 1:
-		ping, _ = NewPRUDPPacketV1(connection, nil)
+		ping, _ = NewPRUDPPacketV1(pep.Server, connection, nil)
 	case 2:
-		ping, _ = NewPRUDPPacketLite(connection, nil)
+		ping, _ = NewPRUDPPacketLite(pep.Server, connection, nil)
 	}
 
 	ping.SetType(PingPacket)
@@ -604,6 +604,36 @@ func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 	})
 
 	return connection
+}
+
+// AccessKey returns the servers sandbox access key
+func (pep *PRUDPEndPoint) AccessKey() string {
+	return pep.Server.AccessKey
+}
+
+// SetAccessKey sets the servers sandbox access key
+func (pep *PRUDPEndPoint) SetAccessKey(accessKey string) {
+	pep.Server.AccessKey = accessKey
+}
+
+// Send sends the packet to the packets sender
+func (pep *PRUDPEndPoint) Send(packet PacketInterface) {
+	pep.Server.Send(packet)
+}
+
+// LibraryVersions returns the versions that the server has
+func (pep *PRUDPEndPoint) LibraryVersions() *LibraryVersions {
+	return pep.Server.LibraryVersions
+}
+
+// ByteStreamSettings returns the settings to be used for ByteStreams
+func (pep *PRUDPEndPoint) ByteStreamSettings() *ByteStreamSettings {
+	return pep.Server.ByteStreamSettings
+}
+
+// SetByteStreamSettings sets the settings to be used for ByteStreams
+func (pep *PRUDPEndPoint) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings) {
+	pep.Server.ByteStreamSettings = byteStreamSettings
 }
 
 // NewPRUDPEndPoint returns a new PRUDPEndPoint for a server on the provided stream ID

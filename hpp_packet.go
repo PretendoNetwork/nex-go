@@ -55,7 +55,7 @@ func (p *HPPPacket) validateAccessKeySignature(signature string) error {
 }
 
 func (p *HPPPacket) calculateAccessKeySignature() ([]byte, error) {
-	accessKey := p.Sender().Server().AccessKey()
+	accessKey := p.Sender().Endpoint().AccessKey()
 
 	accessKeyBytes, err := hex.DecodeString(accessKey)
 	if err != nil {
@@ -93,7 +93,7 @@ func (p *HPPPacket) validatePasswordSignature(signature string) error {
 func (p *HPPPacket) calculatePasswordSignature() ([]byte, error) {
 	sender := p.Sender()
 	pid := sender.PID()
-	account, _ := sender.Server().(*HPPServer).AccountDetailsByPID(pid)
+	account, _ := sender.Endpoint().(*HPPServer).AccountDetailsByPID(pid)
 	if account == nil {
 		return nil, errors.New("PID does not exist")
 	}
@@ -140,7 +140,7 @@ func NewHPPPacket(client *HPPClient, payload []byte) (*HPPPacket, error) {
 	}
 
 	if payload != nil {
-		rmcMessage := NewRMCRequest(client.Server())
+		rmcMessage := NewRMCRequest(client.Endpoint())
 		err := rmcMessage.FromBytes(payload)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode HPP request. %s", err)

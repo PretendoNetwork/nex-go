@@ -55,7 +55,8 @@ package main
 import (
 	"fmt"
 
-	nex "github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
 func main() {
@@ -63,6 +64,9 @@ func main() {
 
 	authServer := nex.NewPRUDPServer() // The main PRUDP server
 	endpoint := nex.NewPRUDPEndPoint(1) // A PRUDP endpoint for PRUDP connections to connect to. Bound to StreamID 1
+	endpoint.ServerAccount = nex.NewAccount(types.NewPID(1), "Quazal Authentication", "password"))
+	endpoint.AccountDetailsByPID = accountDetailsByPID
+	endpoint.AccountDetailsByUsername = accountDetailsByUsername
 
 	// Setup event handlers for the endpoint
 	endpoint.OnData(func(packet nex.PacketInterface) {
@@ -86,10 +90,9 @@ func main() {
 	// Bind the endpoint to the server and configure it's settings
 	authServer.BindPRUDPEndPoint(endpoint)
 	authServer.SetFragmentSize(962)
-	authServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
-	authServer.SetKerberosPassword([]byte("password"))
-	authServer.SetKerberosKeySize(16)
-	authServer.SetAccessKey("ridfebb9")
+	authServer.LibraryVersions.SetDefault(nex.NewLibraryVersion(1, 1, 0))
+	authServer.SessionKeyLength = 16
+	authServer.AccessKey = "ridfebb9"
 	authServer.Listen(60000)
 }
 ```

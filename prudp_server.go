@@ -18,21 +18,14 @@ type PRUDPServer struct {
 	Endpoints                     *MutexMap[uint8, *PRUDPEndPoint]
 	Connections                   *MutexMap[string, *SocketConnection]
 	SupportedFunctions            uint32
-	accessKey                     string
+	AccessKey                     string
 	KerberosTicketVersion         int
 	SessionKeyLength              int
 	FragmentSize                  int
-	version                       *LibraryVersion
-	datastoreProtocolVersion      *LibraryVersion
-	matchMakingProtocolVersion    *LibraryVersion
-	rankingProtocolVersion        *LibraryVersion
-	ranking2ProtocolVersion       *LibraryVersion
-	messagingProtocolVersion      *LibraryVersion
-	utilityProtocolVersion        *LibraryVersion
-	natTraversalProtocolVersion   *LibraryVersion
 	pingTimeout                   time.Duration
 	PRUDPv1ConnectionSignatureKey []byte
-	byteStreamSettings            *ByteStreamSettings
+	LibraryVersions               *LibraryVersions
+	ByteStreamSettings            *ByteStreamSettings
 	PRUDPV0Settings               *PRUDPV0Settings
 }
 
@@ -47,7 +40,7 @@ func (ps *PRUDPServer) BindPRUDPEndPoint(endpoint *PRUDPEndPoint) {
 	ps.Endpoints.Set(endpoint.StreamID, endpoint)
 }
 
-// Listen is an alias of ListenUDP. Implemented to conform to the ServerInterface
+// Listen is an alias of ListenUDP. Implemented to conform to the EndpointInterface
 func (ps *PRUDPServer) Listen(port int) {
 	ps.ListenUDP(port)
 }
@@ -130,7 +123,7 @@ func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 }
 
 func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
-	readStream := NewByteStreamIn(packetData, ps)
+	readStream := NewByteStreamIn(packetData, ps.LibraryVersions, ps.ByteStreamSettings)
 
 	var packets []PRUDPPacketInterface
 
@@ -139,11 +132,11 @@ func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, 
 	// * until no more data is left, to account for multiple
 	// * packets being sent at once
 	if ps.websocketServer != nil && packetData[0] == 0x80 {
-		packets, _ = NewPRUDPPacketsLite(nil, readStream)
+		packets, _ = NewPRUDPPacketsLite(ps, nil, readStream)
 	} else if bytes.Equal(packetData[:2], []byte{0xEA, 0xD0}) {
-		packets, _ = NewPRUDPPacketsV1(nil, readStream)
+		packets, _ = NewPRUDPPacketsV1(ps, nil, readStream)
 	} else {
-		packets, _ = NewPRUDPPacketsV0(nil, readStream)
+		packets, _ = NewPRUDPPacketsV0(ps, nil, readStream)
 	}
 
 	for _, packet := range packets {
@@ -304,16 +297,6 @@ func (ps *PRUDPServer) sendRaw(socket *SocketConnection, data []byte) {
 	}
 }
 
-// AccessKey returns the servers sandbox access key
-func (ps *PRUDPServer) AccessKey() string {
-	return ps.accessKey
-}
-
-// SetAccessKey sets the servers sandbox access key
-func (ps *PRUDPServer) SetAccessKey(accessKey string) {
-	ps.accessKey = accessKey
-}
-
 // SetFragmentSize sets the max size for a packets payload
 func (ps *PRUDPServer) SetFragmentSize(fragmentSize int) {
 	// TODO - Derive this value from the MTU
@@ -330,103 +313,6 @@ func (ps *PRUDPServer) SetFragmentSize(fragmentSize int) {
 	ps.FragmentSize = fragmentSize
 }
 
-// LibraryVersion returns the server NEX version
-func (ps *PRUDPServer) LibraryVersion() *LibraryVersion {
-	return ps.version
-}
-
-// SetDefaultLibraryVersion sets the default NEX protocol versions
-func (ps *PRUDPServer) SetDefaultLibraryVersion(version *LibraryVersion) {
-	ps.version = version
-	ps.datastoreProtocolVersion = version.Copy()
-	ps.matchMakingProtocolVersion = version.Copy()
-	ps.rankingProtocolVersion = version.Copy()
-	ps.ranking2ProtocolVersion = version.Copy()
-	ps.messagingProtocolVersion = version.Copy()
-	ps.utilityProtocolVersion = version.Copy()
-	ps.natTraversalProtocolVersion = version.Copy()
-}
-
-// DataStoreProtocolVersion returns the servers DataStore protocol version
-func (ps *PRUDPServer) DataStoreProtocolVersion() *LibraryVersion {
-	return ps.datastoreProtocolVersion
-}
-
-// SetDataStoreProtocolVersion sets the servers DataStore protocol version
-func (ps *PRUDPServer) SetDataStoreProtocolVersion(version *LibraryVersion) {
-	ps.datastoreProtocolVersion = version
-}
-
-// MatchMakingProtocolVersion returns the servers MatchMaking protocol version
-func (ps *PRUDPServer) MatchMakingProtocolVersion() *LibraryVersion {
-	return ps.matchMakingProtocolVersion
-}
-
-// SetMatchMakingProtocolVersion sets the servers MatchMaking protocol version
-func (ps *PRUDPServer) SetMatchMakingProtocolVersion(version *LibraryVersion) {
-	ps.matchMakingProtocolVersion = version
-}
-
-// RankingProtocolVersion returns the servers Ranking protocol version
-func (ps *PRUDPServer) RankingProtocolVersion() *LibraryVersion {
-	return ps.rankingProtocolVersion
-}
-
-// SetRankingProtocolVersion sets the servers Ranking protocol version
-func (ps *PRUDPServer) SetRankingProtocolVersion(version *LibraryVersion) {
-	ps.rankingProtocolVersion = version
-}
-
-// Ranking2ProtocolVersion returns the servers Ranking2 protocol version
-func (ps *PRUDPServer) Ranking2ProtocolVersion() *LibraryVersion {
-	return ps.ranking2ProtocolVersion
-}
-
-// SetRanking2ProtocolVersion sets the servers Ranking2 protocol version
-func (ps *PRUDPServer) SetRanking2ProtocolVersion(version *LibraryVersion) {
-	ps.ranking2ProtocolVersion = version
-}
-
-// MessagingProtocolVersion returns the servers Messaging protocol version
-func (ps *PRUDPServer) MessagingProtocolVersion() *LibraryVersion {
-	return ps.messagingProtocolVersion
-}
-
-// SetMessagingProtocolVersion sets the servers Messaging protocol version
-func (ps *PRUDPServer) SetMessagingProtocolVersion(version *LibraryVersion) {
-	ps.messagingProtocolVersion = version
-}
-
-// UtilityProtocolVersion returns the servers Utility protocol version
-func (ps *PRUDPServer) UtilityProtocolVersion() *LibraryVersion {
-	return ps.utilityProtocolVersion
-}
-
-// SetUtilityProtocolVersion sets the servers Utility protocol version
-func (ps *PRUDPServer) SetUtilityProtocolVersion(version *LibraryVersion) {
-	ps.utilityProtocolVersion = version
-}
-
-// SetNATTraversalProtocolVersion sets the servers NAT Traversal protocol version
-func (ps *PRUDPServer) SetNATTraversalProtocolVersion(version *LibraryVersion) {
-	ps.natTraversalProtocolVersion = version
-}
-
-// NATTraversalProtocolVersion returns the servers NAT Traversal protocol version
-func (ps *PRUDPServer) NATTraversalProtocolVersion() *LibraryVersion {
-	return ps.natTraversalProtocolVersion
-}
-
-// ByteStreamSettings returns the settings to be used for ByteStreams
-func (ps *PRUDPServer) ByteStreamSettings() *ByteStreamSettings {
-	return ps.byteStreamSettings
-}
-
-// SetByteStreamSettings sets the settings to be used for ByteStreams
-func (ps *PRUDPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings) {
-	ps.byteStreamSettings = byteStreamSettings
-}
-
 // NewPRUDPServer will return a new PRUDP server
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
@@ -435,7 +321,8 @@ func NewPRUDPServer() *PRUDPServer {
 		SessionKeyLength:   32,
 		FragmentSize:       1300,
 		pingTimeout:        time.Second * 15,
-		byteStreamSettings: NewByteStreamSettings(),
+		LibraryVersions:    NewLibraryVersions(),
+		ByteStreamSettings: NewByteStreamSettings(),
 		PRUDPV0Settings:    NewPRUDPV0Settings(),
 	}
 }

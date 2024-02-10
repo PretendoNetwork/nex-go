@@ -93,6 +93,7 @@ func NewKerberosTicket() *KerberosTicket {
 
 // KerberosTicketInternalData holds the internal data for a kerberos ticket to be processed by the server
 type KerberosTicketInternalData struct {
+	Server     *PRUDPServer // TODO - Remove this dependency and make a settings struct
 	Issued     *types.DateTime
 	SourcePID  *types.PID
 	SessionKey []byte
@@ -108,7 +109,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut)
 
 	data := stream.Bytes()
 
-	if stream.Server.(*PRUDPServer).KerberosTicketVersion == 1 {
+	if ti.Server.KerberosTicketVersion == 1 {
 		ticketKey := make([]byte, 16)
 		_, err := rand.Read(ticketKey)
 		if err != nil {
@@ -122,7 +123,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut)
 
 		encrypted := encryption.Encrypt(data)
 
-		finalStream := NewByteStreamOut(stream.Server)
+		finalStream := NewByteStreamOut(stream.LibraryVersions, stream.Settings)
 
 		ticketBuffer := types.NewBuffer(ticketKey)
 		encryptedBuffer := types.NewBuffer(encrypted)
@@ -140,7 +141,7 @@ func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut)
 
 // Decrypt decrypts the given data and populates the struct
 func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) error {
-	if stream.Server.(*PRUDPServer).KerberosTicketVersion == 1 {
+	if ti.Server.KerberosTicketVersion == 1 {
 		ticketKey := types.NewBuffer(nil)
 		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data key. %s", err.Error())
@@ -154,7 +155,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 		hash := md5.Sum(append(key, ticketKey.Value...))
 		key = hash[:]
 
-		stream = NewByteStreamIn(data.Value, stream.Server)
+		stream = NewByteStreamIn(data.Value, stream.LibraryVersions, stream.Settings)
 	}
 
 	encryption := NewKerberosEncryption(key)
@@ -164,7 +165,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 		return fmt.Errorf("Failed to decrypt Kerberos ticket internal data. %s", err.Error())
 	}
 
-	stream = NewByteStreamIn(decrypted, stream.Server)
+	stream = NewByteStreamIn(decrypted, stream.LibraryVersions, stream.Settings)
 
 	timestamp := types.NewDateTime(0)
 	if err := timestamp.ExtractFrom(stream); err != nil {
@@ -178,14 +179,14 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 
 	ti.Issued = timestamp
 	ti.SourcePID = userPID
-	ti.SessionKey = stream.ReadBytesNext(int64(stream.Server.(*PRUDPServer).SessionKeyLength))
+	ti.SessionKey = stream.ReadBytesNext(int64(ti.Server.SessionKeyLength))
 
 	return nil
 }
 
 // NewKerberosTicketInternalData returns a new KerberosTicketInternalData instance
-func NewKerberosTicketInternalData() *KerberosTicketInternalData {
-	return &KerberosTicketInternalData{}
+func NewKerberosTicketInternalData(server *PRUDPServer) *KerberosTicketInternalData {
+	return &KerberosTicketInternalData{Server: server}
 }
 
 // DeriveKerberosKey derives a users kerberos encryption key based on their PID and password

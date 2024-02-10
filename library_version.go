@@ -76,3 +76,32 @@ func NewLibraryVersion(major, minor, patch int) *LibraryVersion {
 		semver: fmt.Sprintf("v%d.%d.%d", major, minor, patch),
 	}
 }
+
+// LibraryVersions contains a set of the NEX version that the server uses
+type LibraryVersions struct {
+	Main         *LibraryVersion
+	DataStore    *LibraryVersion
+	MatchMaking  *LibraryVersion
+	Ranking      *LibraryVersion
+	Ranking2     *LibraryVersion
+	Messaging    *LibraryVersion
+	Utility      *LibraryVersion
+	NATTraversal *LibraryVersion
+}
+
+// SetDefault sets the default NEX protocol versions
+func (lvs *LibraryVersions) SetDefault(version *LibraryVersion) {
+	lvs.Main = version
+	lvs.DataStore = version.Copy()
+	lvs.MatchMaking = version.Copy()
+	lvs.Ranking = version.Copy()
+	lvs.Ranking2 = version.Copy()
+	lvs.Messaging = version.Copy()
+	lvs.Utility = version.Copy()
+	lvs.NATTraversal = version.Copy()
+}
+
+// NewLibraryVersions returns a new set of LibraryVersions
+func NewLibraryVersions() *LibraryVersions {
+	return &LibraryVersions{}
+}

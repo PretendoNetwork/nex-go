@@ -9,19 +9,20 @@ import (
 )
 
 var authServer *nex.PRUDPServer
+var authEndpoint *nex.PRUDPEndPoint
 
 func startAuthenticationServer() {
 	fmt.Println("Starting auth")
 
 	authServer = nex.NewPRUDPServer()
 
-	endpoint := nex.NewPRUDPEndPoint(1)
+	authEndpoint = nex.NewPRUDPEndPoint(1)
 
-	endpoint.AccountDetailsByPID = accountDetailsByPID
-	endpoint.AccountDetailsByUsername = accountDetailsByUsername
-	endpoint.ServerAccount = authenticationServerAccount
+	authEndpoint.AccountDetailsByPID = accountDetailsByPID
+	authEndpoint.AccountDetailsByUsername = accountDetailsByUsername
+	authEndpoint.ServerAccount = authenticationServerAccount
 
-	endpoint.OnData(func(packet nex.PacketInterface) {
+	authEndpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
 			request := packet.RMCMessage()
 
@@ -40,20 +41,20 @@ func startAuthenticationServer() {
 	})
 
 	authServer.SetFragmentSize(962)
-	authServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
+	authServer.LibraryVersions.SetDefault(nex.NewLibraryVersion(1, 1, 0))
 	authServer.SessionKeyLength = 16
-	authServer.SetAccessKey("ridfebb9")
-	authServer.BindPRUDPEndPoint(endpoint)
+	authServer.AccessKey = "ridfebb9"
+	authServer.BindPRUDPEndPoint(authEndpoint)
 	authServer.Listen(60000)
 }
 
 func login(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage(authServer)
+	response := nex.NewRMCMessage(authEndpoint)
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewByteStreamIn(parameters, authServer)
+	parametersStream := nex.NewByteStreamIn(parameters, authEndpoint.LibraryVersions(), authEndpoint.ByteStreamSettings())
 
 	strUserName := types.NewString("")
 	if err := strUserName.ExtractFrom(parametersStream); err != nil {
@@ -75,7 +76,7 @@ func login(packet nex.PRUDPPacketInterface) {
 	pConnectionData.StationURLSpecialProtocols = types.NewStationURL("")
 	pConnectionData.Time = types.NewDateTime(0).Now()
 
-	responseStream := nex.NewByteStreamOut(authServer)
+	responseStream := nex.NewByteStreamOut(authEndpoint.LibraryVersions(), authEndpoint.ByteStreamSettings())
 
 	retval.WriteTo(responseStream)
 	pidPrincipal.WriteTo(responseStream)
@@ -91,7 +92,7 @@ func login(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(authServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
@@ -109,11 +110,11 @@ func login(packet nex.PRUDPPacketInterface) {
 
 func requestTicket(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage(authServer)
+	response := nex.NewRMCMessage(authEndpoint)
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewByteStreamIn(parameters, authServer)
+	parametersStream := nex.NewByteStreamIn(parameters, authEndpoint.LibraryVersions(), authEndpoint.ByteStreamSettings())
 
 	idSource := types.NewPID(0)
 	if err := idSource.ExtractFrom(parametersStream); err != nil {
@@ -131,7 +132,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	retval := types.NewQResultSuccess(0x00010001)
 	pbufResponse := types.NewBuffer(generateTicket(sourceAccount, targetAccount, authServer.SessionKeyLength))
 
-	responseStream := nex.NewByteStreamOut(authServer)
+	responseStream := nex.NewByteStreamOut(authEndpoint.LibraryVersions(), authEndpoint.ByteStreamSettings())
 
 	retval.WriteTo(responseStream)
 	pbufResponse.WriteTo(responseStream)
@@ -144,7 +145,7 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(authServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)

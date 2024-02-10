@@ -8,15 +8,16 @@ import (
 // ByteStreamOut is an abstraction of github.com/superwhiskers/crunch with nex type support
 type ByteStreamOut struct {
 	*crunch.Buffer
-	Server ServerInterface
+	LibraryVersions *LibraryVersions
+	Settings        *ByteStreamSettings
 }
 
 // StringLengthSize returns the expected size of String length fields
 func (bso *ByteStreamOut) StringLengthSize() int {
 	size := 2
 
-	if bso.Server != nil && bso.Server.ByteStreamSettings() != nil {
-		size = bso.Server.ByteStreamSettings().StringLengthSize
+	if bso.Settings != nil {
+		size = bso.Settings.StringLengthSize
 	}
 
 	return size
@@ -26,8 +27,8 @@ func (bso *ByteStreamOut) StringLengthSize() int {
 func (bso *ByteStreamOut) PIDSize() int {
 	size := 4
 
-	if bso.Server != nil && bso.Server.ByteStreamSettings() != nil {
-		size = bso.Server.ByteStreamSettings().PIDSize
+	if bso.Settings != nil {
+		size = bso.Settings.PIDSize
 	}
 
 	return size
@@ -37,8 +38,8 @@ func (bso *ByteStreamOut) PIDSize() int {
 func (bso *ByteStreamOut) UseStructureHeader() bool {
 	useStructureHeader := false
 
-	if bso.Server != nil && bso.Server.ByteStreamSettings() != nil {
-		useStructureHeader = bso.Server.ByteStreamSettings().UseStructureHeader
+	if bso.Settings != nil {
+		useStructureHeader = bso.Settings.UseStructureHeader
 	}
 
 	return useStructureHeader
@@ -46,7 +47,7 @@ func (bso *ByteStreamOut) UseStructureHeader() bool {
 
 // CopyNew returns a copy of the StreamOut but with a blank internal buffer. Returns as types.Writable
 func (bso *ByteStreamOut) CopyNew() types.Writable {
-	return NewByteStreamOut(bso.Server)
+	return NewByteStreamOut(bso.LibraryVersions, bso.Settings)
 }
 
 // Writes the input data to the end of the StreamOut
@@ -127,9 +128,10 @@ func (bso *ByteStreamOut) WritePrimitiveBool(b bool) {
 }
 
 // NewByteStreamOut returns a new NEX writable byte stream
-func NewByteStreamOut(server ServerInterface) *ByteStreamOut {
+func NewByteStreamOut(libraryVersions *LibraryVersions, settings *ByteStreamSettings) *ByteStreamOut {
 	return &ByteStreamOut{
 		Buffer: crunch.NewBuffer(),
-		Server: server,
+		LibraryVersions: libraryVersions,
+		Settings: settings,
 	}
 }

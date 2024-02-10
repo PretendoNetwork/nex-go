@@ -19,7 +19,7 @@ type PRUDPPacketV0 struct {
 //
 // Retains the same PRUDPConnection pointer
 func (p *PRUDPPacketV0) Copy() PRUDPPacketInterface {
-	copied, _ := NewPRUDPPacketV0(p.sender, nil)
+	copied, _ := NewPRUDPPacketV0(p.server, p.sender, nil)
 
 	copied.server = p.server
 	copied.sourceVirtualPort = p.sourceVirtualPort
@@ -193,7 +193,7 @@ func (p *PRUDPPacketV0) decode() error {
 // Bytes encodes a PRUDPv0 packet into a byte slice
 func (p *PRUDPPacketV0) Bytes() []byte {
 	server := p.server
-	stream := NewByteStreamOut(server)
+	stream := NewByteStreamOut(server.LibraryVersions, server.ByteStreamSettings)
 
 	stream.WritePrimitiveUInt8(uint8(p.sourceVirtualPort))
 	stream.WritePrimitiveUInt8(uint8(p.destinationVirtualPort))
@@ -247,7 +247,7 @@ func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byt
 }
 
 // NewPRUDPPacketV0 creates and returns a new PacketV0 using the provided Client and stream
-func NewPRUDPPacketV0(connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketV0, error) {
+func NewPRUDPPacketV0(server *PRUDPServer, connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketV0, error) {
 	packet := &PRUDPPacketV0{
 		PRUDPPacket: PRUDPPacket{
 			sender:     connection,
@@ -256,27 +256,24 @@ func NewPRUDPPacketV0(connection *PRUDPConnection, readStream *ByteStreamIn) (*P
 		},
 	}
 
+	packet.server = server
+
 	if readStream != nil {
-		packet.server = readStream.Server.(*PRUDPServer)
 		err := packet.decode()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode PRUDPv0 packet. %s", err.Error())
 		}
 	}
 
-	if connection != nil {
-		packet.server = connection.Endpoint.Server
-	}
-
 	return packet, nil
 }
 
 // NewPRUDPPacketsV0 reads all possible PRUDPv0 packets from the stream
-func NewPRUDPPacketsV0(connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsV0(server *PRUDPServer, connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {
-		packet, err := NewPRUDPPacketV0(connection, readStream)
+		packet, err := NewPRUDPPacketV0(server, connection, readStream)
 		if err != nil {
 			return packets, err
 		}
@@ -317,7 +314,7 @@ func defaultPRUDPv0CalculateSignature(packet *PRUDPPacketV0, sessionKey, connect
 			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
 		}
 
-		if packet.packetType == DisconnectPacket && packet.server.accessKey != "ridfebb9" {
+		if packet.packetType == DisconnectPacket && packet.server.AccessKey != "ridfebb9" {
 			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
 		}
 	}
@@ -333,7 +330,7 @@ func defaultPRUDPv0CalculateDataSignature(packet *PRUDPPacketV0, sessionKey []by
 	server := packet.server
 	data := packet.payload
 
-	if server.AccessKey() != "ridfebb9" {
+	if server.AccessKey != "ridfebb9" {
 		header := []byte{0, 0, packet.fragmentID}
 		binary.LittleEndian.PutUint16(header[:2], packet.sequenceID)
 
@@ -342,7 +339,7 @@ func defaultPRUDPv0CalculateDataSignature(packet *PRUDPPacketV0, sessionKey []by
 	}
 
 	if len(data) > 0 {
-		key := md5.Sum([]byte(server.AccessKey()))
+		key := md5.Sum([]byte(server.AccessKey))
 		mac := hmac.New(md5.New, key[:])
 
 		mac.Write(data)
@@ -357,7 +354,7 @@ func defaultPRUDPv0CalculateDataSignature(packet *PRUDPPacketV0, sessionKey []by
 
 func defaultPRUDPv0CalculateChecksum(packet *PRUDPPacketV0, data []byte) uint32 {
 	server := packet.server
-	checksum := sum[byte, uint32]([]byte(server.AccessKey()))
+	checksum := sum[byte, uint32]([]byte(server.AccessKey))
 
 	if server.PRUDPV0Settings.UseEnhancedChecksum {
 		padSize := (len(data) + 3) &^ 3

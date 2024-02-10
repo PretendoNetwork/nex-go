@@ -9,15 +9,16 @@ import (
 // ByteStreamIn is an input stream abstraction of github.com/superwhiskers/crunch/v3 with nex type support
 type ByteStreamIn struct {
 	*crunch.Buffer
-	Server ServerInterface
+	LibraryVersions *LibraryVersions
+	Settings        *ByteStreamSettings
 }
 
 // StringLengthSize returns the expected size of String length fields
 func (bsi *ByteStreamIn) StringLengthSize() int {
 	size := 2
 
-	if bsi.Server != nil && bsi.Server.ByteStreamSettings() != nil {
-		size = bsi.Server.ByteStreamSettings().StringLengthSize
+	if bsi.Settings != nil {
+		size = bsi.Settings.StringLengthSize
 	}
 
 	return size
@@ -27,8 +28,8 @@ func (bsi *ByteStreamIn) StringLengthSize() int {
 func (bsi *ByteStreamIn) PIDSize() int {
 	size := 4
 
-	if bsi.Server != nil && bsi.Server.ByteStreamSettings() != nil {
-		size = bsi.Server.ByteStreamSettings().PIDSize
+	if bsi.Settings != nil {
+		size = bsi.Settings.PIDSize
 	}
 
 	return size
@@ -38,8 +39,8 @@ func (bsi *ByteStreamIn) PIDSize() int {
 func (bsi *ByteStreamIn) UseStructureHeader() bool {
 	useStructureHeader := false
 
-	if bsi.Server != nil && bsi.Server.ByteStreamSettings() != nil {
-		useStructureHeader = bsi.Server.ByteStreamSettings().UseStructureHeader
+	if bsi.Settings != nil {
+		useStructureHeader = bsi.Settings.UseStructureHeader
 	}
 
 	return useStructureHeader
@@ -167,9 +168,10 @@ func (bsi *ByteStreamIn) ReadPrimitiveBool() (bool, error) {
 }
 
 // NewByteStreamIn returns a new NEX input byte stream
-func NewByteStreamIn(data []byte, server ServerInterface) *ByteStreamIn {
+func NewByteStreamIn(data []byte, libraryVersions *LibraryVersions, settings *ByteStreamSettings) *ByteStreamIn {
 	return &ByteStreamIn{
 		Buffer: crunch.NewBuffer(data),
-		Server: server,
+		LibraryVersions: libraryVersions,
+		Settings: settings,
 	}
 }

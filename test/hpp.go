@@ -77,7 +77,7 @@ func startHPPServer() {
 		}
 	})
 
-	hppServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(2, 4, 1))
+	hppServer.LibraryVersions().SetDefault(nex.NewLibraryVersion(2, 4, 1))
 	hppServer.SetAccessKey("76f26496")
 	hppServer.AccountDetailsByPID = accountDetailsByPID
 	hppServer.AccountDetailsByUsername = accountDetailsByUsername
@@ -91,7 +91,7 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewByteStreamIn(parameters, hppServer)
+	parametersStream := nex.NewByteStreamIn(parameters, hppServer.LibraryVersions(), hppServer.ByteStreamSettings())
 
 	param := &dataStoreGetNotificationURLParam{}
 	param.PreviousURL = types.NewString("")
@@ -103,7 +103,7 @@ func getNotificationURL(packet *nex.HPPPacket) {
 
 	fmt.Println("[HPP]", param.PreviousURL)
 
-	responseStream := nex.NewByteStreamOut(hppServer)
+	responseStream := nex.NewByteStreamOut(hppServer.LibraryVersions(), hppServer.ByteStreamSettings())
 
 	info := &dataStoreReqGetNotificationURLInfo{}
 	info.URL = types.NewString("https://example.com")

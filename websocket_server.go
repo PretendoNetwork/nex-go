@@ -75,10 +75,10 @@ func (ws *WebSocketServer) init() {
 	ws.upgrader = gws.NewUpgrader(&wsEventHandler{
 		prudpServer: ws.prudpServer,
 	}, &gws.ServerOption{
-		ReadAsyncEnabled: true,         // * Parallel message processing
-		Recovery:         gws.Recovery, // * Exception recovery
-		ReadBufferSize:   64000,
-		WriteBufferSize:  64000,
+		ParallelEnabled: true,         // * Parallel message processing
+		Recovery:        gws.Recovery, // * Exception recovery
+		ReadBufferSize:  64000,
+		WriteBufferSize: 64000,
 	})
 
 	ws.mux = http.NewServeMux()

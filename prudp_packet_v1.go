@@ -25,7 +25,7 @@ type PRUDPPacketV1 struct {
 //
 // Retains the same PRUDPConnection pointer
 func (p *PRUDPPacketV1) Copy() PRUDPPacketInterface {
-	copied, _ := NewPRUDPPacketV1(p.sender, nil)
+	copied, _ := NewPRUDPPacketV1(p.server, p.sender, nil)
 
 	copied.server = p.server
 	copied.sourceVirtualPort = p.sourceVirtualPort
@@ -107,7 +107,7 @@ func (p *PRUDPPacketV1) Bytes() []byte {
 
 	header := p.encodeHeader()
 
-	stream := NewByteStreamOut(nil)
+	stream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
 	stream.Grow(2)
 	stream.WriteBytesNext([]byte{0xEA, 0xD0})
@@ -197,7 +197,7 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 }
 
 func (p *PRUDPPacketV1) encodeHeader() []byte {
-	stream := NewByteStreamOut(nil)
+	stream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
 	stream.WritePrimitiveUInt8(1) // * Version
 	stream.WritePrimitiveUInt8(p.optionsLength)
@@ -214,7 +214,7 @@ func (p *PRUDPPacketV1) encodeHeader() []byte {
 
 func (p *PRUDPPacketV1) decodeOptions() error {
 	data := p.readStream.ReadBytesNext(int64(p.optionsLength))
-	optionsStream := NewByteStreamIn(data, nil)
+	optionsStream := NewByteStreamIn(data, p.server.LibraryVersions, p.server.ByteStreamSettings)
 
 	for optionsStream.Remaining() > 0 {
 		optionID, err := optionsStream.ReadPrimitiveUInt8()
@@ -268,7 +268,7 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 }
 
 func (p *PRUDPPacketV1) encodeOptions() []byte {
-	optionsStream := NewByteStreamOut(nil)
+	optionsStream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
 	if p.packetType == SynPacket || p.packetType == ConnectPacket {
 		optionsStream.WritePrimitiveUInt8(0)
@@ -331,7 +331,7 @@ func (p *PRUDPPacketV1) calculateConnectionSignature(addr net.Addr) ([]byte, err
 }
 
 func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byte) []byte {
-	accessKeyBytes := []byte(p.server.accessKey)
+	accessKeyBytes := []byte(p.server.AccessKey)
 	options := p.encodeOptions()
 	header := p.encodeHeader()
 
@@ -353,7 +353,7 @@ func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byt
 }
 
 // NewPRUDPPacketV1 creates and returns a new PacketV1 using the provided Client and stream
-func NewPRUDPPacketV1(connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketV1, error) {
+func NewPRUDPPacketV1(server *PRUDPServer, connection *PRUDPConnection, readStream *ByteStreamIn) (*PRUDPPacketV1, error) {
 	packet := &PRUDPPacketV1{
 		PRUDPPacket: PRUDPPacket{
 			sender:     connection,
@@ -362,27 +362,24 @@ func NewPRUDPPacketV1(connection *PRUDPConnection, readStream *ByteStreamIn) (*P
 		},
 	}
 
+	packet.server = server
+
 	if readStream != nil {
-		packet.server = readStream.Server.(*PRUDPServer)
 		err := packet.decode()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to decode PRUDPv1 packet. %s", err.Error())
 		}
 	}
 
-	if connection != nil {
-		packet.server = connection.Endpoint.Server
-	}
-
 	return packet, nil
 }
 
 // NewPRUDPPacketsV1 reads all possible PRUDPv1 packets from the stream
-func NewPRUDPPacketsV1(connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
+func NewPRUDPPacketsV1(server *PRUDPServer, connection *PRUDPConnection, readStream *ByteStreamIn) ([]PRUDPPacketInterface, error) {
 	packets := make([]PRUDPPacketInterface, 0)
 
 	for readStream.Remaining() > 0 {
-		packet, err := NewPRUDPPacketV1(connection, readStream)
+		packet, err := NewPRUDPPacketV1(server, connection, readStream)
 		if err != nil {
 			return packets, err
 		}

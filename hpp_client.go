@@ -8,14 +8,14 @@ import (
 
 // HPPClient represents a single HPP client
 type HPPClient struct {
-	address *net.TCPAddr
-	server  *HPPServer
-	pid     *types.PID
+	address  *net.TCPAddr
+	endpoint *HPPServer
+	pid      *types.PID
 }
 
-// Server returns the server the client is connecting to
-func (c *HPPClient) Server() ServerInterface {
-	return c.server
+// Endpoint returns the server the client is connecting to
+func (c *HPPClient) Endpoint() EndpointInterface {
+	return c.endpoint
 }
 
 // Address returns the clients address as a net.Addr
@@ -36,7 +36,7 @@ func (c *HPPClient) SetPID(pid *types.PID) {
 // NewHPPClient creates and returns a new Client using the provided IP address and server
 func NewHPPClient(address *net.TCPAddr, server *HPPServer) *HPPClient {
 	return &HPPClient{
-		address: address,
-		server:  server,
+		address:  address,
+		endpoint: server,
 	}
 }

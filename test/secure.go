@@ -10,6 +10,7 @@ import (
 )
 
 var secureServer *nex.PRUDPServer
+var secureEndpoint *nex.PRUDPEndPoint
 
 // * Took these structs out of the protocols lib for convenience
 
@@ -46,13 +47,13 @@ func startSecureServer() {
 
 	secureServer = nex.NewPRUDPServer()
 
-	endpoint := nex.NewPRUDPEndPoint(1)
+	secureEndpoint = nex.NewPRUDPEndPoint(1)
 
-	endpoint.AccountDetailsByPID = accountDetailsByPID
-	endpoint.AccountDetailsByUsername = accountDetailsByUsername
-	endpoint.ServerAccount = secureServerAccount
+	secureEndpoint.AccountDetailsByPID = accountDetailsByPID
+	secureEndpoint.AccountDetailsByUsername = accountDetailsByUsername
+	secureEndpoint.ServerAccount = secureServerAccount
 
-	endpoint.OnData(func(packet nex.PacketInterface) {
+	secureEndpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
 			request := packet.RMCMessage()
 
@@ -79,21 +80,21 @@ func startSecureServer() {
 	})
 
 	secureServer.SetFragmentSize(962)
-	secureServer.SetDefaultLibraryVersion(nex.NewLibraryVersion(1, 1, 0))
+	secureServer.LibraryVersions.SetDefault(nex.NewLibraryVersion(1, 1, 0))
 	secureServer.SessionKeyLength = 16
-	secureServer.SetAccessKey("ridfebb9")
-	secureServer.BindPRUDPEndPoint(endpoint)
+	secureServer.AccessKey = "ridfebb9"
+	secureServer.BindPRUDPEndPoint(secureEndpoint)
 	secureServer.Listen(60001)
 }
 
 func registerEx(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage(secureServer)
+	response := nex.NewRMCMessage(secureEndpoint)
 	connection := packet.Sender().(*nex.PRUDPConnection)
 
 	parameters := request.Parameters
 
-	parametersStream := nex.NewByteStreamIn(parameters, secureServer)
+	parametersStream := nex.NewByteStreamIn(parameters, secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	vecMyURLs := types.NewList[*types.StationURL]()
 	vecMyURLs.Type = types.NewStationURL("")
@@ -116,7 +117,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	retval := types.NewQResultSuccess(0x00010001)
 	localStationURL := types.NewString(localStation.EncodeToString())
 
-	responseStream := nex.NewByteStreamOut(secureServer)
+	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	retval.WriteTo(responseStream)
 	responseStream.WritePrimitiveUInt32LE(connection.ID)
@@ -130,7 +131,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(connection, nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, connection, nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
@@ -148,9 +149,9 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage(secureServer)
+	response := nex.NewRMCMessage(secureEndpoint)
 
-	responseStream := nex.NewByteStreamOut(secureServer)
+	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	(&principalPreference{
 		ShowOnlinePresence:  types.NewPrimitiveBool(true),
@@ -178,7 +179,7 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
@@ -196,9 +197,9 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 
 func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage(secureServer)
+	response := nex.NewRMCMessage(secureEndpoint)
 
-	responseStream := nex.NewByteStreamOut(secureServer)
+	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	responseStream.WritePrimitiveUInt8(0) // * Unknown
 
@@ -210,7 +211,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 	response.MethodID = request.MethodID
 	response.Parameters = responseStream.Bytes()
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)
@@ -228,7 +229,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 
 func updatePresence(packet nex.PRUDPPacketInterface) {
 	request := packet.RMCMessage()
-	response := nex.NewRMCMessage(secureServer)
+	response := nex.NewRMCMessage(secureEndpoint)
 
 	response.IsSuccess = true
 	response.IsRequest = false
@@ -237,7 +238,7 @@ func updatePresence(packet nex.PRUDPPacketInterface) {
 	response.CallID = request.CallID
 	response.MethodID = request.MethodID
 
-	responsePacket, _ := nex.NewPRUDPPacketV0(packet.Sender().(*nex.PRUDPConnection), nil)
+	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
 	responsePacket.AddFlag(nex.FlagHasSize)

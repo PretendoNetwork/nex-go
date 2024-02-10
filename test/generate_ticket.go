@@ -17,21 +17,21 @@ func generateTicket(source *nex.Account, target *nex.Account, sessionKeyLength i
 		panic(err)
 	}
 
-	ticketInternalData := nex.NewKerberosTicketInternalData()
+	ticketInternalData := nex.NewKerberosTicketInternalData(authServer)
 	serverTime := types.NewDateTime(0).Now()
 
 	ticketInternalData.Issued = serverTime
 	ticketInternalData.SourcePID = source.PID
 	ticketInternalData.SessionKey = sessionKey
 
-	encryptedTicketInternalData, _ := ticketInternalData.Encrypt(targetKey, nex.NewByteStreamOut(authServer))
+	encryptedTicketInternalData, _ := ticketInternalData.Encrypt(targetKey, nex.NewByteStreamOut(authServer.LibraryVersions, authServer.ByteStreamSettings))
 
 	ticket := nex.NewKerberosTicket()
 	ticket.SessionKey = sessionKey
 	ticket.TargetPID = target.PID
 	ticket.InternalData = types.NewBuffer(encryptedTicketInternalData)
 
-	encryptedTicket, _ := ticket.Encrypt(sourceKey, nex.NewByteStreamOut(authServer))
+	encryptedTicket, _ := ticket.Encrypt(sourceKey, nex.NewByteStreamOut(authServer.LibraryVersions, authServer.ByteStreamSettings))
 
 	return encryptedTicket
 }

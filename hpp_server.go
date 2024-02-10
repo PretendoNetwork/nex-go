@@ -14,14 +14,7 @@ import (
 type HPPServer struct {
 	server                      *http.Server
 	accessKey                   string
-	version                     *LibraryVersion
-	datastoreProtocolVersion    *LibraryVersion
-	matchMakingProtocolVersion  *LibraryVersion
-	rankingProtocolVersion      *LibraryVersion
-	ranking2ProtocolVersion     *LibraryVersion
-	messagingProtocolVersion    *LibraryVersion
-	utilityProtocolVersion      *LibraryVersion
-	natTraversalProtocolVersion *LibraryVersion
+	libraryVersions             *LibraryVersions
 	dataHandlers                []func(packet PacketInterface)
 	byteStreamSettings          *ByteStreamSettings
 	AccountDetailsByPID         func(pid *types.PID) (*Account, *Error)
@@ -167,6 +160,11 @@ func (s *HPPServer) Send(packet PacketInterface) {
 	}
 }
 
+// LibraryVersions returns the versions that the server has
+func (s *HPPServer) LibraryVersions() *LibraryVersions {
+	return s.libraryVersions
+}
+
 // AccessKey returns the servers sandbox access key
 func (s *HPPServer) AccessKey() string {
 	return s.accessKey
@@ -175,93 +173,6 @@ func (s *HPPServer) AccessKey() string {
 // SetAccessKey sets the servers sandbox access key
 func (s *HPPServer) SetAccessKey(accessKey string) {
 	s.accessKey = accessKey
-}
-
-// LibraryVersion returns the server NEX version
-func (s *HPPServer) LibraryVersion() *LibraryVersion {
-	return s.version
-}
-
-// SetDefaultLibraryVersion sets the default NEX protocol versions
-func (s *HPPServer) SetDefaultLibraryVersion(version *LibraryVersion) {
-	s.version = version
-	s.datastoreProtocolVersion = version.Copy()
-	s.matchMakingProtocolVersion = version.Copy()
-	s.rankingProtocolVersion = version.Copy()
-	s.ranking2ProtocolVersion = version.Copy()
-	s.messagingProtocolVersion = version.Copy()
-	s.utilityProtocolVersion = version.Copy()
-	s.natTraversalProtocolVersion = version.Copy()
-}
-
-// DataStoreProtocolVersion returns the servers DataStore protocol version
-func (s *HPPServer) DataStoreProtocolVersion() *LibraryVersion {
-	return s.datastoreProtocolVersion
-}
-
-// SetDataStoreProtocolVersion sets the servers DataStore protocol version
-func (s *HPPServer) SetDataStoreProtocolVersion(version *LibraryVersion) {
-	s.datastoreProtocolVersion = version
-}
-
-// MatchMakingProtocolVersion returns the servers MatchMaking protocol version
-func (s *HPPServer) MatchMakingProtocolVersion() *LibraryVersion {
-	return s.matchMakingProtocolVersion
-}
-
-// SetMatchMakingProtocolVersion sets the servers MatchMaking protocol version
-func (s *HPPServer) SetMatchMakingProtocolVersion(version *LibraryVersion) {
-	s.matchMakingProtocolVersion = version
-}
-
-// RankingProtocolVersion returns the servers Ranking protocol version
-func (s *HPPServer) RankingProtocolVersion() *LibraryVersion {
-	return s.rankingProtocolVersion
-}
-
-// SetRankingProtocolVersion sets the servers Ranking protocol version
-func (s *HPPServer) SetRankingProtocolVersion(version *LibraryVersion) {
-	s.rankingProtocolVersion = version
-}
-
-// Ranking2ProtocolVersion returns the servers Ranking2 protocol version
-func (s *HPPServer) Ranking2ProtocolVersion() *LibraryVersion {
-	return s.ranking2ProtocolVersion
-}
-
-// SetRanking2ProtocolVersion sets the servers Ranking2 protocol version
-func (s *HPPServer) SetRanking2ProtocolVersion(version *LibraryVersion) {
-	s.ranking2ProtocolVersion = version
-}
-
-// MessagingProtocolVersion returns the servers Messaging protocol version
-func (s *HPPServer) MessagingProtocolVersion() *LibraryVersion {
-	return s.messagingProtocolVersion
-}
-
-// SetMessagingProtocolVersion sets the servers Messaging protocol version
-func (s *HPPServer) SetMessagingProtocolVersion(version *LibraryVersion) {
-	s.messagingProtocolVersion = version
-}
-
-// UtilityProtocolVersion returns the servers Utility protocol version
-func (s *HPPServer) UtilityProtocolVersion() *LibraryVersion {
-	return s.utilityProtocolVersion
-}
-
-// SetUtilityProtocolVersion sets the servers Utility protocol version
-func (s *HPPServer) SetUtilityProtocolVersion(version *LibraryVersion) {
-	s.utilityProtocolVersion = version
-}
-
-// SetNATTraversalProtocolVersion sets the servers NAT Traversal protocol version
-func (s *HPPServer) SetNATTraversalProtocolVersion(version *LibraryVersion) {
-	s.natTraversalProtocolVersion = version
-}
-
-// NATTraversalProtocolVersion returns the servers NAT Traversal protocol version
-func (s *HPPServer) NATTraversalProtocolVersion() *LibraryVersion {
-	return s.natTraversalProtocolVersion
 }
 
 // ByteStreamSettings returns the settings to be used for ByteStreams
@@ -278,6 +189,7 @@ func (s *HPPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings
 func NewHPPServer() *HPPServer {
 	s := &HPPServer{
 		dataHandlers:       make([]func(packet PacketInterface), 0),
+		libraryVersions:    NewLibraryVersions(),
 		byteStreamSettings: NewByteStreamSettings(),
 	}
 
