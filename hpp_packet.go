@@ -20,7 +20,7 @@ type HPPPacket struct {
 }
 
 // Sender returns the Client who sent the packet
-func (p *HPPPacket) Sender() ClientInterface {
+func (p *HPPPacket) Sender() ConnectionInterface {
 	return p.sender
 }
 

@@ -7,8 +7,8 @@ type PRUDPPacketInterface interface {
 	Copy() PRUDPPacketInterface
 	Version() int
 	Bytes() []byte
-	SetSender(sender ClientInterface)
-	Sender() ClientInterface
+	SetSender(sender ConnectionInterface)
+	Sender() ConnectionInterface
 	Flags() uint16
 	HasFlag(flag uint16) bool
 	AddFlag(flag uint16)

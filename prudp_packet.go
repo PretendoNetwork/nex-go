@@ -23,12 +23,12 @@ type PRUDPPacket struct {
 }
 
 // SetSender sets the Client who sent the packet
-func (p *PRUDPPacket) SetSender(sender ClientInterface) {
+func (p *PRUDPPacket) SetSender(sender ConnectionInterface) {
 	p.sender = sender.(*PRUDPConnection)
 }
 
 // Sender returns the Client who sent the packet
-func (p *PRUDPPacket) Sender() ClientInterface {
+func (p *PRUDPPacket) Sender() ConnectionInterface {
 	return p.sender
 }
 
