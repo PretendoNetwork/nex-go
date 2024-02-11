@@ -7,6 +7,8 @@ import "net"
 // PRUDPV0Settings defines settings for how to handle aspects of PRUDPv0 packets
 type PRUDPV0Settings struct {
 	IsQuazalMode                  bool
+	EncryptedConnect              bool
+	LegacyConnectionSignature     bool
 	UseEnhancedChecksum           bool
 	ConnectionSignatureCalculator func(packet *PRUDPPacketV0, addr net.Addr) ([]byte, error)
 	SignatureCalculator           func(packet *PRUDPPacketV0, sessionKey, connectionSignature []byte) []byte
@@ -18,6 +20,8 @@ type PRUDPV0Settings struct {
 func NewPRUDPV0Settings() *PRUDPV0Settings {
 	return &PRUDPV0Settings{
 		IsQuazalMode:                  false,
+		EncryptedConnect:              false,
+		LegacyConnectionSignature:     false,
 		UseEnhancedChecksum:           false,
 		ConnectionSignatureCalculator: defaultPRUDPv0ConnectionSignature,
 		SignatureCalculator:           defaultPRUDPv0CalculateSignature,

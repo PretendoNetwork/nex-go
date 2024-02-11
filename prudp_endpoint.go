@@ -24,6 +24,7 @@ type PRUDPEndPoint struct {
 	ServerAccount                *Account
 	AccountDetailsByPID          func(pid *types.PID) (*Account, *Error)
 	AccountDetailsByUsername     func(username string) (*Account, *Error)
+	IsSecureEndpoint             bool
 }
 
 // RegisterServiceProtocol registers a NEX service with the endpoint
@@ -289,10 +290,25 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 
 	payload := make([]byte, 0)
 
-	if len(packet.Payload()) != 0 {
-		sessionKey, pid, checkValue, err := pep.readKerberosTicket(packet.Payload())
+	if pep.IsSecureEndpoint {
+		var decryptedPayload []byte
+		if pep.Server.PRUDPV0Settings.EncryptedConnect {
+			decryptedPayload = packet.decryptPayload()
+
+		} else {
+			decryptedPayload = packet.Payload()
+		}
+
+		decompressedPayload, err := connection.StreamSettings.CompressionAlgorithm.Decompress(decryptedPayload)
 		if err != nil {
 			logger.Error(err.Error())
+			return
+		}
+
+		sessionKey, pid, checkValue, err := pep.readKerberosTicket(decompressedPayload)
+		if err != nil {
+			logger.Error(err.Error())
+			return
 		}
 
 		connection.SetPID(pid)
@@ -311,7 +327,24 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 		payload = stream.Bytes()
 	}
 
-	ack.SetPayload(payload)
+	compressedPayload, err := connection.StreamSettings.CompressionAlgorithm.Compress(payload)
+	if err != nil {
+		logger.Error(err.Error())
+		return
+	}
+
+	var encryptedPayload []byte
+	if pep.Server.PRUDPV0Settings.EncryptedConnect {
+		encryptedPayload, err = connection.StreamSettings.EncryptionAlgorithm.Encrypt(compressedPayload)
+		if err != nil {
+			logger.Error(err.Error())
+			return
+		}
+	} else {
+		encryptedPayload = compressedPayload
+	}
+
+	ack.SetPayload(encryptedPayload)
 	ack.setSignature(ack.calculateSignature([]byte{}, packet.getConnectionSignature()))
 
 	pep.emit("connect", ack)
@@ -645,5 +678,6 @@ func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 		packetEventHandlers:          make(map[string][]func(PacketInterface)),
 		connectionEndedEventHandlers: make([]func(connection *PRUDPConnection), 0),
 		ConnectionIDCounter:          NewCounter[uint32](0),
+		IsSecureEndpoint:             false,
 	}
 }

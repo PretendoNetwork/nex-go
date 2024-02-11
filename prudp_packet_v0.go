@@ -309,7 +309,7 @@ func defaultPRUDPv0ConnectionSignature(packet *PRUDPPacketV0, addr net.Addr) ([]
 }
 
 func defaultPRUDPv0CalculateSignature(packet *PRUDPPacketV0, sessionKey, connectionSignature []byte) []byte {
-	if !packet.server.PRUDPV0Settings.IsQuazalMode {
+	if !packet.server.PRUDPV0Settings.LegacyConnectionSignature {
 		if packet.packetType == DataPacket {
 			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
 		}
