@@ -293,7 +293,11 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	if pep.IsSecureEndpoint {
 		var decryptedPayload []byte
 		if pep.Server.PRUDPV0Settings.EncryptedConnect {
-			decryptedPayload = packet.decryptPayload()
+			decryptedPayload, err = connection.StreamSettings.EncryptionAlgorithm.Decrypt(packet.Payload())
+			if err != nil {
+				logger.Error(err.Error())
+				return
+			}
 
 		} else {
 			decryptedPayload = packet.Payload()

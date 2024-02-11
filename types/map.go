@@ -51,7 +51,7 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 			return err
 		}
 
-		keys = append(keys, value.(K))
+		keys = append(keys, key.(K))
 		values = append(values, value.(V))
 	}
 

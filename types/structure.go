@@ -8,7 +8,6 @@ import (
 // Structure represents a Quazal Rendez-Vous/NEX Structure (custom class) base struct.
 type Structure struct {
 	StructureVersion       uint8
-	StructureContentLength uint32
 }
 
 // ExtractHeaderFrom extracts the structure header from the given readable
@@ -29,7 +28,6 @@ func (s *Structure) ExtractHeaderFrom(readable Readable) error {
 		}
 
 		s.StructureVersion = version
-		s.StructureContentLength = contentLength
 	}
 
 	return nil
