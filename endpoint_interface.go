@@ -8,4 +8,5 @@ type EndpointInterface interface {
 	LibraryVersions() *LibraryVersions
 	ByteStreamSettings() *ByteStreamSettings
 	SetByteStreamSettings(settings *ByteStreamSettings)
+	EmitError(err *Error)
 }

@@ -20,6 +20,7 @@ type PRUDPEndPoint struct {
 	Connections                  *MutexMap[string, *PRUDPConnection]
 	packetEventHandlers          map[string][]func(packet PacketInterface)
 	connectionEndedEventHandlers []func(connection *PRUDPConnection)
+	errorEventHandlers           []func(err *Error)
 	ConnectionIDCounter          *Counter[uint32]
 	ServerAccount                *Account
 	AccountDetailsByPID          func(pid *types.PID) (*Account, *Error)
@@ -35,6 +36,12 @@ func (pep *PRUDPEndPoint) RegisterServiceProtocol(protocol ServiceProtocol) {
 // OnData adds an event handler which is fired when a new DATA packet is received
 func (pep *PRUDPEndPoint) OnData(handler func(packet PacketInterface)) {
 	pep.on("data", handler)
+}
+
+// OnError adds an event handler which is fired when an error occurs on the endpoint
+func (pep *PRUDPEndPoint) OnError(handler func(err *Error)) {
+	// * "Ended" events are a special case, so handle them separately
+	pep.errorEventHandlers = append(pep.errorEventHandlers, handler)
 }
 
 // OnDisconnect adds an event handler which is fired when a new DISCONNECT packet is received
@@ -71,6 +78,13 @@ func (pep *PRUDPEndPoint) emit(name string, packet PRUDPPacketInterface) {
 func (pep *PRUDPEndPoint) emitConnectionEnded(connection *PRUDPConnection) {
 	for _, handler := range pep.connectionEndedEventHandlers {
 		go handler(connection)
+	}
+}
+
+// EmitError calls all the endpoints error event handlers with the provided error
+func (pep *PRUDPEndPoint) EmitError(err *Error) {
+	for _, handler := range pep.errorEventHandlers {
+		go handler(err)
 	}
 }
 
@@ -681,6 +695,7 @@ func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 		Connections:                  NewMutexMap[string, *PRUDPConnection](),
 		packetEventHandlers:          make(map[string][]func(PacketInterface)),
 		connectionEndedEventHandlers: make([]func(connection *PRUDPConnection), 0),
+		errorEventHandlers:           make([]func(err *Error), 0),
 		ConnectionIDCounter:          NewCounter[uint32](0),
 		IsSecureEndpoint:             false,
 	}

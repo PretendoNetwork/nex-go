@@ -2,12 +2,11 @@ package nex
 
 import "fmt"
 
-// TODO - Add more metadata? Like the sender or whatever?
-
-// Error is a custom error type implementing the error interface
+// Error is a custom error type implementing the error interface.
 type Error struct {
-	ResultCode uint32
-	Message    string
+	ResultCode uint32          // * NEX result code. See result_codes.go for details
+	Message    string          // * The error base message
+	Packet     PacketInterface // * The packet which caused the error. May not always be present
 }
 
 // Error satisfies the error interface and prints the underlying error

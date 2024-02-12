@@ -12,13 +12,14 @@ import (
 
 // HPPServer represents a bare-bones HPP server
 type HPPServer struct {
-	server                      *http.Server
-	accessKey                   string
-	libraryVersions             *LibraryVersions
-	dataHandlers                []func(packet PacketInterface)
-	byteStreamSettings          *ByteStreamSettings
-	AccountDetailsByPID         func(pid *types.PID) (*Account, *Error)
-	AccountDetailsByUsername    func(username string) (*Account, *Error)
+	server                   *http.Server
+	accessKey                string
+	libraryVersions          *LibraryVersions
+	dataHandlers             []func(packet PacketInterface)
+	errorEventHandlers       []func(err *Error)
+	byteStreamSettings       *ByteStreamSettings
+	AccountDetailsByPID      func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByUsername func(username string) (*Account, *Error)
 }
 
 // RegisterServiceProtocol registers a NEX service with the HPP server
@@ -29,6 +30,13 @@ func (s *HPPServer) RegisterServiceProtocol(protocol ServiceProtocol) {
 // OnData adds an event handler which is fired when a new HPP request is received
 func (s *HPPServer) OnData(handler func(packet PacketInterface)) {
 	s.dataHandlers = append(s.dataHandlers, handler)
+}
+
+// EmitError calls all the endpoints error event handlers with the provided error
+func (s *HPPServer) EmitError(err *Error) {
+	for _, handler := range s.errorEventHandlers {
+		go handler(err)
+	}
 }
 
 func (s *HPPServer) handleRequest(w http.ResponseWriter, req *http.Request) {
@@ -189,6 +197,7 @@ func (s *HPPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings
 func NewHPPServer() *HPPServer {
 	s := &HPPServer{
 		dataHandlers:       make([]func(packet PacketInterface), 0),
+		errorEventHandlers: make([]func(err *Error), 0),
 		libraryVersions:    NewLibraryVersions(),
 		byteStreamSettings: NewByteStreamSettings(),
 	}
