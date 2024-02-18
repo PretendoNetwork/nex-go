@@ -30,6 +30,7 @@ type PRUDPEndPoint struct {
 
 // RegisterServiceProtocol registers a NEX service with the endpoint
 func (pep *PRUDPEndPoint) RegisterServiceProtocol(protocol ServiceProtocol) {
+	protocol.SetEndpoint(pep)
 	pep.OnData(protocol.HandlePacket)
 }
 

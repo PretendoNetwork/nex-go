@@ -24,6 +24,7 @@ type HPPServer struct {
 
 // RegisterServiceProtocol registers a NEX service with the HPP server
 func (s *HPPServer) RegisterServiceProtocol(protocol ServiceProtocol) {
+	protocol.SetEndpoint(s)
 	s.OnData(protocol.HandlePacket)
 }
 
