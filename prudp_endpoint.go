@@ -214,6 +214,12 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
 
+	if connection.ConnectionState != StateNotConnected {
+		// TODO - Log this?
+		// * Connection is in a bad state, drop the packet and let it die
+		return
+	}
+
 	var ack PRUDPPacketInterface
 
 	if packet.Version() == 2 {
@@ -249,6 +255,8 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 		ack.supportedFunctions = pep.Server.SupportedFunctions & packet.(*PRUDPPacketV1).supportedFunctions
 	}
 
+	connection.ConnectionState = StateConnecting
+
 	pep.emit("syn", ack)
 
 	pep.Server.sendRaw(connection.Socket, ack.Bytes())
@@ -256,6 +264,12 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 
 func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
+
+	if connection.ConnectionState != StateConnecting {
+		// TODO - Log this?
+		// * Connection is in a bad state, drop the packet and let it die
+		return
+	}
 
 	var ack PRUDPPacketInterface
 
@@ -366,12 +380,22 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	ack.SetPayload(encryptedPayload)
 	ack.setSignature(ack.calculateSignature([]byte{}, packet.getConnectionSignature()))
 
+	connection.ConnectionState = StateConnected
+
 	pep.emit("connect", ack)
 
 	pep.Server.sendRaw(connection.Socket, ack.Bytes())
 }
 
 func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
+	connection := packet.Sender().(*PRUDPConnection)
+
+	if connection.ConnectionState != StateConnected {
+		// TODO - Log this?
+		// * Connection is in a bad state, drop the packet and let it die
+		return
+	}
+
 	if packet.HasFlag(FlagReliable) {
 		pep.handleReliable(packet)
 	} else {
@@ -380,6 +404,9 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
+	// TODO - Should we check the state here, or just let the connection disconnect at any time?
+	// TODO - Should we bother to set the connections state here? It's being destroyed anyway
+
 	if packet.HasFlag(FlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}

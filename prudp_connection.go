@@ -13,8 +13,9 @@ import (
 // Does not necessarily represent a socket connection.
 // A single network socket may be used to open multiple PRUDP virtual connections
 type PRUDPConnection struct {
-	Socket                              *SocketConnection                // * The connections parent socket
-	endpoint                            *PRUDPEndPoint                   // * The PRUDP endpoint the connection is connected to
+	Socket                              *SocketConnection // * The connections parent socket
+	endpoint                            *PRUDPEndPoint    // * The PRUDP endpoint the connection is connected to
+	ConnectionState                     ConnectionState
 	ID                                  uint32                           // * Connection ID
 	SessionID                           uint8                            // * Random value generated at the start of the session. Client and server IDs do not need to match
 	ServerSessionID                     uint8                            // * Random value generated at the start of the session. Client and server IDs do not need to match
@@ -211,6 +212,7 @@ func (pc *PRUDPConnection) stopHeartbeatTimers() {
 func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 	pc := &PRUDPConnection{
 		Socket:                              socket,
+		ConnectionState:                     StateNotConnected,
 		pid:                                 types.NewPID(0),
 		slidingWindows:                      NewMutexMap[uint8, *SlidingWindow](),
 		outgoingUnreliableSequenceIDCounter: NewCounter[uint16](1),
