@@ -9,8 +9,7 @@ import (
 
 // RMCMessage represents a message in the RMC (Remote Method Call) protocol
 type RMCMessage struct {
-	Server                EndpointInterface
-	VerboseMode           bool                         // * Determines whether or not to encode the message using the "verbose" encoding method
+	Endpoint              EndpointInterface
 	IsRequest             bool                         // * Indicates if the message is a request message (true) or response message (false)
 	IsSuccess             bool                         // * Indicates if the message is a success message (true) for a response message
 	IsHPP                 bool                         // * Indicates if the message is an HPP message
@@ -27,7 +26,7 @@ type RMCMessage struct {
 
 // Copy copies the message into a new RMCMessage
 func (rmc *RMCMessage) Copy() *RMCMessage {
-	copied := NewRMCMessage(rmc.Server)
+	copied := NewRMCMessage(rmc.Endpoint)
 
 	copied.IsRequest = rmc.IsRequest
 	copied.IsSuccess = rmc.IsSuccess
@@ -48,7 +47,7 @@ func (rmc *RMCMessage) Copy() *RMCMessage {
 
 // FromBytes decodes an RMCMessage from the given byte slice.
 func (rmc *RMCMessage) FromBytes(data []byte) error {
-	if rmc.VerboseMode {
+	if rmc.Endpoint.UseVerboseRMC() {
 		return rmc.decodeVerbose(data)
 	} else {
 		return rmc.decodePacked(data)
@@ -56,7 +55,7 @@ func (rmc *RMCMessage) FromBytes(data []byte) error {
 }
 
 func (rmc *RMCMessage) decodePacked(data []byte) error {
-	stream := NewByteStreamIn(data, rmc.Server.LibraryVersions(), rmc.Server.ByteStreamSettings())
+	stream := NewByteStreamIn(data, rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	length, err := stream.ReadPrimitiveUInt32LE()
 	if err != nil {
@@ -143,7 +142,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 }
 
 func (rmc *RMCMessage) decodeVerbose(data []byte) error {
-	stream := NewByteStreamIn(data, rmc.Server.LibraryVersions(), rmc.Server.ByteStreamSettings())
+	stream := NewByteStreamIn(data, rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	length, err := stream.ReadPrimitiveUInt32LE()
 	if err != nil {
@@ -224,7 +223,7 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 
 // Bytes serializes the RMCMessage to a byte slice.
 func (rmc *RMCMessage) Bytes() []byte {
-	if rmc.VerboseMode {
+	if rmc.Endpoint.UseVerboseRMC() {
 		return rmc.encodeVerbose()
 	} else {
 		return rmc.encodePacked()
@@ -232,7 +231,7 @@ func (rmc *RMCMessage) Bytes() []byte {
 }
 
 func (rmc *RMCMessage) encodePacked() []byte {
-	stream := NewByteStreamOut(rmc.Server.LibraryVersions(), rmc.Server.ByteStreamSettings())
+	stream := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	// * RMC requests have their protocol IDs ORed with 0x80
 	var protocolIDFlag uint16 = 0x80
@@ -279,7 +278,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 
 	serialized := stream.Bytes()
 
-	message := NewByteStreamOut(rmc.Server.LibraryVersions(), rmc.Server.ByteStreamSettings())
+	message := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	message.WritePrimitiveUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
@@ -289,7 +288,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 }
 
 func (rmc *RMCMessage) encodeVerbose() []byte {
-	stream := NewByteStreamOut(rmc.Server.LibraryVersions(), rmc.Server.ByteStreamSettings())
+	stream := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	rmc.ProtocolName.WriteTo(stream)
 	stream.WritePrimitiveBool(rmc.IsRequest)
@@ -328,7 +327,7 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 
 	serialized := stream.Bytes()
 
-	message := NewByteStreamOut(rmc.Server.LibraryVersions(), rmc.Server.ByteStreamSettings())
+	message := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	message.WritePrimitiveUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
@@ -338,23 +337,23 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 }
 
 // NewRMCMessage returns a new generic RMC Message
-func NewRMCMessage(server EndpointInterface) *RMCMessage {
+func NewRMCMessage(endpoint EndpointInterface) *RMCMessage {
 	return &RMCMessage{
-		Server: server,
+		Endpoint: endpoint,
 	}
 }
 
 // NewRMCRequest returns a new blank RMCRequest
-func NewRMCRequest(server EndpointInterface) *RMCMessage {
+func NewRMCRequest(endpoint EndpointInterface) *RMCMessage {
 	return &RMCMessage{
-		Server:    server,
+		Endpoint:  endpoint,
 		IsRequest: true,
 	}
 }
 
 // NewRMCSuccess returns a new RMC Message configured as a success response
-func NewRMCSuccess(server EndpointInterface, parameters []byte) *RMCMessage {
-	message := NewRMCMessage(server)
+func NewRMCSuccess(endpoint EndpointInterface, parameters []byte) *RMCMessage {
+	message := NewRMCMessage(endpoint)
 	message.IsRequest = false
 	message.IsSuccess = true
 	message.Parameters = parameters
@@ -363,12 +362,12 @@ func NewRMCSuccess(server EndpointInterface, parameters []byte) *RMCMessage {
 }
 
 // NewRMCError returns a new RMC Message configured as a error response
-func NewRMCError(server EndpointInterface, errorCode uint32) *RMCMessage {
+func NewRMCError(endpoint EndpointInterface, errorCode uint32) *RMCMessage {
 	if int(errorCode)&errorMask == 0 {
 		errorCode = uint32(int(errorCode) | errorMask)
 	}
 
-	message := NewRMCMessage(server)
+	message := NewRMCMessage(endpoint)
 	message.IsRequest = false
 	message.IsSuccess = false
 	message.ErrorCode = errorCode

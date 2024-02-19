@@ -20,6 +20,7 @@ type HPPServer struct {
 	byteStreamSettings       *ByteStreamSettings
 	AccountDetailsByPID      func(pid *types.PID) (*Account, *Error)
 	AccountDetailsByUsername func(username string) (*Account, *Error)
+	useVerboseRMC            bool
 }
 
 // RegisterServiceProtocol registers a NEX service with the HPP server
@@ -192,6 +193,16 @@ func (s *HPPServer) ByteStreamSettings() *ByteStreamSettings {
 // SetByteStreamSettings sets the settings to be used for ByteStreams
 func (s *HPPServer) SetByteStreamSettings(byteStreamSettings *ByteStreamSettings) {
 	s.byteStreamSettings = byteStreamSettings
+}
+
+// UseVerboseRMC checks whether or not the endpoint uses verbose RMC
+func (s *HPPServer) UseVerboseRMC() bool {
+	return s.useVerboseRMC
+}
+
+// EnableVerboseRMC enable or disables the use of verbose RMC
+func (s *HPPServer) EnableVerboseRMC(enable bool) {
+	s.useVerboseRMC = enable
 }
 
 // NewHPPServer returns a new HPP server

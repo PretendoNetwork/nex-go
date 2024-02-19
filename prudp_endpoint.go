@@ -715,6 +715,16 @@ func (pep *PRUDPEndPoint) SetByteStreamSettings(byteStreamSettings *ByteStreamSe
 	pep.Server.ByteStreamSettings = byteStreamSettings
 }
 
+// UseVerboseRMC checks whether or not the endpoint uses verbose RMC
+func (pep *PRUDPEndPoint) UseVerboseRMC() bool {
+	return pep.Server.UseVerboseRMC
+}
+
+// EnableVerboseRMC enable or disables the use of verbose RMC
+func (pep *PRUDPEndPoint) EnableVerboseRMC(enable bool) {
+	pep.Server.UseVerboseRMC = enable
+}
+
 // NewPRUDPEndPoint returns a new PRUDPEndPoint for a server on the provided stream ID
 func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 	return &PRUDPEndPoint{

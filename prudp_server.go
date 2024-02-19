@@ -27,6 +27,7 @@ type PRUDPServer struct {
 	LibraryVersions               *LibraryVersions
 	ByteStreamSettings            *ByteStreamSettings
 	PRUDPV0Settings               *PRUDPV0Settings
+	UseVerboseRMC                 bool
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server

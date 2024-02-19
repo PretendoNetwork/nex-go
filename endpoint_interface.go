@@ -8,5 +8,7 @@ type EndpointInterface interface {
 	LibraryVersions() *LibraryVersions
 	ByteStreamSettings() *ByteStreamSettings
 	SetByteStreamSettings(settings *ByteStreamSettings)
+	UseVerboseRMC() bool // TODO - Move this to a RMCSettings struct?
+	EnableVerboseRMC(enabled bool)
 	EmitError(err *Error)
 }
