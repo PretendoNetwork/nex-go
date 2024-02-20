@@ -80,9 +80,11 @@ func (ps *PRUDPServer) listenDatagram(quit chan struct{}) {
 		var addr *net.UDPAddr
 
 		read, addr, err = ps.udpSocket.ReadFromUDP(buffer)
-		packetData := buffer[:read]
+		if err == nil {
+			packetData := buffer[:read]
 
-		err = ps.handleSocketMessage(packetData, addr, nil)
+			err = ps.handleSocketMessage(packetData, addr, nil)
+		}
 	}
 
 	quit <- struct{}{}
