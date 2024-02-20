@@ -13,6 +13,10 @@ import (
 // PRUDPEndPoint is an implementation of rdv::PRUDPEndPoint.
 // A PRUDPEndPoint represents a remote server location the client may connect to using a given remote stream ID.
 // Each PRUDPEndPoint handles it's own set of PRUDPConnections, state, and events.
+//
+// In NEX there exists nn::nex::SecureEndPoint, which presumably is what differentiates between the authentication
+// and secure servers. However the functionality of rdv::PRUDPEndPoint and nn::nex::SecureEndPoint is seemingly
+// identical. Rather than duplicate the logic from PRUDPEndpoint, a IsSecureEndpoint flag has been added instead.
 type PRUDPEndPoint struct {
 	Server                       *PRUDPServer
 	StreamID                     uint8
