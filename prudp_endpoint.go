@@ -107,13 +107,11 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 		connection.StreamType = streamType
 		connection.StreamID = streamID
 		connection.StreamSettings = pep.DefaultStreamSettings.Copy()
-		connection.startHeartbeat()
 
 		pep.Connections.Set(discriminator, connection)
 	}
 
 	packet.SetSender(connection)
-	connection.resetHeartbeat()
 
 	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
 		pep.handleAcknowledgment(packet)
@@ -364,6 +362,7 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	ack.setSignature(ack.calculateSignature([]byte{}, packet.getConnectionSignature()))
 
 	connection.ConnectionState = StateConnected
+	connection.startHeartbeat()
 
 	pep.emit("connect", ack)
 
@@ -378,6 +377,8 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 		// * Connection is in a bad state, drop the packet and let it die
 		return
 	}
+
+	connection.resetHeartbeat()
 
 	if packet.HasFlag(FlagReliable) {
 		pep.handleReliable(packet)
@@ -406,6 +407,10 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
+	connection := packet.Sender().(*PRUDPConnection)
+
+	connection.resetHeartbeat()
+
 	if packet.HasFlag(FlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
