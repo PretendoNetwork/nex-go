@@ -29,7 +29,7 @@ type PRUDPEndPoint struct {
 	ServerAccount                *Account
 	AccountDetailsByPID          func(pid *types.PID) (*Account, *Error)
 	AccountDetailsByUsername     func(username string) (*Account, *Error)
-	IsSecureEndpoint             bool
+	IsSecureEndPoint             bool
 }
 
 // RegisterServiceProtocol registers a NEX service with the endpoint
@@ -323,7 +323,7 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 
 	payload := make([]byte, 0)
 
-	if pep.IsSecureEndpoint {
+	if pep.IsSecureEndPoint {
 		var decryptedPayload []byte
 		if pep.Server.PRUDPV0Settings.EncryptedConnect {
 			decryptedPayload, err = connection.StreamSettings.EncryptionAlgorithm.Decrypt(packet.Payload())
@@ -739,6 +739,6 @@ func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 		connectionEndedEventHandlers: make([]func(connection *PRUDPConnection), 0),
 		errorEventHandlers:           make([]func(err *Error), 0),
 		ConnectionIDCounter:          NewCounter[uint32](0),
-		IsSecureEndpoint:             false,
+		IsSecureEndPoint:             false,
 	}
 }
