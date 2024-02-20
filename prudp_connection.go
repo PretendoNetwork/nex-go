@@ -36,7 +36,7 @@ type PRUDPConnection struct {
 	StationURLs                         *types.List[*types.StationURL]
 }
 
-// Server returns the PRUDP server the connections socket is connected to
+// Endpoint returns the PRUDP server the connections socket is connected to
 func (pc *PRUDPConnection) Endpoint() EndpointInterface {
 	return pc.endpoint
 }
