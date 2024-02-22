@@ -133,12 +133,17 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 }
 
 func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
+	connection := packet.Sender().(*PRUDPConnection)
+	if connection.ConnectionState != StateConnected {
+		// TODO - Log this?
+		// * Connection is in a bad state, drop the packet and let it die
+		return
+	}
+
 	if packet.HasFlag(FlagMultiAck) {
 		pep.handleMultiAcknowledgment(packet)
 		return
 	}
-
-	connection := packet.Sender().(*PRUDPConnection)
 
 	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
 	slidingWindow.ResendScheduler.AcknowledgePacket(packet.SequenceID())
