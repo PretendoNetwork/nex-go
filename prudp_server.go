@@ -27,6 +27,7 @@ type PRUDPServer struct {
 	LibraryVersions               *LibraryVersions
 	ByteStreamSettings            *ByteStreamSettings
 	PRUDPV0Settings               *PRUDPV0Settings
+	PRUDPV1Settings               *PRUDPV1Settings
 	UseVerboseRMC                 bool
 }
 
@@ -273,7 +274,13 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		}
 	}
 
-	packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
+
+	if ps.PRUDPV1Settings.LegacyConnectionSignature {
+		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.Signature))
+	} else {
+		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
+	}
+
 
 	if packetCopy.HasFlag(FlagReliable) && packetCopy.HasFlag(FlagNeedsAck) {
 		slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
@@ -327,5 +334,6 @@ func NewPRUDPServer() *PRUDPServer {
 		LibraryVersions:    NewLibraryVersions(),
 		ByteStreamSettings: NewByteStreamSettings(),
 		PRUDPV0Settings:    NewPRUDPV0Settings(),
+		PRUDPV1Settings:    NewPRUDPV1Settings(),
 	}
 }

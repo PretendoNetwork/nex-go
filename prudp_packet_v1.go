@@ -342,6 +342,10 @@ func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byt
 	key := md5.Sum(accessKeyBytes)
 	mac := hmac.New(md5.New, key[:])
 
+	if p.packetType == ConnectPacket && p.server.PRUDPV1Settings.LegacyConnectionSignature {
+		connectionSignature = make([]byte, 0)
+	}
+
 	mac.Write(header[4:])
 	mac.Write(sessionKey)
 	mac.Write(accessKeySumBytes)
