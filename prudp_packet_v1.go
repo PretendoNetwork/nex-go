@@ -309,51 +309,11 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 }
 
 func (p *PRUDPPacketV1) calculateConnectionSignature(addr net.Addr) ([]byte, error) {
-	var ip net.IP
-	var port int
-
-	switch v := addr.(type) {
-	case *net.UDPAddr:
-		ip = v.IP.To4()
-		port = v.Port
-	default:
-		return nil, fmt.Errorf("Unsupported network type: %T", addr)
-	}
-
-	portBytes := make([]byte, 2)
-	binary.BigEndian.PutUint16(portBytes, uint16(port))
-
-	data := append(ip, portBytes...)
-	hash := hmac.New(md5.New, p.server.PRUDPv1ConnectionSignatureKey)
-	hash.Write(data)
-
-	return hash.Sum(nil), nil
+	return p.server.PRUDPV1Settings.ConnectionSignatureCalculator(p, addr)
 }
 
 func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byte) []byte {
-	accessKeyBytes := []byte(p.server.AccessKey)
-	options := p.encodeOptions()
-	header := p.encodeHeader()
-
-	accessKeySum := sum[byte, uint32](accessKeyBytes)
-	accessKeySumBytes := make([]byte, 4)
-	binary.LittleEndian.PutUint32(accessKeySumBytes, accessKeySum)
-
-	key := md5.Sum(accessKeyBytes)
-	mac := hmac.New(md5.New, key[:])
-
-	if p.packetType == ConnectPacket && p.server.PRUDPV1Settings.LegacyConnectionSignature {
-		connectionSignature = make([]byte, 0)
-	}
-
-	mac.Write(header[4:])
-	mac.Write(sessionKey)
-	mac.Write(accessKeySumBytes)
-	mac.Write(connectionSignature)
-	mac.Write(options)
-	mac.Write(p.payload)
-
-	return mac.Sum(nil)
+	return p.server.PRUDPV1Settings.SignatureCalculator(p, sessionKey, connectionSignature)
 }
 
 // NewPRUDPPacketV1 creates and returns a new PacketV1 using the provided Client and stream
@@ -392,4 +352,52 @@ func NewPRUDPPacketsV1(server *PRUDPServer, connection *PRUDPConnection, readStr
 	}
 
 	return packets, nil
+}
+
+func defaultPRUDPv1ConnectionSignature(packet *PRUDPPacketV1, addr net.Addr) ([]byte, error) {
+	var ip net.IP
+	var port int
+
+	switch v := addr.(type) {
+	case *net.UDPAddr:
+		ip = v.IP.To4()
+		port = v.Port
+	default:
+		return nil, fmt.Errorf("Unsupported network type: %T", addr)
+	}
+
+	portBytes := make([]byte, 2)
+	binary.BigEndian.PutUint16(portBytes, uint16(port))
+
+	data := append(ip, portBytes...)
+	hash := hmac.New(md5.New, packet.server.PRUDPv1ConnectionSignatureKey)
+	hash.Write(data)
+
+	return hash.Sum(nil), nil
+}
+
+func defaultPRUDPv1CalculateSignature(packet *PRUDPPacketV1, sessionKey, connectionSignature []byte) []byte {
+	accessKeyBytes := []byte(packet.server.AccessKey)
+	options := packet.encodeOptions()
+	header := packet.encodeHeader()
+
+	accessKeySum := sum[byte, uint32](accessKeyBytes)
+	accessKeySumBytes := make([]byte, 4)
+	binary.LittleEndian.PutUint32(accessKeySumBytes, accessKeySum)
+
+	key := md5.Sum(accessKeyBytes)
+	mac := hmac.New(md5.New, key[:])
+
+	if packet.packetType == ConnectPacket && packet.server.PRUDPV1Settings.LegacyConnectionSignature {
+		connectionSignature = make([]byte, 0)
+	}
+
+	mac.Write(header[4:])
+	mac.Write(sessionKey)
+	mac.Write(accessKeySumBytes)
+	mac.Write(connectionSignature)
+	mac.Write(options)
+	mac.Write(packet.payload)
+
+	return mac.Sum(nil)
 }
