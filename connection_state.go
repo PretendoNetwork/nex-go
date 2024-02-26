@@ -1,6 +1,6 @@
 package nex
 
-// ConnectionState is an implementation of nn::nex::EndPoint::_ConnectionState.
+// ConnectionState is an implementation of the nn::nex::EndPoint::_ConnectionState enum.
 //
 // The state represents a PRUDP clients connection state. The original Rendez-Vous
 // library supports  states 0-6, though NEX only supports 0-4. The remaining 2 are

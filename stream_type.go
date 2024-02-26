@@ -2,7 +2,8 @@ package nex
 
 // TODO - Should this be moved to the types module?
 
-// StreamType is an implementation of rdv::Stream::Type.
+// StreamType is an implementation of the rdv::Stream::Type enum.
+//
 // StreamType is used to create VirtualPorts used in PRUDP virtual
 // connections. Each stream may be one of these types, and each stream
 // has it's own state.
