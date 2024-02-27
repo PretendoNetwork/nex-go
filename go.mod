@@ -4,8 +4,8 @@ go 1.21
 
 require (
 	github.com/PretendoNetwork/plogger-go v1.0.4
-	github.com/cyberdelia/lzo v1.0.0
 	github.com/lxzan/gws v1.8.0
+	github.com/rasky/go-lzo v0.0.0-20200203143853-96a758eda86e
 	github.com/superwhiskers/crunch/v3 v3.5.7
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/mod v0.12.0
