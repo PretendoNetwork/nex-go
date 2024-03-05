@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"runtime"
-	"time"
 
 	"github.com/lxzan/gws"
 )
@@ -22,7 +21,6 @@ type PRUDPServer struct {
 	KerberosTicketVersion         int
 	SessionKeyLength              int
 	FragmentSize                  int
-	pingTimeout                   time.Duration
 	PRUDPv1ConnectionSignatureKey []byte
 	LibraryVersions               *LibraryVersions
 	ByteStreamSettings            *ByteStreamSettings
@@ -330,7 +328,6 @@ func NewPRUDPServer() *PRUDPServer {
 		Connections:        NewMutexMap[string, *SocketConnection](),
 		SessionKeyLength:   32,
 		FragmentSize:       1300,
-		pingTimeout:        time.Second * 15,
 		LibraryVersions:    NewLibraryVersions(),
 		ByteStreamSettings: NewByteStreamSettings(),
 		PRUDPV0Settings:    NewPRUDPV0Settings(),

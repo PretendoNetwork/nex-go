@@ -35,8 +35,6 @@ func (pi *PendingPacket) startResendTimer() {
 // ResendScheduler manages the resending of reliable PRUDP packets
 type ResendScheduler struct {
 	packets  *MutexMap[uint16, *PendingPacket]
-	Interval time.Duration
-	Increase time.Duration
 }
 
 // Stop kills the resend scheduler and stops all pending packets
@@ -62,10 +60,13 @@ func (rs *ResendScheduler) Stop() {
 
 // AddPacket adds a packet to the scheduler and begins it's timer
 func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
+	connection := packet.Sender().(*PRUDPConnection)
+	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
+
 	pendingPacket := &PendingPacket{
 		packet:   packet,
 		rs:       rs,
-		interval: rs.Interval,
+		interval: time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond,
 	}
 
 	rs.packets.Set(packet.SequenceID(), pendingPacket)
@@ -106,28 +107,26 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		return
 	}
 
-	if time.Since(pendingPacket.lastSendTime) >= rs.Interval {
+	if time.Since(pendingPacket.lastSendTime) >= time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond {
 		// * Resend the packet to the connection
 		server := connection.endpoint.Server
 		data := packet.Bytes()
 		server.sendRaw(connection.Socket, data)
-
-		pendingPacket.interval += rs.Increase
-		pendingPacket.ticker.Reset(pendingPacket.interval)
+		
 		pendingPacket.resendCount++
+		if (pendingPacket.resendCount < slidingWindow.streamSettings.ExtraRestransmitTimeoutTrigger) {
+			pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout) * slidingWindow.streamSettings.RetransmitTimeoutMultiplier)) * time.Millisecond
+		} else {
+			pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout) * slidingWindow.streamSettings.ExtraRetransmitTimeoutMultiplier)) * time.Millisecond
+		}
+		pendingPacket.ticker.Reset(pendingPacket.interval)
 		pendingPacket.lastSendTime = time.Now()
 	}
 }
 
-// NewResendScheduler creates a new ResendScheduler with the provided max resend count and interval and increase durations
-//
-// If increase is non-zero then every resend will have it's duration increased by that amount. For example an interval of
-// 1 second and an increase of 5 seconds. The 1st resend happens after 1 second, the 2nd will take place 6 seconds
-// after the 1st, and the 3rd will take place 11 seconds after the 2nd
-func NewResendScheduler(maxResendCount int, interval, increase time.Duration) *ResendScheduler {
+// NewResendScheduler creates a new ResendScheduler
+func NewResendScheduler() *ResendScheduler {
 	return &ResendScheduler{
 		packets:  NewMutexMap[uint16, *PendingPacket](),
-		Interval: interval,
-		Increase: increase,
 	}
 }
