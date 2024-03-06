@@ -1,9 +1,5 @@
 package nex
 
-import (
-	"time"
-)
-
 // SlidingWindow is an implementation of rdv::SlidingWindow.
 // SlidingWindow reorders pending reliable packets to ensure they are handled in the expected order.
 // In the original library each virtual connection stream only uses a single SlidingWindow, but starting
@@ -74,7 +70,7 @@ func NewSlidingWindow() *SlidingWindow {
 		pendingPackets:            NewMutexMap[uint16, PRUDPPacketInterface](),
 		incomingSequenceIDCounter: NewCounter[uint16](0),
 		outgoingSequenceIDCounter: NewCounter[uint16](0),
-		ResendScheduler:           NewResendScheduler(5, time.Second, 0),
+		ResendScheduler:           NewResendScheduler(),
 	}
 
 	return sw

@@ -169,13 +169,16 @@ func (pc *PRUDPConnection) resetHeartbeat() {
 	}
 
 	if pc.heartbeatTimer != nil {
-		pc.heartbeatTimer.Reset(pc.endpoint.Server.pingTimeout) // TODO - This is part of StreamSettings
+		// TODO: This may not be accurate, needs more research
+		pc.heartbeatTimer.Reset(time.Duration(pc.StreamSettings.MaxSilenceTime) * time.Millisecond)
 	}
 }
 
 func (pc *PRUDPConnection) startHeartbeat() {
 	endpoint := pc.endpoint
-	server := endpoint.Server
+
+	// TODO: This may not be accurate, needs more research
+	maxSilenceTime := time.Duration(pc.StreamSettings.MaxSilenceTime) * time.Millisecond
 
 	// * Every time a packet is sent, connection.resetHeartbeat()
 	// * is called which resets this timer. If this function
@@ -183,12 +186,12 @@ func (pc *PRUDPConnection) startHeartbeat() {
 	// * in the expected time frame. If this happens, send
 	// * the client a PING packet to try and kick start the
 	// * heartbeat again
-	pc.heartbeatTimer = time.AfterFunc(server.pingTimeout, func() {
+	pc.heartbeatTimer = time.AfterFunc(maxSilenceTime, func() {
 		endpoint.sendPing(pc)
 
 		// * If the heartbeat still did not restart, assume the
 		// * connection is dead and clean up
-		pc.pingKickTimer = time.AfterFunc(server.pingTimeout, func() {
+		pc.pingKickTimer = time.AfterFunc(maxSilenceTime, func() {
 			pc.cleanup() // * "removed" event is dispatched here
 
 			discriminator := fmt.Sprintf("%s-%d-%d", pc.Socket.Address.String(), pc.StreamType, pc.StreamID)

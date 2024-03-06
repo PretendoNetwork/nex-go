@@ -12,19 +12,19 @@ import (
 // The original library has more settings which are not present here as their use is unknown.
 // Not all values are used at this time, and only exist to future-proof for a later time.
 type StreamSettings struct {
-	ExtraRestransmitTimeoutTrigger   uint32                // * Unused. The number of times a packet can be retransmitted before ExtraRetransmitTimeoutMultiplier is used
+	ExtraRestransmitTimeoutTrigger   uint32                // * The number of times a packet can be retransmitted before ExtraRetransmitTimeoutMultiplier is used
 	MaxPacketRetransmissions         uint32                // * The number of times a packet can be retransmitted before the timeout time is checked
-	KeepAliveTimeout                 uint32                // * Unused. Presumably the time a packet can be alive for without acknowledgement? Milliseconds?
+	KeepAliveTimeout                 uint32                // * Presumably the time a packet can be alive for without acknowledgement? Milliseconds?
 	ChecksumBase                     uint32                // * Unused. The base value for PRUDPv0 checksum calculations
 	FaultDetectionEnabled            bool                  // * Unused. Presumably used to detect PIA faults?
 	InitialRTT                       uint32                // * Unused. The connections initial RTT
 	EncryptionAlgorithm              encryption.Algorithm  // * The encryption algorithm used for packet payloads
-	ExtraRetransmitTimeoutMultiplier float32               // * Unused. Used as part of the RTO calculations when retransmitting a packet. Only used if ExtraRestransmitTimeoutTrigger has been reached
+	ExtraRetransmitTimeoutMultiplier float32               // * Used as part of the RTO calculations when retransmitting a packet. Only used if ExtraRestransmitTimeoutTrigger has been reached
 	WindowSize                       uint32                // * Unused. The max number of (reliable?) packets allowed in a SlidingWindow
 	CompressionAlgorithm             compression.Algorithm // * The compression algorithm used for packet payloads
 	RTTRetransmit                    uint32                // * Unused. Unknown use
-	RetransmitTimeoutMultiplier      float32               // * Unused. Used as part of the RTO calculations when retransmitting a packet. Only used if ExtraRestransmitTimeoutTrigger has not been reached
-	MaxSilenceTime                   uint32                // * Unused. Presumably the time a connection can go without any packets from the other side? Milliseconds?
+	RetransmitTimeoutMultiplier      float32               // * Used as part of the RTO calculations when retransmitting a packet. Only used if ExtraRestransmitTimeoutTrigger has not been reached
+	MaxSilenceTime                   uint32                // * Presumably the time a connection can go without any packets from the other side? Milliseconds?
 }
 
 // Copy returns a new copy of the settings

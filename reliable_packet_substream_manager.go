@@ -2,7 +2,6 @@ package nex
 
 import (
 	"crypto/rc4"
-	"time"
 )
 
 // ReliablePacketSubstreamManager represents a substream manager for reliable PRUDP packets
@@ -85,7 +84,7 @@ func NewReliablePacketSubstreamManager(startingIncomingSequenceID, startingOutgo
 		packetMap:                 NewMutexMap[uint16, PRUDPPacketInterface](),
 		incomingSequenceIDCounter: NewCounter[uint16](startingIncomingSequenceID),
 		outgoingSequenceIDCounter: NewCounter[uint16](startingOutgoingSequenceID),
-		ResendScheduler:           NewResendScheduler(5, time.Second, 0),
+		ResendScheduler:           NewResendScheduler(),
 	}
 
 	psm.SetCipherKey([]byte("CD&ML"))
