@@ -169,12 +169,15 @@ func (pc *PRUDPConnection) resetHeartbeat() {
 	}
 
 	if pc.heartbeatTimer != nil {
+		// TODO: This may not be accurate, needs more research
 		pc.heartbeatTimer.Reset(time.Duration(pc.StreamSettings.MaxSilenceTime) * time.Millisecond)
 	}
 }
 
 func (pc *PRUDPConnection) startHeartbeat() {
 	endpoint := pc.endpoint
+
+	// TODO: This may not be accurate, needs more research
 	maxSilenceTime := time.Duration(pc.StreamSettings.MaxSilenceTime) * time.Millisecond
 
 	// * Every time a packet is sent, connection.resetHeartbeat()

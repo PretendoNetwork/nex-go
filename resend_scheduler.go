@@ -66,6 +66,7 @@ func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
 	pendingPacket := &PendingPacket{
 		packet:   packet,
 		rs:       rs,
+		// TODO: This may not be accurate, needs more research
 		interval: time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond,
 	}
 
@@ -107,6 +108,7 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		return
 	}
 
+	// TODO: This may not be accurate, needs more research
 	if time.Since(pendingPacket.lastSendTime) >= time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond {
 		// * Resend the packet to the connection
 		server := connection.endpoint.Server
@@ -114,11 +116,15 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		server.sendRaw(connection.Socket, data)
 		
 		pendingPacket.resendCount++
+
+		var retransmitTimeoutMultiplier float32
 		if (pendingPacket.resendCount < slidingWindow.streamSettings.ExtraRestransmitTimeoutTrigger) {
-			pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout) * slidingWindow.streamSettings.RetransmitTimeoutMultiplier)) * time.Millisecond
+			retransmitTimeoutMultiplier = slidingWindow.streamSettings.RetransmitTimeoutMultiplier
 		} else {
-			pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout) * slidingWindow.streamSettings.ExtraRetransmitTimeoutMultiplier)) * time.Millisecond
+			retransmitTimeoutMultiplier = slidingWindow.streamSettings.ExtraRetransmitTimeoutMultiplier
 		}
+		pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout) * retransmitTimeoutMultiplier)) * time.Millisecond
+		
 		pendingPacket.ticker.Reset(pendingPacket.interval)
 		pendingPacket.lastSendTime = time.Now()
 	}
