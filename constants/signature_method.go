@@ -1,4 +1,4 @@
-package nex
+package constants
 
 // SignatureMethod is an implementation of the nn::nex::PRUDPMessageInterface::SignatureMethod enum.
 //

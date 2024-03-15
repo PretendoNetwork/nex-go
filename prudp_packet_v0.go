@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net"
 	"slices"
+
+	"github.com/PretendoNetwork/nex-go/constants"
 )
 
 // PRUDPPacketV0 represents a PRUDPv0 packet
@@ -98,7 +100,7 @@ func (p *PRUDPPacketV0) decode() error {
 		p.packetType = typeAndFlags & 0xF
 	}
 
-	if _, ok := validPacketTypes[p.packetType]; !ok {
+	if p.packetType > constants.PingPacket {
 		return errors.New("Invalid PRUDPv0 packet type")
 	}
 
@@ -114,7 +116,7 @@ func (p *PRUDPPacketV0) decode() error {
 		return fmt.Errorf("Failed to read PRUDPv0 sequence ID. %s", err.Error())
 	}
 
-	if p.packetType == SynPacket || p.packetType == ConnectPacket {
+	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 		if p.readStream.Remaining() < 4 {
 			return errors.New("Failed to read PRUDPv0 connection signature. Not have enough data")
 		}
@@ -122,7 +124,7 @@ func (p *PRUDPPacketV0) decode() error {
 		p.connectionSignature = p.readStream.ReadBytesNext(4)
 	}
 
-	if p.packetType == DataPacket {
+	if p.packetType == constants.DataPacket {
 		if p.readStream.Remaining() < 1 {
 			return errors.New("Failed to read PRUDPv0 fragment ID. Not have enough data")
 		}
@@ -135,7 +137,7 @@ func (p *PRUDPPacketV0) decode() error {
 
 	var payloadSize uint16
 
-	if p.HasFlag(FlagHasSize) {
+	if p.HasFlag(constants.FlagHasSize) {
 		if p.readStream.Remaining() < 2 {
 			return errors.New("Failed to read PRUDPv0 payload size. Not have enough data")
 		}
@@ -209,16 +211,16 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	stream.WriteBytesNext(p.signature)
 	stream.WritePrimitiveUInt16LE(p.sequenceID)
 
-	if p.packetType == SynPacket || p.packetType == ConnectPacket {
+	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 		stream.Grow(int64(len(p.connectionSignature)))
 		stream.WriteBytesNext(p.connectionSignature)
 	}
 
-	if p.packetType == DataPacket {
+	if p.packetType == constants.DataPacket {
 		stream.WritePrimitiveUInt8(p.fragmentID)
 	}
 
-	if p.HasFlag(FlagHasSize) {
+	if p.HasFlag(constants.FlagHasSize) {
 		stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
 	}
 
@@ -310,11 +312,11 @@ func defaultPRUDPv0ConnectionSignature(packet *PRUDPPacketV0, addr net.Addr) ([]
 
 func defaultPRUDPv0CalculateSignature(packet *PRUDPPacketV0, sessionKey, connectionSignature []byte) []byte {
 	if !packet.server.PRUDPV0Settings.LegacyConnectionSignature {
-		if packet.packetType == DataPacket {
+		if packet.packetType == constants.DataPacket {
 			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
 		}
 
-		if packet.packetType == DisconnectPacket && packet.server.AccessKey != "ridfebb9" {
+		if packet.packetType == constants.DisconnectPacket && packet.server.AccessKey != "ridfebb9" {
 			return packet.server.PRUDPV0Settings.DataSignatureCalculator(packet, sessionKey)
 		}
 	}

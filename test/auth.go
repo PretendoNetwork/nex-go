@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/constants"
 	"github.com/PretendoNetwork/nex-go/types"
 )
 
@@ -95,9 +96,9 @@ func login(packet nex.PRUDPPacketInterface) {
 	responsePacket, _ := nex.NewPRUDPPacketV0(authServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
-	responsePacket.AddFlag(nex.FlagHasSize)
-	responsePacket.AddFlag(nex.FlagReliable)
-	responsePacket.AddFlag(nex.FlagNeedsAck)
+	responsePacket.AddFlag(constants.FlagHasSize)
+	responsePacket.AddFlag(constants.FlagReliable)
+	responsePacket.AddFlag(constants.FlagNeedsAck)
 	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -148,9 +149,9 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	responsePacket, _ := nex.NewPRUDPPacketV0(authServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
-	responsePacket.AddFlag(nex.FlagHasSize)
-	responsePacket.AddFlag(nex.FlagReliable)
-	responsePacket.AddFlag(nex.FlagNeedsAck)
+	responsePacket.AddFlag(constants.FlagHasSize)
+	responsePacket.AddFlag(constants.FlagReliable)
+	responsePacket.AddFlag(constants.FlagNeedsAck)
 	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())

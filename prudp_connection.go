@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/PretendoNetwork/nex-go/constants"
 	"github.com/PretendoNetwork/nex-go/types"
 )
 
@@ -22,7 +23,7 @@ type PRUDPConnection struct {
 	SessionKey                          []byte                           // * Secret key generated at the start of the session. Used for encrypting packets to the secure server
 	pid                                 *types.PID                       // * PID of the user
 	DefaultPRUDPVersion                 int                              // * The PRUDP version the connection was established with. Used for sending PING packets
-	StreamType                          StreamType                       // * rdv::Stream::Type used in this connection
+	StreamType                          constants.StreamType             // * rdv::Stream::Type used in this connection
 	StreamID                            uint8                            // * rdv::Stream ID, also called the "port number", used in this connection. 0-15 on PRUDPv0/v1, and 0-31 on PRUDPLite
 	StreamSettings                      *StreamSettings                  // * Settings for this virtual connection
 	Signature                           []byte                           // * Connection signature for packets coming from the client, as seen by the server

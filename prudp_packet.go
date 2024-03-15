@@ -1,6 +1,10 @@
 package nex
 
-import "crypto/rc4"
+import (
+	"crypto/rc4"
+
+	"github.com/PretendoNetwork/nex-go/constants"
+)
 
 // PRUDPPacket holds all the fields each packet should have in all PRUDP versions
 type PRUDPPacket struct {
@@ -58,12 +62,12 @@ func (p *PRUDPPacket) Type() uint16 {
 }
 
 // SetSourceVirtualPortStreamType sets the packets source VirtualPort StreamType
-func (p *PRUDPPacket) SetSourceVirtualPortStreamType(streamType StreamType) {
+func (p *PRUDPPacket) SetSourceVirtualPortStreamType(streamType constants.StreamType) {
 	p.sourceVirtualPort.SetStreamType(streamType)
 }
 
 // SourceVirtualPortStreamType returns the packets source VirtualPort StreamType
-func (p *PRUDPPacket) SourceVirtualPortStreamType() StreamType {
+func (p *PRUDPPacket) SourceVirtualPortStreamType() constants.StreamType {
 	return p.sourceVirtualPort.StreamType()
 }
 
@@ -78,12 +82,12 @@ func (p *PRUDPPacket) SourceVirtualPortStreamID() uint8 {
 }
 
 // SetDestinationVirtualPortStreamType sets the packets destination VirtualPort StreamType
-func (p *PRUDPPacket) SetDestinationVirtualPortStreamType(streamType StreamType) {
+func (p *PRUDPPacket) SetDestinationVirtualPortStreamType(streamType constants.StreamType) {
 	p.destinationVirtualPort.SetStreamType(streamType)
 }
 
 // DestinationVirtualPortStreamType returns the packets destination VirtualPort StreamType
-func (p *PRUDPPacket) DestinationVirtualPortStreamType() StreamType {
+func (p *PRUDPPacket) DestinationVirtualPortStreamType() constants.StreamType {
 	return p.destinationVirtualPort.StreamType()
 }
 
@@ -145,7 +149,7 @@ func (p *PRUDPPacket) decryptPayload() []byte {
 	payload := p.payload
 
 	// TODO - This assumes a reliable DATA packet. Handle unreliable here? Or do that in a different method?
-	if p.packetType == DataPacket {
+	if p.packetType == constants.DataPacket {
 		slidingWindow := p.sender.SlidingWindow(p.SubstreamID())
 
 		payload, _ = slidingWindow.streamSettings.EncryptionAlgorithm.Decrypt(payload)

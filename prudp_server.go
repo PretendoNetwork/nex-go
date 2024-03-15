@@ -7,6 +7,7 @@ import (
 	"net"
 	"runtime"
 
+	"github.com/PretendoNetwork/nex-go/constants"
 	"github.com/lxzan/gws"
 )
 
@@ -165,12 +166,12 @@ func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Ad
 		return
 	}
 
-	if packet.DestinationVirtualPortStreamType() > StreamTypeRelay {
+	if packet.DestinationVirtualPortStreamType() > constants.StreamTypeRelay {
 		logger.Warningf("Client %s trying to use invalid to destination stream type %d", address.String(), packet.DestinationVirtualPortStreamType())
 		return
 	}
 
-	if packet.SourceVirtualPortStreamType() > StreamTypeRelay {
+	if packet.SourceVirtualPortStreamType() > constants.StreamTypeRelay {
 		logger.Warningf("Client %s trying to use invalid to source stream type %d", address.String(), packet.DestinationVirtualPortStreamType())
 		return
 	}
@@ -233,13 +234,13 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	packetCopy := packet.Copy()
 	connection := packetCopy.Sender().(*PRUDPConnection)
 
-	if !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
-		if packetCopy.HasFlag(FlagReliable) {
+	if !packetCopy.HasFlag(constants.FlagAck) && !packetCopy.HasFlag(constants.FlagMultiAck) {
+		if packetCopy.HasFlag(constants.FlagReliable) {
 			slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 			packetCopy.SetSequenceID(slidingWindow.NextOutgoingSequenceID())
-		} else if packetCopy.Type() == DataPacket {
+		} else if packetCopy.Type() == constants.DataPacket {
 			packetCopy.SetSequenceID(connection.outgoingUnreliableSequenceIDCounter.Next())
-		} else if packetCopy.Type() == PingPacket {
+		} else if packetCopy.Type() == constants.PingPacket {
 			packetCopy.SetSequenceID(connection.outgoingPingSequenceIDCounter.Next())
 		} else {
 			packetCopy.SetSequenceID(0)
@@ -248,8 +249,8 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 	packetCopy.SetSessionID(connection.ServerSessionID)
 
-	if packetCopy.Type() == DataPacket && !packetCopy.HasFlag(FlagAck) && !packetCopy.HasFlag(FlagMultiAck) {
-		if packetCopy.HasFlag(FlagReliable) {
+	if packetCopy.Type() == constants.DataPacket && !packetCopy.HasFlag(constants.FlagAck) && !packetCopy.HasFlag(constants.FlagMultiAck) {
+		if packetCopy.HasFlag(constants.FlagReliable) {
 			slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 			payload := packetCopy.Payload()
 
@@ -278,7 +279,7 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
 	}
 
-	if packetCopy.HasFlag(FlagReliable) && packetCopy.HasFlag(FlagNeedsAck) {
+	if packetCopy.HasFlag(constants.FlagReliable) && packetCopy.HasFlag(constants.FlagNeedsAck) {
 		slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 		slidingWindow.ResendScheduler.AddPacket(packetCopy)
 	}

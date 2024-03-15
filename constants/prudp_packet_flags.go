@@ -1,4 +1,4 @@
-package nex
+package constants
 
 const (
 	// FlagAck is the ID for the PRUDP Ack Flag

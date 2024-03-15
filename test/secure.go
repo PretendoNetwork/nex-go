@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/PretendoNetwork/nex-go"
+	"github.com/PretendoNetwork/nex-go/constants"
 	"github.com/PretendoNetwork/nex-go/types"
 )
 
@@ -111,8 +112,8 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 	address := packet.Sender().Address().(*net.UDPAddr).IP.String()
 
-	localStation.Fields["address"] = address
-	localStation.Fields["port"] = strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port)
+	localStation.Params["address"] = address
+	localStation.Params["port"] = strconv.Itoa(packet.Sender().Address().(*net.UDPAddr).Port)
 
 	retval := types.NewQResultSuccess(0x00010001)
 	localStationURL := types.NewString(localStation.EncodeToString())
@@ -134,9 +135,9 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, connection, nil)
 
 	responsePacket.SetType(packet.Type())
-	responsePacket.AddFlag(nex.FlagHasSize)
-	responsePacket.AddFlag(nex.FlagReliable)
-	responsePacket.AddFlag(nex.FlagNeedsAck)
+	responsePacket.AddFlag(constants.FlagHasSize)
+	responsePacket.AddFlag(constants.FlagReliable)
+	responsePacket.AddFlag(constants.FlagNeedsAck)
 	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -182,9 +183,9 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
-	responsePacket.AddFlag(nex.FlagHasSize)
-	responsePacket.AddFlag(nex.FlagReliable)
-	responsePacket.AddFlag(nex.FlagNeedsAck)
+	responsePacket.AddFlag(constants.FlagHasSize)
+	responsePacket.AddFlag(constants.FlagReliable)
+	responsePacket.AddFlag(constants.FlagNeedsAck)
 	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -214,9 +215,9 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
-	responsePacket.AddFlag(nex.FlagHasSize)
-	responsePacket.AddFlag(nex.FlagReliable)
-	responsePacket.AddFlag(nex.FlagNeedsAck)
+	responsePacket.AddFlag(constants.FlagHasSize)
+	responsePacket.AddFlag(constants.FlagReliable)
+	responsePacket.AddFlag(constants.FlagNeedsAck)
 	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -241,9 +242,9 @@ func updatePresence(packet nex.PRUDPPacketInterface) {
 	responsePacket, _ := nex.NewPRUDPPacketV0(secureServer, packet.Sender().(*nex.PRUDPConnection), nil)
 
 	responsePacket.SetType(packet.Type())
-	responsePacket.AddFlag(nex.FlagHasSize)
-	responsePacket.AddFlag(nex.FlagReliable)
-	responsePacket.AddFlag(nex.FlagNeedsAck)
+	responsePacket.AddFlag(constants.FlagHasSize)
+	responsePacket.AddFlag(constants.FlagReliable)
+	responsePacket.AddFlag(constants.FlagNeedsAck)
 	responsePacket.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	responsePacket.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	responsePacket.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())

@@ -1,6 +1,10 @@
 package nex
 
-import "net"
+import (
+	"net"
+
+	"github.com/PretendoNetwork/nex-go/constants"
+)
 
 // PRUDPPacketInterface defines all the methods a PRUDP packet should have
 type PRUDPPacketInterface interface {
@@ -14,12 +18,12 @@ type PRUDPPacketInterface interface {
 	AddFlag(flag uint16)
 	SetType(packetType uint16)
 	Type() uint16
-	SetSourceVirtualPortStreamType(streamType StreamType)
-	SourceVirtualPortStreamType() StreamType
+	SetSourceVirtualPortStreamType(streamType constants.StreamType)
+	SourceVirtualPortStreamType() constants.StreamType
 	SetSourceVirtualPortStreamID(port uint8)
 	SourceVirtualPortStreamID() uint8
-	SetDestinationVirtualPortStreamType(streamType StreamType)
-	DestinationVirtualPortStreamType() StreamType
+	SetDestinationVirtualPortStreamType(streamType constants.StreamType)
+	DestinationVirtualPortStreamType() constants.StreamType
 	SetDestinationVirtualPortStreamID(port uint8)
 	DestinationVirtualPortStreamID() uint8
 	SessionID() uint8

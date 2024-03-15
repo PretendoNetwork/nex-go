@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/PretendoNetwork/nex-go/constants"
 	"github.com/PretendoNetwork/nex-go/types"
 )
 
@@ -113,21 +114,21 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 
 	packet.SetSender(connection)
 
-	if packet.HasFlag(FlagAck) || packet.HasFlag(FlagMultiAck) {
+	if packet.HasFlag(constants.FlagAck) || packet.HasFlag(constants.FlagMultiAck) {
 		pep.handleAcknowledgment(packet)
 		return
 	}
 
 	switch packet.Type() {
-	case SynPacket:
+	case constants.SynPacket:
 		pep.handleSyn(packet)
-	case ConnectPacket:
+	case constants.ConnectPacket:
 		pep.handleConnect(packet)
-	case DataPacket:
+	case constants.DataPacket:
 		pep.handleData(packet)
-	case DisconnectPacket:
+	case constants.DisconnectPacket:
 		pep.handleDisconnect(packet)
-	case PingPacket:
+	case constants.PingPacket:
 		pep.handlePing(packet)
 	}
 }
@@ -140,7 +141,7 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 		return
 	}
 
-	if packet.HasFlag(FlagMultiAck) {
+	if packet.HasFlag(constants.FlagMultiAck) {
 		pep.handleMultiAcknowledgment(packet)
 		return
 	}
@@ -224,9 +225,9 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	connection.reset()
 	connection.Signature = connectionSignature
 
-	ack.SetType(SynPacket)
-	ack.AddFlag(FlagAck)
-	ack.AddFlag(FlagHasSize)
+	ack.SetType(constants.SynPacket)
+	ack.AddFlag(constants.FlagAck)
+	ack.AddFlag(constants.FlagHasSize)
 	ack.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -277,9 +278,9 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 
 	connection.ServerSessionID = packet.SessionID()
 
-	ack.SetType(ConnectPacket)
-	ack.AddFlag(FlagAck)
-	ack.AddFlag(FlagHasSize)
+	ack.SetType(constants.ConnectPacket)
+	ack.AddFlag(constants.FlagAck)
+	ack.AddFlag(constants.FlagHasSize)
 	ack.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -385,7 +386,7 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 
 	connection.resetHeartbeat()
 
-	if packet.HasFlag(FlagReliable) {
+	if packet.HasFlag(constants.FlagReliable) {
 		pep.handleReliable(packet)
 	} else {
 		pep.handleUnreliable(packet)
@@ -396,7 +397,7 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	// TODO - Should we check the state here, or just let the connection disconnect at any time?
 	// TODO - Should we bother to set the connections state here? It's being destroyed anyway
 
-	if packet.HasFlag(FlagNeedsAck) {
+	if packet.HasFlag(constants.FlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
@@ -416,7 +417,7 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 
 	connection.resetHeartbeat()
 
-	if packet.HasFlag(FlagNeedsAck) {
+	if packet.HasFlag(constants.FlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 }
@@ -499,7 +500,7 @@ func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
 	}
 
 	ack.SetType(packet.Type())
-	ack.AddFlag(FlagAck)
+	ack.AddFlag(constants.FlagAck)
 	ack.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -511,14 +512,14 @@ func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
 	pep.Server.sendPacket(ack)
 
 	// * Servers send the DISCONNECT ACK 3 times
-	if packet.Type() == DisconnectPacket {
+	if packet.Type() == constants.DisconnectPacket {
 		pep.Server.sendPacket(ack)
 		pep.Server.sendPacket(ack)
 	}
 }
 
 func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
-	if packet.HasFlag(FlagNeedsAck) {
+	if packet.HasFlag(constants.FlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
@@ -527,7 +528,7 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 	slidingWindow := packet.Sender().(*PRUDPConnection).SlidingWindow(packet.SubstreamID())
 
 	for _, pendingPacket := range slidingWindow.Update(packet) {
-		if packet.Type() == DataPacket {
+		if packet.Type() == constants.DataPacket {
 			var decryptedPayload []byte
 
 			if packet.Version() != 2 {
@@ -563,7 +564,7 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handleUnreliable(packet PRUDPPacketInterface) {
-	if packet.HasFlag(FlagNeedsAck) {
+	if packet.HasFlag(constants.FlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
@@ -635,8 +636,8 @@ func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {
 		ping, _ = NewPRUDPPacketLite(pep.Server, connection, nil)
 	}
 
-	ping.SetType(PingPacket)
-	ping.AddFlag(FlagNeedsAck)
+	ping.SetType(constants.PingPacket)
+	ping.AddFlag(constants.FlagNeedsAck)
 	ping.SetSourceVirtualPortStreamType(connection.StreamType)
 	ping.SetSourceVirtualPortStreamID(pep.StreamID)
 	ping.SetDestinationVirtualPortStreamType(connection.StreamType)

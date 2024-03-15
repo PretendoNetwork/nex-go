@@ -1,5 +1,7 @@
 package nex
 
+import "github.com/PretendoNetwork/nex-go/constants"
+
 // VirtualPort in an implementation of rdv::VirtualPort.
 // PRUDP will reuse a single physical socket connection for many virtual PRUDP connections.
 // VirtualPorts are a byte which represents a stream for a virtual PRUDP connection.
@@ -9,13 +11,13 @@ package nex
 type VirtualPort byte
 
 // SetStreamType sets the VirtualPort stream type
-func (vp *VirtualPort) SetStreamType(streamType StreamType) {
+func (vp *VirtualPort) SetStreamType(streamType constants.StreamType) {
 	*vp = VirtualPort((byte(*vp) & 0x0F) | (byte(streamType) << 4))
 }
 
 // StreamType returns the VirtualPort stream type
-func (vp VirtualPort) StreamType() StreamType {
-	return StreamType(vp >> 4)
+func (vp VirtualPort) StreamType() constants.StreamType {
+	return constants.StreamType(vp >> 4)
 }
 
 // SetStreamID sets the VirtualPort stream ID

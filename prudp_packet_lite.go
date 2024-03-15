@@ -6,14 +6,16 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+
+	"github.com/PretendoNetwork/nex-go/constants"
 )
 
 // PRUDPPacketLite represents a PRUDPLite packet
 type PRUDPPacketLite struct {
 	PRUDPPacket
-	sourceVirtualPortStreamType      StreamType
+	sourceVirtualPortStreamType      constants.StreamType
 	sourceVirtualPortStreamID        uint8
-	destinationVirtualPortStreamType StreamType
+	destinationVirtualPortStreamType constants.StreamType
 	destinationVirtualPortStreamID   uint8
 	optionsLength                    uint8
 	minorVersion                     uint32
@@ -23,13 +25,13 @@ type PRUDPPacketLite struct {
 	liteSignature                    []byte
 }
 
-// SetSourceVirtualPortStreamType sets the packets source VirtualPort StreamType
-func (p *PRUDPPacketLite) SetSourceVirtualPortStreamType(streamType StreamType) {
+// SetSourceVirtualPortStreamType sets the packets source VirtualPort  StreamType
+func (p *PRUDPPacketLite) SetSourceVirtualPortStreamType(streamType constants.StreamType) {
 	p.sourceVirtualPortStreamType = streamType
 }
 
 // SourceVirtualPortStreamType returns the packets source VirtualPort StreamType
-func (p *PRUDPPacketLite) SourceVirtualPortStreamType() StreamType {
+func (p *PRUDPPacketLite) SourceVirtualPortStreamType() constants.StreamType {
 	return p.sourceVirtualPortStreamType
 }
 
@@ -43,13 +45,13 @@ func (p *PRUDPPacketLite) SourceVirtualPortStreamID() uint8 {
 	return p.sourceVirtualPort.StreamID()
 }
 
-// SetDestinationVirtualPortStreamType sets the packets destination VirtualPort StreamType
-func (p *PRUDPPacketLite) SetDestinationVirtualPortStreamType(streamType StreamType) {
+// SetDestinationVirtualPortStreamType sets the packets destination VirtualPort constants.StreamType
+func (p *PRUDPPacketLite) SetDestinationVirtualPortStreamType(streamType constants.StreamType) {
 	p.destinationVirtualPortStreamType = streamType
 }
 
-// DestinationVirtualPortStreamType returns the packets destination VirtualPort StreamType
-func (p *PRUDPPacketLite) DestinationVirtualPortStreamType() StreamType {
+// DestinationVirtualPortStreamType returns the packets destination VirtualPort constants.StreamType
+func (p *PRUDPPacketLite) DestinationVirtualPortStreamType() constants.StreamType {
 	return p.destinationVirtualPortStreamType
 }
 
@@ -139,8 +141,8 @@ func (p *PRUDPPacketLite) decode() error {
 		return fmt.Errorf("Failed to decode PRUDPLite virtual ports stream types. %s", err.Error())
 	}
 
-	p.sourceVirtualPortStreamType = StreamType(streamTypes >> 4)
-	p.destinationVirtualPortStreamType = StreamType(streamTypes & 0xF)
+	p.sourceVirtualPortStreamType = constants.StreamType(streamTypes >> 4)
+	p.destinationVirtualPortStreamType = constants.StreamType(streamTypes & 0xF)
 
 	p.sourceVirtualPortStreamID, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
@@ -220,7 +222,7 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 			return err
 		}
 
-		if p.packetType == SynPacket || p.packetType == ConnectPacket {
+		if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 			if optionID == 0 {
 				p.supportedFunctions, err = optionsStream.ReadPrimitiveUInt32LE()
 
@@ -237,19 +239,19 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 			}
 		}
 
-		if p.packetType == ConnectPacket {
+		if p.packetType == constants.ConnectPacket {
 			if optionID == 3 {
 				p.initialUnreliableSequenceID, err = optionsStream.ReadPrimitiveUInt16LE()
 			}
 		}
 
-		if p.packetType == DataPacket {
+		if p.packetType == constants.DataPacket {
 			if optionID == 2 {
 				p.fragmentID, err = optionsStream.ReadPrimitiveUInt8()
 			}
 		}
 
-		if p.packetType == ConnectPacket && !p.HasFlag(FlagAck) {
+		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.FlagAck) {
 			if optionID == 0x80 {
 				p.liteSignature = optionsStream.ReadBytesNext(int64(optionSize))
 			}
@@ -269,19 +271,19 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 func (p *PRUDPPacketLite) encodeOptions() []byte {
 	optionsStream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
-	if p.packetType == SynPacket || p.packetType == ConnectPacket {
+	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 		optionsStream.WritePrimitiveUInt8(0)
 		optionsStream.WritePrimitiveUInt8(4)
 		optionsStream.WritePrimitiveUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
 
-		if p.packetType == SynPacket && p.HasFlag(FlagAck) {
+		if p.packetType == constants.SynPacket && p.HasFlag(constants.FlagAck) {
 			optionsStream.WritePrimitiveUInt8(1)
 			optionsStream.WritePrimitiveUInt8(16)
 			optionsStream.Grow(16)
 			optionsStream.WriteBytesNext(p.connectionSignature)
 		}
 
-		if p.packetType == ConnectPacket && !p.HasFlag(FlagAck) {
+		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.FlagAck) {
 			optionsStream.WritePrimitiveUInt8(1)
 			optionsStream.WritePrimitiveUInt8(16)
 			optionsStream.Grow(16)

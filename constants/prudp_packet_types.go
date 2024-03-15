@@ -1,4 +1,4 @@
-package nex
+package constants
 
 const (
 	// SynPacket is the ID for the PRUDP Syn Packet type
@@ -16,11 +16,3 @@ const (
 	// PingPacket is the ID for the PRUDP Ping Packet type
 	PingPacket uint16 = 0x4
 )
-
-var validPacketTypes = map[uint16]bool{
-	SynPacket:        true,
-	ConnectPacket:    true,
-	DataPacket:       true,
-	DisconnectPacket: true,
-	PingPacket:       true,
-}

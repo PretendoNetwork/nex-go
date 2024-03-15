@@ -1,4 +1,4 @@
-package nex
+package constants
 
 // TODO - Should this be moved to the types module?
 

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"net"
+
+	"github.com/PretendoNetwork/nex-go/constants"
 )
 
 // PRUDPPacketV1 represents a PRUDPv1 packet
@@ -174,7 +176,7 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 	p.flags = typeAndFlags >> 4
 	p.packetType = typeAndFlags & 0xF
 
-	if _, ok := validPacketTypes[p.packetType]; !ok {
+	if p.packetType > constants.PingPacket {
 		return errors.New("Invalid PRUDPv1 packet type")
 	}
 
@@ -227,7 +229,7 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 			return err
 		}
 
-		if p.packetType == SynPacket || p.packetType == ConnectPacket {
+		if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 			if optionID == 0 {
 				p.supportedFunctions, err = optionsStream.ReadPrimitiveUInt32LE()
 
@@ -244,13 +246,13 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 			}
 		}
 
-		if p.packetType == ConnectPacket {
+		if p.packetType == constants.ConnectPacket {
 			if optionID == 3 {
 				p.initialUnreliableSequenceID, err = optionsStream.ReadPrimitiveUInt16LE()
 			}
 		}
 
-		if p.packetType == DataPacket {
+		if p.packetType == constants.DataPacket {
 			if optionID == 2 {
 				p.fragmentID, err = optionsStream.ReadPrimitiveUInt8()
 			}
@@ -270,7 +272,7 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 func (p *PRUDPPacketV1) encodeOptions() []byte {
 	optionsStream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
-	if p.packetType == SynPacket || p.packetType == ConnectPacket {
+	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 		optionsStream.WritePrimitiveUInt8(0)
 		optionsStream.WritePrimitiveUInt8(4)
 		optionsStream.WritePrimitiveUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
@@ -288,7 +290,7 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 		// * specific order. Due to how this section is
 		// * parsed, though, order REALLY doesn't matter.
 		// * NintendoClients expects option 3 before 4, though
-		if p.packetType == ConnectPacket {
+		if p.packetType == constants.ConnectPacket {
 			optionsStream.WritePrimitiveUInt8(3)
 			optionsStream.WritePrimitiveUInt8(2)
 			optionsStream.WritePrimitiveUInt16LE(p.initialUnreliableSequenceID)
@@ -299,7 +301,7 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 		optionsStream.WritePrimitiveUInt8(p.maximumSubstreamID)
 	}
 
-	if p.packetType == DataPacket {
+	if p.packetType == constants.DataPacket {
 		optionsStream.WritePrimitiveUInt8(2)
 		optionsStream.WritePrimitiveUInt8(1)
 		optionsStream.WritePrimitiveUInt8(p.fragmentID)
@@ -388,7 +390,7 @@ func defaultPRUDPv1CalculateSignature(packet *PRUDPPacketV1, sessionKey, connect
 	key := md5.Sum(accessKeyBytes)
 	mac := hmac.New(md5.New, key[:])
 
-	if packet.packetType == ConnectPacket && packet.server.PRUDPV1Settings.LegacyConnectionSignature {
+	if packet.packetType == constants.ConnectPacket && packet.server.PRUDPV1Settings.LegacyConnectionSignature {
 		connectionSignature = make([]byte, 0)
 	}
 
