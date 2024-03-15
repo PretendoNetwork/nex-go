@@ -234,8 +234,8 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	packetCopy := packet.Copy()
 	connection := packetCopy.Sender().(*PRUDPConnection)
 
-	if !packetCopy.HasFlag(constants.FlagAck) && !packetCopy.HasFlag(constants.FlagMultiAck) {
-		if packetCopy.HasFlag(constants.FlagReliable) {
+	if !packetCopy.HasFlag(constants.PacketFlagAck) && !packetCopy.HasFlag(constants.PacketFlagMultiAck) {
+		if packetCopy.HasFlag(constants.PacketFlagReliable) {
 			slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 			packetCopy.SetSequenceID(slidingWindow.NextOutgoingSequenceID())
 		} else if packetCopy.Type() == constants.DataPacket {
@@ -249,8 +249,8 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 	packetCopy.SetSessionID(connection.ServerSessionID)
 
-	if packetCopy.Type() == constants.DataPacket && !packetCopy.HasFlag(constants.FlagAck) && !packetCopy.HasFlag(constants.FlagMultiAck) {
-		if packetCopy.HasFlag(constants.FlagReliable) {
+	if packetCopy.Type() == constants.DataPacket && !packetCopy.HasFlag(constants.PacketFlagAck) && !packetCopy.HasFlag(constants.PacketFlagMultiAck) {
+		if packetCopy.HasFlag(constants.PacketFlagReliable) {
 			slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 			payload := packetCopy.Payload()
 
@@ -279,7 +279,7 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
 	}
 
-	if packetCopy.HasFlag(constants.FlagReliable) && packetCopy.HasFlag(constants.FlagNeedsAck) {
+	if packetCopy.HasFlag(constants.PacketFlagReliable) && packetCopy.HasFlag(constants.PacketFlagNeedsAck) {
 		slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 		slidingWindow.ResendScheduler.AddPacket(packetCopy)
 	}

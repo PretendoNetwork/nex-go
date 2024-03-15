@@ -1,18 +1,18 @@
 package constants
 
 const (
-	// FlagAck is the ID for the PRUDP Ack Flag
-	FlagAck uint16 = 0x1
+	// PacketFlagAck is the ID for the PRUDP Ack Flag
+	PacketFlagAck uint16 = 0x1
 
-	// FlagReliable is the ID for the PRUDP Reliable Flag
-	FlagReliable uint16 = 0x2
+	// PacketFlagReliable is the ID for the PRUDP Reliable Flag
+	PacketFlagReliable uint16 = 0x2
 
-	// FlagNeedsAck is the ID for the PRUDP NeedsAck Flag
-	FlagNeedsAck uint16 = 0x4
+	// PacketFlagNeedsAck is the ID for the PRUDP NeedsAck Flag
+	PacketFlagNeedsAck uint16 = 0x4
 
-	// FlagHasSize is the ID for the PRUDP HasSize Flag
-	FlagHasSize uint16 = 0x8
+	// PacketFlagHasSize is the ID for the PRUDP HasSize Flag
+	PacketFlagHasSize uint16 = 0x8
 
-	// FlagMultiAck is the ID for the PRUDP MultiAck Flag
-	FlagMultiAck uint16 = 0x200
+	// PacketFlagMultiAck is the ID for the PRUDP MultiAck Flag
+	PacketFlagMultiAck uint16 = 0x200
 )

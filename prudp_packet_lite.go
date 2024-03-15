@@ -251,7 +251,7 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 			}
 		}
 
-		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.FlagAck) {
+		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.PacketFlagAck) {
 			if optionID == 0x80 {
 				p.liteSignature = optionsStream.ReadBytesNext(int64(optionSize))
 			}
@@ -276,14 +276,14 @@ func (p *PRUDPPacketLite) encodeOptions() []byte {
 		optionsStream.WritePrimitiveUInt8(4)
 		optionsStream.WritePrimitiveUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
 
-		if p.packetType == constants.SynPacket && p.HasFlag(constants.FlagAck) {
+		if p.packetType == constants.SynPacket && p.HasFlag(constants.PacketFlagAck) {
 			optionsStream.WritePrimitiveUInt8(1)
 			optionsStream.WritePrimitiveUInt8(16)
 			optionsStream.Grow(16)
 			optionsStream.WriteBytesNext(p.connectionSignature)
 		}
 
-		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.FlagAck) {
+		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.PacketFlagAck) {
 			optionsStream.WritePrimitiveUInt8(1)
 			optionsStream.WritePrimitiveUInt8(16)
 			optionsStream.Grow(16)

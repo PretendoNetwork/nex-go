@@ -137,7 +137,7 @@ func (p *PRUDPPacketV0) decode() error {
 
 	var payloadSize uint16
 
-	if p.HasFlag(constants.FlagHasSize) {
+	if p.HasFlag(constants.PacketFlagHasSize) {
 		if p.readStream.Remaining() < 2 {
 			return errors.New("Failed to read PRUDPv0 payload size. Not have enough data")
 		}
@@ -220,7 +220,7 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 		stream.WritePrimitiveUInt8(p.fragmentID)
 	}
 
-	if p.HasFlag(constants.FlagHasSize) {
+	if p.HasFlag(constants.PacketFlagHasSize) {
 		stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
 	}
 

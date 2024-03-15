@@ -114,7 +114,7 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 
 	packet.SetSender(connection)
 
-	if packet.HasFlag(constants.FlagAck) || packet.HasFlag(constants.FlagMultiAck) {
+	if packet.HasFlag(constants.PacketFlagAck) || packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleAcknowledgment(packet)
 		return
 	}
@@ -141,7 +141,7 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 		return
 	}
 
-	if packet.HasFlag(constants.FlagMultiAck) {
+	if packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleMultiAcknowledgment(packet)
 		return
 	}
@@ -226,8 +226,8 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	connection.Signature = connectionSignature
 
 	ack.SetType(constants.SynPacket)
-	ack.AddFlag(constants.FlagAck)
-	ack.AddFlag(constants.FlagHasSize)
+	ack.AddFlag(constants.PacketFlagAck)
+	ack.AddFlag(constants.PacketFlagHasSize)
 	ack.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -279,8 +279,8 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	connection.ServerSessionID = packet.SessionID()
 
 	ack.SetType(constants.ConnectPacket)
-	ack.AddFlag(constants.FlagAck)
-	ack.AddFlag(constants.FlagHasSize)
+	ack.AddFlag(constants.PacketFlagAck)
+	ack.AddFlag(constants.PacketFlagHasSize)
 	ack.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -386,7 +386,7 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 
 	connection.resetHeartbeat()
 
-	if packet.HasFlag(constants.FlagReliable) {
+	if packet.HasFlag(constants.PacketFlagReliable) {
 		pep.handleReliable(packet)
 	} else {
 		pep.handleUnreliable(packet)
@@ -397,7 +397,7 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	// TODO - Should we check the state here, or just let the connection disconnect at any time?
 	// TODO - Should we bother to set the connections state here? It's being destroyed anyway
 
-	if packet.HasFlag(constants.FlagNeedsAck) {
+	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
@@ -417,7 +417,7 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 
 	connection.resetHeartbeat()
 
-	if packet.HasFlag(constants.FlagNeedsAck) {
+	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 }
@@ -500,7 +500,7 @@ func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
 	}
 
 	ack.SetType(packet.Type())
-	ack.AddFlag(constants.FlagAck)
+	ack.AddFlag(constants.PacketFlagAck)
 	ack.SetSourceVirtualPortStreamType(packet.DestinationVirtualPortStreamType())
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
@@ -519,7 +519,7 @@ func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
-	if packet.HasFlag(constants.FlagNeedsAck) {
+	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
@@ -564,7 +564,7 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handleUnreliable(packet PRUDPPacketInterface) {
-	if packet.HasFlag(constants.FlagNeedsAck) {
+	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
@@ -637,7 +637,7 @@ func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {
 	}
 
 	ping.SetType(constants.PingPacket)
-	ping.AddFlag(constants.FlagNeedsAck)
+	ping.AddFlag(constants.PacketFlagNeedsAck)
 	ping.SetSourceVirtualPortStreamType(connection.StreamType)
 	ping.SetSourceVirtualPortStreamID(pep.StreamID)
 	ping.SetDestinationVirtualPortStreamType(connection.StreamType)
