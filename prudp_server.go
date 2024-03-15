@@ -272,13 +272,11 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		}
 	}
 
-
 	if ps.PRUDPV1Settings.LegacyConnectionSignature {
 		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.Signature))
 	} else {
 		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
 	}
-
 
 	if packetCopy.HasFlag(FlagReliable) && packetCopy.HasFlag(FlagNeedsAck) {
 		slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())

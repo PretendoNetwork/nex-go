@@ -130,8 +130,8 @@ func (bso *ByteStreamOut) WritePrimitiveBool(b bool) {
 // NewByteStreamOut returns a new NEX writable byte stream
 func NewByteStreamOut(libraryVersions *LibraryVersions, settings *ByteStreamSettings) *ByteStreamOut {
 	return &ByteStreamOut{
-		Buffer: crunch.NewBuffer(),
+		Buffer:          crunch.NewBuffer(),
 		LibraryVersions: libraryVersions,
-		Settings: settings,
+		Settings:        settings,
 	}
 }

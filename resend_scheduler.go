@@ -34,7 +34,7 @@ func (pi *PendingPacket) startResendTimer() {
 
 // ResendScheduler manages the resending of reliable PRUDP packets
 type ResendScheduler struct {
-	packets  *MutexMap[uint16, *PendingPacket]
+	packets *MutexMap[uint16, *PendingPacket]
 }
 
 // Stop kills the resend scheduler and stops all pending packets
@@ -64,8 +64,8 @@ func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
 	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
 
 	pendingPacket := &PendingPacket{
-		packet:   packet,
-		rs:       rs,
+		packet: packet,
+		rs:     rs,
 		// TODO: This may not be accurate, needs more research
 		interval: time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond,
 	}
@@ -109,22 +109,22 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 	}
 
 	// TODO: This may not be accurate, needs more research
-	if time.Since(pendingPacket.lastSendTime) >= time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond {
+	if time.Since(pendingPacket.lastSendTime) >= time.Duration(slidingWindow.streamSettings.KeepAliveTimeout)*time.Millisecond {
 		// * Resend the packet to the connection
 		server := connection.endpoint.Server
 		data := packet.Bytes()
 		server.sendRaw(connection.Socket, data)
-		
+
 		pendingPacket.resendCount++
 
 		var retransmitTimeoutMultiplier float32
-		if (pendingPacket.resendCount < slidingWindow.streamSettings.ExtraRestransmitTimeoutTrigger) {
+		if pendingPacket.resendCount < slidingWindow.streamSettings.ExtraRestransmitTimeoutTrigger {
 			retransmitTimeoutMultiplier = slidingWindow.streamSettings.RetransmitTimeoutMultiplier
 		} else {
 			retransmitTimeoutMultiplier = slidingWindow.streamSettings.ExtraRetransmitTimeoutMultiplier
 		}
-		pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout) * retransmitTimeoutMultiplier)) * time.Millisecond
-		
+		pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout)*retransmitTimeoutMultiplier)) * time.Millisecond
+
 		pendingPacket.ticker.Reset(pendingPacket.interval)
 		pendingPacket.lastSendTime = time.Now()
 	}
@@ -133,6 +133,6 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 // NewResendScheduler creates a new ResendScheduler
 func NewResendScheduler() *ResendScheduler {
 	return &ResendScheduler{
-		packets:  NewMutexMap[uint16, *PendingPacket](),
+		packets: NewMutexMap[uint16, *PendingPacket](),
 	}
 }

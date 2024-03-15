@@ -170,8 +170,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveBool() (bool, error) {
 // NewByteStreamIn returns a new NEX input byte stream
 func NewByteStreamIn(data []byte, libraryVersions *LibraryVersions, settings *ByteStreamSettings) *ByteStreamIn {
 	return &ByteStreamIn{
-		Buffer: crunch.NewBuffer(data),
+		Buffer:          crunch.NewBuffer(data),
 		LibraryVersions: libraryVersions,
-		Settings: settings,
+		Settings:        settings,
 	}
 }
