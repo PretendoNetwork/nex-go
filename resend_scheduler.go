@@ -52,7 +52,13 @@ func (rs *ResendScheduler) Stop() {
 	for _, sequenceID := range stillPending {
 		if pendingPacket, ok := rs.packets.Get(sequenceID); ok {
 			pendingPacket.isAcknowledged = true // * Prevent an edge case where the ticker is already being processed
-			pendingPacket.ticker.Stop()
+
+			if pendingPacket.ticker != nil {
+				// * This should never happen, but popped up in CTGP-7 testing?
+				// * Did the GC clear this before we called it?
+				pendingPacket.ticker.Stop()
+			}
+
 			rs.packets.Delete(sequenceID)
 		}
 	}
