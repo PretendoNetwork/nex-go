@@ -531,7 +531,7 @@ func (s *StationURL) FromString(str string) {
 	parts := strings.Split(str, ":/")
 	parametersString := ""
 
-	// * Unknown scehemes seem to be supported based on
+	// * Unknown schemes seem to be supported based on
 	// * Format__Q3_2nn3nex10StationURLFv
 	if len(parts) == 1 {
 		parametersString = parts[0]
@@ -576,7 +576,7 @@ func (s *StationURL) FromString(str string) {
 func (s *StationURL) EncodeToString() string {
 	scheme := ""
 
-	// * Unknown scehemes seem to be supported based on
+	// * Unknown schemes seem to be supported based on
 	// * Format__Q3_2nn3nex10StationURLFv
 	if s.urlType == constants.StationURLPRUDP {
 		scheme = "prudp:/"
