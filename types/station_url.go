@@ -133,7 +133,7 @@ func (s *StationURL) SetParamValue(name, value string) {
 
 // RemoveParam removes a StationURL parameter.
 //
-// Not part of the original API
+// Originally called nn::nex::StationURL::Remove
 func (s *StationURL) RemoveParam(name string) {
 	delete(s.params, name)
 }
