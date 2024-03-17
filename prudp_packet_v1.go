@@ -176,10 +176,6 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 	p.flags = typeAndFlags >> 4
 	p.packetType = typeAndFlags & 0xF
 
-	if p.packetType > constants.PingPacket {
-		return errors.New("Invalid PRUDPv1 packet type")
-	}
-
 	p.sessionID, err = p.readStream.ReadPrimitiveUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 session ID. %s", err.Error())
