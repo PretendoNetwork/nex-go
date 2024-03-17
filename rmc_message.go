@@ -93,9 +93,6 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 		}
 
 		rmc.Parameters = stream.ReadRemaining()
-		if err != nil {
-			return fmt.Errorf("Failed to read RMC Message (request) parameters. %s", err.Error())
-		}
 	} else {
 		rmc.IsRequest = false
 		rmc.IsSuccess, err = stream.ReadPrimitiveBool()
@@ -115,14 +112,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 			}
 
 			rmc.MethodID = rmc.MethodID & ^uint32(0x8000)
-			if err != nil {
-				return fmt.Errorf("Failed to read RMC Message (response) method ID. %s", err.Error())
-			}
-
 			rmc.Parameters = stream.ReadRemaining()
-			if err != nil {
-				return fmt.Errorf("Failed to read RMC Message (response) parameters. %s", err.Error())
-			}
 
 		} else {
 			rmc.ErrorCode, err = stream.ReadPrimitiveUInt32LE()
@@ -180,9 +170,6 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 		}
 
 		rmc.Parameters = stream.ReadRemaining()
-		if err != nil {
-			return fmt.Errorf("Failed to read RMC Message (request) parameters. %s", err.Error())
-		}
 	} else {
 		rmc.IsSuccess, err = stream.ReadPrimitiveBool()
 		if err != nil {
@@ -201,9 +188,6 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 			}
 
 			rmc.Parameters = stream.ReadRemaining()
-			if err != nil {
-				return fmt.Errorf("Failed to read RMC Message (response) parameters. %s", err.Error())
-			}
 
 		} else {
 			rmc.ErrorCode, err = stream.ReadPrimitiveUInt32LE()
