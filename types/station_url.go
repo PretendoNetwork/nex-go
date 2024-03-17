@@ -159,7 +159,7 @@ func (s *StationURL) SetAddress(address string) {
 // Address gets the stations IP address.
 //
 // Originally called nn::nex::StationURL::GetAddress
-func (s *StationURL) Address(address string) (string, bool) {
+func (s *StationURL) Address() (string, bool) {
 	return s.ParamValue("address")
 }
 
