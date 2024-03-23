@@ -120,7 +120,7 @@ func (m *MutexSlice[V]) Size() int {
 
 // Each runs a callback function for every item in the slice.
 //
-// The slice cannot not be modified inside the callback function.
+// The slice cannot be modified inside the callback function.
 //
 // Returns true if the loop was terminated early.
 func (m *MutexSlice[V]) Each(callback func(index int, value V) bool) bool {
@@ -145,7 +145,7 @@ func (m *MutexSlice[V]) Clear() {
 }
 
 // NewMutexSlice returns a new instance of MutexSlice with the provided value type
-func NewMutexSlice[K comparable, V comparable]() *MutexSlice[V] {
+func NewMutexSlice[V comparable]() *MutexSlice[V] {
 	return &MutexSlice[V]{
 		RWMutex: &sync.RWMutex{},
 		real:    make([]V, 0),
