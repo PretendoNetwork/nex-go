@@ -562,11 +562,8 @@ func (s *StationURL) FromString(str string) {
 	parameters := strings.Split(parametersString, ";")
 
 	for i := 0; i < len(parameters); i++ {
-		parameter := strings.Split(parameters[i], "=")
-
 		// TODO - StationURL parameters support extra data through the # delimiter. What is that? Need to support it somehow
-		name := parameter[0]
-		value := parameter[1]
+		name, value, _ := strings.Cut(parameters[i], "=")
 
 		s.SetParamValue(name, value)
 	}
