@@ -6,114 +6,148 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"fmt"
 )
 
-// HPPPacket represents an HPP packet
+// HPPPacket holds all the data about an HPP request
 type HPPPacket struct {
-	Packet
+	sender             *HPPClient
 	accessKeySignature []byte
 	passwordSignature  []byte
+	payload            []byte
+	message            *RMCMessage
+	processed          chan bool
 }
 
-// SetAccessKeySignature sets the packet access key signature
-func (packet *HPPPacket) SetAccessKeySignature(accessKeySignature string) {
-	accessKeySignatureBytes, err := hex.DecodeString(accessKeySignature)
+// Sender returns the Client who sent the packet
+func (p *HPPPacket) Sender() ConnectionInterface {
+	return p.sender
+}
+
+// Payload returns the packets payload
+func (p *HPPPacket) Payload() []byte {
+	return p.payload
+}
+
+// SetPayload sets the packets payload
+func (p *HPPPacket) SetPayload(payload []byte) {
+	p.payload = payload
+}
+
+func (p *HPPPacket) validateAccessKeySignature(signature string) error {
+	signatureBytes, err := hex.DecodeString(signature)
 	if err != nil {
-		logger.Error("[HPP] Failed to convert AccessKeySignature to bytes")
+		return fmt.Errorf("Failed to decode access key signature. %s", err)
 	}
 
-	packet.accessKeySignature = accessKeySignatureBytes
-}
+	p.accessKeySignature = signatureBytes
 
-// AccessKeySignature returns the packet access key signature
-func (packet *HPPPacket) AccessKeySignature() []byte {
-	return packet.accessKeySignature
-}
-
-// SetPasswordSignature sets the packet password signature
-func (packet *HPPPacket) SetPasswordSignature(passwordSignature string) {
-	passwordSignatureBytes, err := hex.DecodeString(passwordSignature)
+	calculatedSignature, err := p.calculateAccessKeySignature()
 	if err != nil {
-		logger.Error("[HPP] Failed to convert PasswordSignature to bytes")
+		return fmt.Errorf("Failed to calculate access key signature. %s", err)
 	}
 
-	packet.passwordSignature = passwordSignatureBytes
+	if !bytes.Equal(calculatedSignature, p.accessKeySignature) {
+		return errors.New("Access key signature does not match")
+	}
+
+	return nil
 }
 
-// PasswordSignature returns the packet password signature
-func (packet *HPPPacket) PasswordSignature() []byte {
-	return packet.passwordSignature
-}
-
-// ValidateAccessKey checks if the access key signature is valid
-func (packet *HPPPacket) ValidateAccessKey() error {
-	accessKey := packet.Sender().Server().AccessKey()
-	buffer := packet.rmcRequest.Bytes()
+func (p *HPPPacket) calculateAccessKeySignature() ([]byte, error) {
+	accessKey := p.Sender().Endpoint().AccessKey()
 
 	accessKeyBytes, err := hex.DecodeString(accessKey)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	calculatedAccessKeySignature := packet.calculateSignature(buffer, accessKeyBytes)
-	if !bytes.Equal(calculatedAccessKeySignature, packet.accessKeySignature) {
-		return errors.New("[HPP] Access key signature is not valid")
+	signature, err := p.calculateSignature(p.payload, accessKeyBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return signature, nil
+}
+
+func (p *HPPPacket) validatePasswordSignature(signature string) error {
+	signatureBytes, err := hex.DecodeString(signature)
+	if err != nil {
+		return fmt.Errorf("Failed to decode password signature. %s", err)
+	}
+
+	p.passwordSignature = signatureBytes
+
+	calculatedSignature, err := p.calculatePasswordSignature()
+	if err != nil {
+		return fmt.Errorf("Failed to calculate password signature. %s", err)
+	}
+
+	if !bytes.Equal(calculatedSignature, p.passwordSignature) {
+		return errors.New("Password signature does not match")
 	}
 
 	return nil
 }
 
-// ValidatePassword checks if the password signature is valid
-func (packet *HPPPacket) ValidatePassword() error {
-	if packet.sender.server.passwordFromPIDHandler == nil {
-		return errors.New("[HPP] Missing passwordFromPIDHandler!")
+func (p *HPPPacket) calculatePasswordSignature() ([]byte, error) {
+	sender := p.Sender()
+	pid := sender.PID()
+	account, _ := sender.Endpoint().(*HPPServer).AccountDetailsByPID(pid)
+	if account == nil {
+		return nil, errors.New("PID does not exist")
 	}
 
-	pid := packet.Sender().PID()
-	buffer := packet.rmcRequest.Bytes()
+	key := DeriveKerberosKey(pid, []byte(account.Password))
 
-	password, _ := packet.sender.server.passwordFromPIDHandler(pid)
-	if password == "" {
-		return errors.New("[HPP] PID does not exist")
+	signature, err := p.calculateSignature(p.payload, key)
+	if err != nil {
+		return nil, err
 	}
 
-	passwordBytes := []byte(password)
-
-	passwordSignatureKey := DeriveKerberosKey(pid, passwordBytes)
-
-	calculatedPasswordSignature := packet.calculateSignature(buffer, passwordSignatureKey)
-	if !bytes.Equal(calculatedPasswordSignature, packet.passwordSignature) {
-		return errors.New("[HPP] Password signature is invalid")
-	}
-
-	return nil
+	return signature, nil
 }
 
-func (packet *HPPPacket) calculateSignature(buffer []byte, key []byte) []byte {
+func (p *HPPPacket) calculateSignature(buffer []byte, key []byte) ([]byte, error) {
 	mac := hmac.New(md5.New, key)
-	mac.Write(buffer)
+
+	_, err := mac.Write(buffer)
+	if err != nil {
+		return nil, err
+	}
+
 	hmac := mac.Sum(nil)
 
-	return hmac
+	return hmac, nil
 }
 
-// NewHPPPacket returns a new HPP packet
-func NewHPPPacket(client *Client, data []byte) (*HPPPacket, error) {
-	packet := NewPacket(client, data)
+// RMCMessage returns the packets RMC Message
+func (p *HPPPacket) RMCMessage() *RMCMessage {
+	return p.message
+}
 
-	hppPacket := HPPPacket{Packet: packet}
+// SetRMCMessage sets the packets RMC Message
+func (p *HPPPacket) SetRMCMessage(message *RMCMessage) {
+	p.message = message
+}
 
-	if data != nil {
-		hppPacket.payload = data
-
-		rmcRequest := NewRMCRequest()
-		err := rmcRequest.FromBytes(data)
-		if err != nil {
-			return &HPPPacket{}, errors.New("[HPP] Error parsing RMC request: " + err.Error())
-		}
-
-		hppPacket.rmcRequest = rmcRequest
+// NewHPPPacket creates and returns a new HPPPacket using the provided Client and payload
+func NewHPPPacket(client *HPPClient, payload []byte) (*HPPPacket, error) {
+	hppPacket := &HPPPacket{
+		sender:    client,
+		payload:   payload,
+		processed: make(chan bool),
 	}
 
-	return &hppPacket, nil
+	if payload != nil {
+		rmcMessage := NewRMCRequest(client.Endpoint())
+		err := rmcMessage.FromBytes(payload)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to decode HPP request. %s", err)
+		}
+
+		hppPacket.SetRMCMessage(rmcMessage)
+	}
+
+	return hppPacket, nil
 }

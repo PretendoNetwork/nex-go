@@ -1,267 +1,202 @@
 package nex
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rc4"
+	"errors"
 	"fmt"
+
+	"github.com/PretendoNetwork/nex-go/types"
 )
 
-// KerberosEncryption is used to encrypt/decrypt using Kerberos
+// KerberosEncryption is a struct representing a Kerberos encryption utility
 type KerberosEncryption struct {
-	key    []byte
-	cipher *rc4.Cipher
+	key []byte
 }
 
-// Encrypt will encrypt the given data using Kerberos
-func (encryption *KerberosEncryption) Encrypt(buffer []byte) []byte {
-	encrypted := make([]byte, len(buffer))
-	encryption.cipher.XORKeyStream(encrypted, buffer)
+// Validate checks the integrity of the given buffer by verifying the HMAC checksum
+func (ke *KerberosEncryption) Validate(buffer []byte) bool {
+	data := buffer[:len(buffer)-0x10]
+	checksum := buffer[len(buffer)-0x10:]
+	mac := hmac.New(md5.New, ke.key)
 
-	mac := hmac.New(md5.New, []byte(encryption.key))
-	mac.Write(encrypted)
-	hmac := mac.Sum(nil)
+	mac.Write(data)
 
-	return append(encrypted, hmac...)
+	return hmac.Equal(checksum, mac.Sum(nil))
 }
 
-// Decrypt will decrypt the given data using Kerberos
-func (encryption *KerberosEncryption) Decrypt(buffer []byte) []byte {
-	if !encryption.Validate(buffer) {
-		logger.Error("Keberos hmac validation failed")
+// Decrypt decrypts the provided buffer if it passes the integrity check
+func (ke *KerberosEncryption) Decrypt(buffer []byte) ([]byte, error) {
+	if !ke.Validate(buffer) {
+		return nil, errors.New("Invalid Kerberos checksum (incorrect password)")
 	}
 
-	offset := len(buffer)
-	offset = offset + -0x10
-
-	encrypted := buffer[:offset]
-
-	decrypted := make([]byte, len(encrypted))
-	encryption.cipher.XORKeyStream(decrypted, encrypted)
-
-	return decrypted
-}
-
-// Validate will check the HMAC of the encrypted data
-func (encryption *KerberosEncryption) Validate(buffer []byte) bool {
-	offset := len(buffer)
-	offset = offset + -0x10
-
-	data := buffer[:offset]
-	checksum := buffer[offset:]
-
-	cipher := hmac.New(md5.New, []byte(encryption.key))
-	cipher.Write(data)
-	mac := cipher.Sum(nil)
-
-	return bytes.Equal(mac, checksum)
-}
-
-// NewKerberosEncryption returns a new KerberosEncryption instance
-func NewKerberosEncryption(key []byte) (*KerberosEncryption, error) {
-	cipher, err := rc4.NewCipher(key)
+	cipher, err := rc4.NewCipher(ke.key)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create Kerberos RC4 cipher. %s", err.Error())
+		return nil, err
 	}
 
-	return &KerberosEncryption{key: key, cipher: cipher}, nil
+	decrypted := make([]byte, len(buffer)-0x10)
+
+	cipher.XORKeyStream(decrypted, buffer[:len(buffer)-0x10])
+
+	return decrypted, nil
 }
 
-// Ticket represents a Kerberos authentication ticket
-type Ticket struct {
-	sessionKey   []byte
-	targetPID    uint32
-	internalData []byte
+// Encrypt encrypts the given buffer and appends an HMAC checksum for integrity
+func (ke *KerberosEncryption) Encrypt(buffer []byte) []byte {
+	cipher, _ := rc4.NewCipher(ke.key)
+	encrypted := make([]byte, len(buffer))
+
+	cipher.XORKeyStream(encrypted, buffer)
+
+	mac := hmac.New(md5.New, ke.key)
+
+	mac.Write(encrypted)
+
+	checksum := mac.Sum(nil)
+
+	return append(encrypted, checksum...)
 }
 
-// SessionKey returns the Tickets session key
-func (ticket *Ticket) SessionKey() []byte {
-	return ticket.sessionKey
+// NewKerberosEncryption creates a new KerberosEncryption instance with the given key.
+func NewKerberosEncryption(key []byte) *KerberosEncryption {
+	return &KerberosEncryption{key: key}
 }
 
-// SetSessionKey sets the Tickets session key
-func (ticket *Ticket) SetSessionKey(sessionKey []byte) {
-	ticket.sessionKey = sessionKey
-}
-
-// TargetPID returns the Tickets target PID
-func (ticket *Ticket) TargetPID() uint32 {
-	return ticket.targetPID
-}
-
-// SetTargetPID sets the Tickets target PID
-func (ticket *Ticket) SetTargetPID(targetPID uint32) {
-	ticket.targetPID = targetPID
-}
-
-// InternalData returns the Tickets internal data buffer
-func (ticket *Ticket) InternalData() []byte {
-	return ticket.internalData
-}
-
-// SetInternalData sets the Tickets internal data buffer
-func (ticket *Ticket) SetInternalData(internalData []byte) {
-	ticket.internalData = internalData
+// KerberosTicket represents a ticket granting a user access to a secure server
+type KerberosTicket struct {
+	SessionKey   []byte
+	TargetPID    *types.PID
+	InternalData *types.Buffer
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
-func (ticket *Ticket) Encrypt(key []byte, stream *StreamOut) ([]byte, error) {
-	encryption, err := NewKerberosEncryption(key)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create Kerberos ticket encryption instance. %s", err.Error())
-	}
+func (kt *KerberosTicket) Encrypt(key []byte, stream *ByteStreamOut) ([]byte, error) {
+	encryption := NewKerberosEncryption(key)
 
-	// Session key is not a NEX buffer type
-	stream.Grow(int64(len(ticket.sessionKey)))
-	stream.WriteBytesNext(ticket.sessionKey)
+	stream.Grow(int64(len(kt.SessionKey)))
+	stream.WriteBytesNext(kt.SessionKey)
 
-	stream.WriteUInt32LE(ticket.targetPID)
-	stream.WriteBuffer(ticket.internalData)
+	kt.TargetPID.WriteTo(stream)
+	kt.InternalData.WriteTo(stream)
 
 	return encryption.Encrypt(stream.Bytes()), nil
 }
 
 // NewKerberosTicket returns a new Ticket instance
-func NewKerberosTicket() *Ticket {
-	return &Ticket{}
+func NewKerberosTicket() *KerberosTicket {
+	return &KerberosTicket{}
 }
 
-// TicketInternalData contains information sent to the secure server
-type TicketInternalData struct {
-	timestamp  *DateTime
-	userPID    uint32
-	sessionKey []byte
-}
-
-// Timestamp returns the TicketInternalDatas timestamp
-func (ticketInternalData *TicketInternalData) Timestamp() *DateTime {
-	return ticketInternalData.timestamp
-}
-
-// SetTimestamp sets the TicketInternalDatas timestamp
-func (ticketInternalData *TicketInternalData) SetTimestamp(timestamp *DateTime) {
-	ticketInternalData.timestamp = timestamp
-}
-
-// UserPID returns the TicketInternalDatas user PID
-func (ticketInternalData *TicketInternalData) UserPID() uint32 {
-	return ticketInternalData.userPID
-}
-
-// SetUserPID sets the TicketInternalDatas user PID
-func (ticketInternalData *TicketInternalData) SetUserPID(userPID uint32) {
-	ticketInternalData.userPID = userPID
-}
-
-// SessionKey returns the TicketInternalDatas session key
-func (ticketInternalData *TicketInternalData) SessionKey() []byte {
-	return ticketInternalData.sessionKey
-}
-
-// SetSessionKey sets the TicketInternalDatas session key
-func (ticketInternalData *TicketInternalData) SetSessionKey(sessionKey []byte) {
-	ticketInternalData.sessionKey = sessionKey
+// KerberosTicketInternalData holds the internal data for a kerberos ticket to be processed by the server
+type KerberosTicketInternalData struct {
+	Server     *PRUDPServer // TODO - Remove this dependency and make a settings struct
+	Issued     *types.DateTime
+	SourcePID  *types.PID
+	SessionKey []byte
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
-func (ticketInternalData *TicketInternalData) Encrypt(key []byte, stream *StreamOut) ([]byte, error) {
-	stream.WriteDateTime(ticketInternalData.timestamp)
-	stream.WriteUInt32LE(ticketInternalData.userPID)
+func (ti *KerberosTicketInternalData) Encrypt(key []byte, stream *ByteStreamOut) ([]byte, error) {
+	ti.Issued.WriteTo(stream)
+	ti.SourcePID.WriteTo(stream)
 
-	// Session key is not a NEX buffer type
-	stream.Grow(int64(len(ticketInternalData.sessionKey)))
-	stream.WriteBytesNext(ticketInternalData.sessionKey)
+	stream.Grow(int64(len(ti.SessionKey)))
+	stream.WriteBytesNext(ti.SessionKey)
 
 	data := stream.Bytes()
 
-	if stream.Server.KerberosTicketVersion() == 1 {
+	if ti.Server.KerberosTicketVersion == 1 {
 		ticketKey := make([]byte, 16)
 		_, err := rand.Read(ticketKey)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to generate ticket key. %s", err.Error())
 		}
 
-		finalKey := MD5Hash(append(key, ticketKey...))
+		hash := md5.Sum(append(key, ticketKey...))
+		finalKey := hash[:]
 
-		encryption, err := NewKerberosEncryption(finalKey)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to create Kerberos ticket internal data encryption instance. %s", err.Error())
-		}
+		encryption := NewKerberosEncryption(finalKey)
 
 		encrypted := encryption.Encrypt(data)
 
-		finalStream := NewStreamOut(stream.Server)
+		finalStream := NewByteStreamOut(stream.LibraryVersions, stream.Settings)
 
-		finalStream.WriteBuffer(ticketKey)
-		finalStream.WriteBuffer(encrypted)
+		ticketBuffer := types.NewBuffer(ticketKey)
+		encryptedBuffer := types.NewBuffer(encrypted)
+
+		ticketBuffer.WriteTo(finalStream)
+		encryptedBuffer.WriteTo(finalStream)
 
 		return finalStream.Bytes(), nil
-	} else {
-		encryption, err := NewKerberosEncryption([]byte(key))
-		if err != nil {
-			return nil, fmt.Errorf("Failed to create Kerberos ticket internal data encryption instance. %s", err.Error())
-		}
-
-		return encryption.Encrypt(data), nil
 	}
+
+	encryption := NewKerberosEncryption([]byte(key))
+
+	return encryption.Encrypt(data), nil
 }
 
 // Decrypt decrypts the given data and populates the struct
-func (ticketInternalData *TicketInternalData) Decrypt(stream *StreamIn, key []byte) error {
-	if stream.Server.KerberosTicketVersion() == 1 {
-		ticketKey, err := stream.ReadBuffer()
-		if err != nil {
+func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) error {
+	if ti.Server.KerberosTicketVersion == 1 {
+		ticketKey := types.NewBuffer(nil)
+		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data key. %s", err.Error())
 		}
 
-		data, err := stream.ReadBuffer()
-		if err != nil {
+		data := types.NewBuffer(nil)
+		if err := ticketKey.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data. %s", err.Error())
 		}
 
-		key = MD5Hash(append(key, ticketKey...))
+		hash := md5.Sum(append(key, ticketKey.Value...))
+		key = hash[:]
 
-		stream = NewStreamIn(data, stream.Server)
+		stream = NewByteStreamIn(data.Value, stream.LibraryVersions, stream.Settings)
 	}
 
-	encryption, err := NewKerberosEncryption(key)
+	encryption := NewKerberosEncryption(key)
+
+	decrypted, err := encryption.Decrypt(stream.Bytes())
 	if err != nil {
-		return fmt.Errorf("Failed to create Kerberos ticket internal data encryption instance. %s", err.Error())
+		return fmt.Errorf("Failed to decrypt Kerberos ticket internal data. %s", err.Error())
 	}
 
-	decrypted := encryption.Decrypt(stream.Bytes())
+	stream = NewByteStreamIn(decrypted, stream.LibraryVersions, stream.Settings)
 
-	stream = NewStreamIn(decrypted, stream.Server)
-
-	timestamp, err := stream.ReadDateTime()
-	if err != nil {
+	timestamp := types.NewDateTime(0)
+	if err := timestamp.ExtractFrom(stream); err != nil {
 		return fmt.Errorf("Failed to read Kerberos ticket internal data timestamp %s", err.Error())
 	}
 
-	userPID, err := stream.ReadUInt32LE()
-	if err != nil {
+	userPID := types.NewPID(0)
+	if err := userPID.ExtractFrom(stream); err != nil {
 		return fmt.Errorf("Failed to read Kerberos ticket internal data user PID %s", err.Error())
 	}
 
-	ticketInternalData.SetTimestamp(timestamp)
-	ticketInternalData.SetUserPID(userPID)
-	ticketInternalData.SetSessionKey(stream.ReadBytesNext(int64(stream.Server.KerberosKeySize())))
+	ti.Issued = timestamp
+	ti.SourcePID = userPID
+	ti.SessionKey = stream.ReadBytesNext(int64(ti.Server.SessionKeyLength))
 
 	return nil
 }
 
-// NewKerberosTicketInternalData returns a new TicketInternalData instance
-func NewKerberosTicketInternalData() *TicketInternalData {
-	return &TicketInternalData{}
+// NewKerberosTicketInternalData returns a new KerberosTicketInternalData instance
+func NewKerberosTicketInternalData(server *PRUDPServer) *KerberosTicketInternalData {
+	return &KerberosTicketInternalData{Server: server}
 }
 
 // DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
-func DeriveKerberosKey(pid uint32, password []byte) []byte {
-	for i := 0; i < 65000+int(pid)%1024; i++ {
-		password = MD5Hash(password)
+func DeriveKerberosKey(pid *types.PID, password []byte) []byte {
+	key := password
+
+	for i := 0; i < 65000+int(pid.Value())%1024; i++ {
+		hash := md5.Sum(key)
+		key = hash[:]
 	}
 
-	return password
+	return key
 }
