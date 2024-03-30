@@ -100,7 +100,7 @@ func (u64 *PrimitiveU64) LShift(other *PrimitiveU64) *PrimitiveU64 {
 
 // PLShift (Primitive Left Shift) runs a left shift operation on the PrimitiveU64 value. Consumes and returns a Go primitive
 func (u64 *PrimitiveU64) PLShift(value uint64) uint64 {
-	return u64.Value &^ value
+	return u64.Value << value
 }
 
 // RShift runs a right shift operation on the PrimitiveU64 value. Consumes and returns a NEX primitive
@@ -110,7 +110,7 @@ func (u64 *PrimitiveU64) RShift(other *PrimitiveU64) *PrimitiveU64 {
 
 // PRShift (Primitive Right Shift) runs a right shift operation on the PrimitiveU64 value. Consumes and returns a Go primitive
 func (u64 *PrimitiveU64) PRShift(value uint64) uint64 {
-	return u64.Value &^ value
+	return u64.Value >> value
 }
 
 // NewPrimitiveU64 returns a new PrimitiveU64

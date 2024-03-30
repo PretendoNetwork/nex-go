@@ -100,7 +100,7 @@ func (u32 *PrimitiveU32) LShift(other *PrimitiveU32) *PrimitiveU32 {
 
 // PLShift (Primitive Left Shift) runs a left shift operation on the PrimitiveU32 value. Consumes and returns a Go primitive
 func (u32 *PrimitiveU32) PLShift(value uint32) uint32 {
-	return u32.Value &^ value
+	return u32.Value << value
 }
 
 // RShift runs a right shift operation on the PrimitiveU32 value. Consumes and returns a NEX primitive
@@ -110,7 +110,7 @@ func (u32 *PrimitiveU32) RShift(other *PrimitiveU32) *PrimitiveU32 {
 
 // PRShift (Primitive Right Shift) runs a right shift operation on the PrimitiveU32 value. Consumes and returns a Go primitive
 func (u32 *PrimitiveU32) PRShift(value uint32) uint32 {
-	return u32.Value &^ value
+	return u32.Value >> value
 }
 
 // NewPrimitiveU32 returns a new PrimitiveU32

@@ -100,7 +100,7 @@ func (s16 *PrimitiveS16) LShift(other *PrimitiveS16) *PrimitiveS16 {
 
 // PLShift (Primitive Left Shift) runs a left shift operation on the PrimitiveS16 value. Consumes and returns a Go primitive
 func (s16 *PrimitiveS16) PLShift(value int16) int16 {
-	return s16.Value &^ value
+	return s16.Value << value
 }
 
 // RShift runs a right shift operation on the PrimitiveS16 value. Consumes and returns a NEX primitive
@@ -110,7 +110,7 @@ func (s16 *PrimitiveS16) RShift(other *PrimitiveS16) *PrimitiveS16 {
 
 // PRShift (Primitive Right Shift) runs a right shift operation on the PrimitiveS16 value. Consumes and returns a Go primitive
 func (s16 *PrimitiveS16) PRShift(value int16) int16 {
-	return s16.Value &^ value
+	return s16.Value >> value
 }
 
 // NewPrimitiveS16 returns a new PrimitiveS16
