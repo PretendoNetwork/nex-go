@@ -101,8 +101,14 @@ func (l *List[T]) Get(index int) (T, error) {
 }
 
 // SetIndex sets a value in the List at the given index
-func (l *List[T]) SetIndex(index int, value T) {
+func (l *List[T]) SetIndex(index int, value T) error {
+	if index < 0 || index >= len(l.real) {
+		return errors.New("Index out of bounds")
+	}
+
 	l.real[index] = value
+
+	return nil
 }
 
 // DeleteIndex deletes an element at the given index. Returns an error if the index is OOB
