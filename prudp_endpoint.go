@@ -119,6 +119,7 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 	}
 
 	packet.SetSender(connection)
+	connection.resetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagAck) || packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleAcknowledgment(packet)
@@ -383,8 +384,6 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 		return
 	}
 
-	connection.resetHeartbeat()
-
 	if packet.HasFlag(constants.PacketFlagReliable) {
 		pep.handleReliable(packet)
 	} else {
@@ -412,10 +411,6 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
-	connection := packet.Sender().(*PRUDPConnection)
-
-	connection.resetHeartbeat()
-
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
