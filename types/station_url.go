@@ -507,7 +507,7 @@ func (s *StationURL) SetPlatformType(platformType uint8) {
 //
 // Returns a bool indicating if the parameter existed or not.
 //
-// Originally called nn::nex::StationURL::GetPortNumber
+// Originally called nn::nex::StationURL::GetPlatformType
 func (s *StationURL) PlatformType() (uint8, bool) {
 	return s.uint8ParamValue("Pl")
 }
