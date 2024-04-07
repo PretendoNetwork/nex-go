@@ -1,6 +1,6 @@
 package nex
 
-import "github.com/PretendoNetwork/nex-go/types"
+import "github.com/PretendoNetwork/nex-go/v2/types"
 
 // Account represents a game server account.
 //

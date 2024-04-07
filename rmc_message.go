@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/PretendoNetwork/nex-go/types"
+	"github.com/PretendoNetwork/nex-go/v2/types"
 )
 
 // RMCMessage represents a message in the RMC (Remote Method Call) protocol

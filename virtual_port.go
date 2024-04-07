@@ -1,6 +1,6 @@
 package nex
 
-import "github.com/PretendoNetwork/nex-go/constants"
+import "github.com/PretendoNetwork/nex-go/v2/constants"
 
 // VirtualPort in an implementation of rdv::VirtualPort.
 // PRUDP will reuse a single physical socket connection for many virtual PRUDP connections.

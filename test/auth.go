@@ -4,9 +4,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/PretendoNetwork/nex-go"
-	"github.com/PretendoNetwork/nex-go/constants"
-	"github.com/PretendoNetwork/nex-go/types"
+	"github.com/PretendoNetwork/nex-go/v2"
+	"github.com/PretendoNetwork/nex-go/v2/constants"
+	"github.com/PretendoNetwork/nex-go/v2/types"
 )
 
 var authServer *nex.PRUDPServer

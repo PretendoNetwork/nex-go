@@ -3,7 +3,7 @@ package nex
 import (
 	"net"
 
-	"github.com/PretendoNetwork/nex-go/constants"
+	"github.com/PretendoNetwork/nex-go/v2/constants"
 )
 
 // PRUDPPacketInterface defines all the methods a PRUDP packet should have

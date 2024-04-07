@@ -4,7 +4,7 @@ package nex
 import (
 	"net"
 
-	"github.com/PretendoNetwork/nex-go/types"
+	"github.com/PretendoNetwork/nex-go/v2/types"
 )
 
 // ConnectionInterface defines all the methods a connection should have regardless of server type

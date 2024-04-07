@@ -6,8 +6,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/PretendoNetwork/nex-go/constants"
-	"github.com/PretendoNetwork/nex-go/types"
+	"github.com/PretendoNetwork/nex-go/v2/constants"
+	"github.com/PretendoNetwork/nex-go/v2/types"
 )
 
 // PRUDPConnection implements an individual PRUDP virtual connection.

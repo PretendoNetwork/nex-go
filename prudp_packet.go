@@ -3,7 +3,7 @@ package nex
 import (
 	"crypto/rc4"
 
-	"github.com/PretendoNetwork/nex-go/constants"
+	"github.com/PretendoNetwork/nex-go/v2/constants"
 )
 
 // PRUDPPacket holds all the fields each packet should have in all PRUDP versions

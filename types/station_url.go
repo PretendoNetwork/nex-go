@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PretendoNetwork/nex-go/constants"
+	"github.com/PretendoNetwork/nex-go/v2/constants"
 )
 
 // StationURL is an implementation of rdv::StationURL.

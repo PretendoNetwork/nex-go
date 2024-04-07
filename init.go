@@ -1,7 +1,7 @@
 package nex
 
 import (
-	"github.com/PretendoNetwork/nex-go/types"
+	"github.com/PretendoNetwork/nex-go/v2/types"
 	"github.com/PretendoNetwork/plogger-go"
 )
 
