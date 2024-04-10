@@ -567,6 +567,10 @@ func (s *StationURL) FromString(str string) {
 
 		s.SetParamValue(name, value)
 	}
+
+	if flags, ok := s.uint8ParamValue("type"); ok {
+		s.flags = flags
+	}
 }
 
 // EncodeToString encodes the StationURL into a string
