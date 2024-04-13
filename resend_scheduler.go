@@ -23,15 +23,18 @@ func (pi *PendingPacket) startResendTimer() {
 	pi.ticker = time.NewTicker(pi.interval)
 
 	for range pi.ticker.C {
+		finished := false
+
 		if pi.isAcknowledged {
 			pi.ticker.Stop()
 			pi.rs.packets.Delete(pi.packet.SequenceID())
-			return
+			finished = true
 		} else {
-			finished := pi.rs.resendPacket(pi)
-			if finished {
-				return
-			}
+			finished = pi.rs.resendPacket(pi)
+		}
+
+		if finished {
+			return
 		}
 	}
 }
