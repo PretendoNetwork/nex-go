@@ -26,8 +26,12 @@ func (pi *PendingPacket) startResendTimer() {
 		if pi.isAcknowledged {
 			pi.ticker.Stop()
 			pi.rs.packets.Delete(pi.packet.SequenceID())
+			return
 		} else {
-			pi.rs.resendPacket(pi)
+			finished := pi.rs.resendPacket(pi)
+			if finished {
+				return
+			}
 		}
 	}
 }
@@ -88,11 +92,11 @@ func (rs *ResendScheduler) AcknowledgePacket(sequenceID uint16) {
 	}
 }
 
-func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
+func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) bool {
 	if pendingPacket.isAcknowledged {
 		// * Prevent a race condition where resendPacket may be called
 		// * at the same time a packet is acknowledged
-		return
+		return false
 	}
 
 	packet := pendingPacket.packet
@@ -111,7 +115,7 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 
 		connection.endpoint.Connections.Delete(discriminator)
 
-		return
+		return true
 	}
 
 	// TODO: This may not be accurate, needs more research
@@ -134,6 +138,8 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) {
 		pendingPacket.ticker.Reset(pendingPacket.interval)
 		pendingPacket.lastSendTime = time.Now()
 	}
+
+	return false
 }
 
 // NewResendScheduler creates a new ResendScheduler
