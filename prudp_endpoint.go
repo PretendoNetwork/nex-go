@@ -664,7 +664,7 @@ func (pep *PRUDPEndPoint) Disconnect(connection *PRUDPConnection) {
 
 	pep.Server.sendPacket(disconnect)
 
-	discriminator := fmt.Sprintf("%s-%d-%d", disconnect.Sender().Address().String(), connection.StreamType, pep.StreamID)
+	discriminator := fmt.Sprintf("%s-%d-%d", connection.Address().String(), connection.StreamType, pep.StreamID)
 	
 	connection.cleanup()
 	pep.Connections.Delete(discriminator)
