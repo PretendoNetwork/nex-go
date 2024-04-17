@@ -135,29 +135,6 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 
 func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-
-	if packet.Type() == constants.DisconnectPacket {
-		// * The client acknowledged a disconnect packet from the server
-		if connection.ConnectionState == StateDisconnecting {
-			// * Cleanup the connection and change state
-			connection.ConnectionState = StateNotConnected
-
-			slidingWindow := connection.SlidingWindow(packet.SubstreamID())
-			slidingWindow.ResendScheduler.AcknowledgePacket(packet.SequenceID())
-
-			streamType := packet.SourceVirtualPortStreamType()
-			streamID := packet.SourceVirtualPortStreamID()
-			discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
-			if connection, ok := pep.Connections.Get(discriminator); ok {
-				connection.cleanup()
-				pep.Connections.Delete(discriminator)
-			}
-
-			pep.emit("disconnect", packet)
-		}
-		return
-	}
-
 	if connection.ConnectionState != StateConnected {
 		// TODO - Log this?
 		// * Connection is in a bad state, drop the packet and let it die
@@ -679,15 +656,20 @@ func (pep *PRUDPEndPoint) Disconnect(connection *PRUDPConnection) {
 	}
 
 	disconnect.SetType(constants.DisconnectPacket)
-	disconnect.AddFlag(constants.PacketFlagNeedsAck)
 	disconnect.SetSourceVirtualPortStreamType(connection.StreamType)
 	disconnect.SetSourceVirtualPortStreamID(pep.StreamID)
 	disconnect.SetDestinationVirtualPortStreamType(connection.StreamType)
 	disconnect.SetDestinationVirtualPortStreamID(connection.StreamID)
 	disconnect.SetSubstreamID(0)
 
-	connection.ConnectionState = StateDisconnecting
 	pep.Server.sendPacket(disconnect)
+
+	discriminator := fmt.Sprintf("%s-%d-%d", disconnect.Sender().Address().String(), connection.StreamType, pep.StreamID)
+	
+	connection.cleanup()
+	pep.Connections.Delete(discriminator)
+
+	pep.emit("disconnect", disconnect)
 }
 
 // FindConnectionByID returns the PRUDP client connected with the given connection ID
