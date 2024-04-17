@@ -664,7 +664,7 @@ func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {
 	pep.Server.sendPacket(ping)
 }
 
-// Disconnect sends a diconnect packet to the connection. The connection
+// Disconnect sends a disconnect packet to the connection. The connection
 // is cleaned up once it times out or acknowledges the disconnect.
 func (pep *PRUDPEndPoint) Disconnect(connection *PRUDPConnection) {
 	var disconnect PRUDPPacketInterface
