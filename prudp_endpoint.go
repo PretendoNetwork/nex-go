@@ -100,6 +100,13 @@ func (pep *PRUDPEndPoint) EmitError(err *Error) {
 	}
 }
 
+// deleteConnectionByID deletes the connection with the specified ID
+func (pep *PRUDPEndPoint) deleteConnectionByID(cid uint32) {
+	pep.Connections.DeleteIf(func(key string, value *PRUDPConnection) bool {
+		return value.ID == cid
+	})
+}
+
 func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *SocketConnection) {
 	streamType := packet.SourceVirtualPortStreamType()
 	streamID := packet.SourceVirtualPortStreamID()

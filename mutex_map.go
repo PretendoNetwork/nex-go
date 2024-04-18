@@ -43,6 +43,23 @@ func (m *MutexMap[K, V]) Delete(key K) {
 	delete(m.real, key)
 }
 
+// DeleteIf deletes every element if the callback returns true.
+// Returns the amount of elements deleted.
+func (m *MutexMap[K, V]) DeleteIf(callback func(key K, value V) bool) int {
+	m.Lock()
+	defer m.Unlock()
+	
+	amout := 0
+	for key, value := range m.real {
+		if callback(key, value) {
+			delete(m.real, key)
+			amout++
+		}
+	}
+
+	return amout
+}
+
 // RunAndDelete runs a callback and removes the key afterwards
 func (m *MutexMap[K, V]) RunAndDelete(key K, callback func(key K, value V)) {
 	m.Lock()

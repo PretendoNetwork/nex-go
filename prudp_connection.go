@@ -2,7 +2,6 @@ package nex
 
 import (
 	"crypto/md5"
-	"fmt"
 	"net"
 	"time"
 
@@ -195,9 +194,7 @@ func (pc *PRUDPConnection) startHeartbeat() {
 		pc.pingKickTimer = time.AfterFunc(maxSilenceTime, func() {
 			pc.cleanup() // * "removed" event is dispatched here
 
-			discriminator := fmt.Sprintf("%s-%d-%d", pc.Socket.Address.String(), pc.StreamType, pc.StreamID)
-
-			endpoint.Connections.Delete(discriminator)
+			endpoint.deleteConnectionByID(pc.ID)
 		})
 	})
 }
