@@ -48,16 +48,16 @@ func (m *MutexMap[K, V]) Delete(key K) {
 func (m *MutexMap[K, V]) DeleteIf(callback func(key K, value V) bool) int {
 	m.Lock()
 	defer m.Unlock()
-	
-	amout := 0
+
+	amount := 0
 	for key, value := range m.real {
 		if callback(key, value) {
 			delete(m.real, key)
-			amout++
+			amount++
 		}
 	}
 
-	return amout
+	return amount
 }
 
 // RunAndDelete runs a callback and removes the key afterwards
