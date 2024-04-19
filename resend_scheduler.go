@@ -1,7 +1,6 @@
 package nex
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -112,11 +111,7 @@ func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) bool {
 		rs.packets.Delete(packet.SequenceID())
 		connection.cleanup() // * "removed" event is dispatched here
 
-		streamType := packet.SourceVirtualPortStreamType()
-		streamID := packet.SourceVirtualPortStreamID()
-		discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
-
-		connection.endpoint.Connections.Delete(discriminator)
+		connection.endpoint.deleteConnectionByID(connection.ID)
 
 		return true
 	}
