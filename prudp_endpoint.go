@@ -142,11 +142,6 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 
 func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-	if connection.ConnectionState != StateConnected {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
-		return
-	}
 
 	if packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleMultiAcknowledgment(packet)
@@ -208,12 +203,6 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
 
-	if connection.ConnectionState != StateNotConnected {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
-		return
-	}
-
 	var ack PRUDPPacketInterface
 
 	if packet.Version() == 2 {
@@ -258,12 +247,6 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 
 func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-
-	if connection.ConnectionState != StateConnecting {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
-		return
-	}
 
 	var ack PRUDPPacketInterface
 
@@ -383,14 +366,6 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
-	connection := packet.Sender().(*PRUDPConnection)
-
-	if connection.ConnectionState != StateConnected {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
-		return
-	}
-
 	if packet.HasFlag(constants.PacketFlagReliable) {
 		pep.handleReliable(packet)
 	} else {
