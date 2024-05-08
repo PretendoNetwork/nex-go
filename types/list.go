@@ -181,3 +181,27 @@ func (l *List[T]) String() string {
 func NewList[T RVType]() *List[T] {
 	return &List[T]{real: make([]T, 0)}
 }
+
+// TransformList applies closure f to each element of the List, returning the result as a slice
+func TransformList[T RVType, R any](l *List[T], f func(T) R) []R {
+	result := make([]R, l.Length())
+
+	for i, v := range l.real {
+		result[i] = f(v)
+	}
+
+	return result
+}
+
+// NewListTransformed applies closure f to each element of a slice, creating a List from the results
+func NewListTransformed[T RVType, R any](l []R, f func(R) T) *List[T] {
+	result := make([]T, len(l))
+
+	for i, v := range l {
+		result[i] = f(v)
+	}
+
+	nexlist := NewList[T]()
+	nexlist.SetFromData(result)
+	return nexlist
+}
