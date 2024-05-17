@@ -1,10 +1,14 @@
 package nex
 
+import "sync"
+
 // SlidingWindow is an implementation of rdv::SlidingWindow.
 // SlidingWindow reorders pending reliable packets to ensure they are handled in the expected order.
 // In the original library each virtual connection stream only uses a single SlidingWindow, but starting
 // in PRUDPv1 with NEX virtual connections may have multiple reliable substreams and thus multiple SlidingWindows.
+// SlidingWindow is not thread safe, use the Lock/Unlock methods if this instance will be modified by multiple goroutines
 type SlidingWindow struct {
+	mutex                     *sync.Mutex
 	pendingPackets            *MutexMap[uint16, PRUDPPacketInterface]
 	incomingSequenceIDCounter *Counter[uint16]
 	outgoingSequenceIDCounter *Counter[uint16]
@@ -64,9 +68,20 @@ func (sw *SlidingWindow) ResetFragmentedPayload() {
 	sw.fragmentedPayload = make([]byte, 0)
 }
 
+// Lock locks the inner mutex for the SlidingWindow
+func (sw *SlidingWindow) Lock() {
+	sw.mutex.Lock()
+}
+
+// Lock unlocks the inner mutex for the SlidingWindow
+func (sw *SlidingWindow) Unlock() {
+	sw.mutex.Unlock()
+}
+
 // NewSlidingWindow initializes a new SlidingWindow with a starting counter value.
 func NewSlidingWindow() *SlidingWindow {
 	sw := &SlidingWindow{
+		mutex:                     &sync.Mutex{},
 		pendingPackets:            NewMutexMap[uint16, PRUDPPacketInterface](),
 		incomingSequenceIDCounter: NewCounter[uint16](0),
 		outgoingSequenceIDCounter: NewCounter[uint16](0),
