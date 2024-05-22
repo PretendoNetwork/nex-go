@@ -16,7 +16,7 @@ func RegisterVariantType(id uint8, rvType RVType) {
 // Variant is an implementation of rdv::Variant.
 // This type can hold many other types, denoted by a type ID.
 type Variant struct {
-	TypeID *PrimitiveU8
+	TypeID *UInt8
 	Type   RVType
 }
 
@@ -36,16 +36,18 @@ func (v *Variant) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read Variant type ID. %s", err.Error())
 	}
 
+	typeID := uint8(*v.TypeID)
+
 	// * Type ID of 0 is a "None" type. There is no data
-	if v.TypeID.Value == 0 {
+	if typeID == 0 {
 		return nil
 	}
 
-	if _, ok := VariantTypes[v.TypeID.Value]; !ok {
-		return fmt.Errorf("Invalid Variant type ID %d", v.TypeID)
+	if _, ok := VariantTypes[typeID]; !ok {
+		return fmt.Errorf("Invalid Variant type ID %d", typeID)
 	}
 
-	v.Type = VariantTypes[v.TypeID.Value].Copy()
+	v.Type = VariantTypes[typeID].Copy()
 
 	return v.Type.ExtractFrom(readable)
 }
@@ -54,7 +56,7 @@ func (v *Variant) ExtractFrom(readable Readable) error {
 func (v *Variant) Copy() RVType {
 	copied := NewVariant()
 
-	copied.TypeID = v.TypeID.Copy().(*PrimitiveU8)
+	copied.TypeID = v.TypeID.Copy().(*UInt8)
 
 	if v.Type != nil {
 		copied.Type = v.Type.Copy()
@@ -112,7 +114,7 @@ func (v *Variant) FormatToString(indentationLevel int) string {
 func NewVariant() *Variant {
 	// * Type ID of 0 is a "None" type. There is no data
 	return &Variant{
-		TypeID: NewPrimitiveU8(0),
+		TypeID: NewUInt8(0),
 		Type:   nil,
 	}
 }

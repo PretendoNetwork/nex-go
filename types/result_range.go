@@ -9,8 +9,8 @@ import (
 // Holds information about how to make queries which may return large data.
 type ResultRange struct {
 	Structure
-	Offset *PrimitiveU32 // Offset into the dataset
-	Length *PrimitiveU32 // Number of items to return
+	Offset *UInt32 // Offset into the dataset
+	Length *UInt32 // Number of items to return
 }
 
 // WriteTo writes the ResultRange to the given writable
@@ -53,8 +53,8 @@ func (rr *ResultRange) Copy() RVType {
 	copied := NewResultRange()
 
 	copied.StructureVersion = rr.StructureVersion
-	copied.Offset = rr.Offset.Copy().(*PrimitiveU32)
-	copied.Length = rr.Length.Copy().(*PrimitiveU32)
+	copied.Offset = rr.Offset.Copy().(*UInt32)
+	copied.Length = rr.Length.Copy().(*UInt32)
 
 	return copied
 }
@@ -102,7 +102,7 @@ func (rr *ResultRange) FormatToString(indentationLevel int) string {
 // NewResultRange returns a new ResultRange
 func NewResultRange() *ResultRange {
 	return &ResultRange{
-		Offset: NewPrimitiveU32(0),
-		Length: NewPrimitiveU32(0),
+		Offset: NewUInt32(0),
+		Length: NewUInt32(0),
 	}
 }

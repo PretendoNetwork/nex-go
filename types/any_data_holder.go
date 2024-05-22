@@ -19,8 +19,8 @@ func RegisterDataHolderType(name string, rvType RVType) {
 // Structure body, so the receiver can properly decode it.
 type AnyDataHolder struct {
 	TypeName   *String
-	Length1    *PrimitiveU32 // Length of ObjectData + Length2
-	Length2    *PrimitiveU32 // Length of ObjectData
+	Length1    *UInt32 // Length of ObjectData + Length2
+	Length2    *UInt32 // Length of ObjectData
 	ObjectData RVType
 }
 
@@ -77,8 +77,8 @@ func (adh *AnyDataHolder) Copy() RVType {
 	copied := NewAnyDataHolder()
 
 	copied.TypeName = adh.TypeName.Copy().(*String)
-	copied.Length1 = adh.Length1.Copy().(*PrimitiveU32)
-	copied.Length2 = adh.Length2.Copy().(*PrimitiveU32)
+	copied.Length1 = adh.Length1.Copy().(*UInt32)
+	copied.Length2 = adh.Length2.Copy().(*UInt32)
 	copied.ObjectData = adh.ObjectData.Copy()
 
 	return copied
@@ -134,7 +134,7 @@ func (adh *AnyDataHolder) FormatToString(indentationLevel int) string {
 func NewAnyDataHolder() *AnyDataHolder {
 	return &AnyDataHolder{
 		TypeName: NewString(""),
-		Length1:  NewPrimitiveU32(0),
-		Length2:  NewPrimitiveU32(0),
+		Length1:  NewUInt32(0),
+		Length2:  NewUInt32(0),
 	}
 }

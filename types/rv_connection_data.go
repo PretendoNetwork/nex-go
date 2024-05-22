@@ -10,7 +10,7 @@ import (
 type RVConnectionData struct {
 	Structure
 	StationURL                 *StationURL
-	SpecialProtocols           *List[*PrimitiveU8]
+	SpecialProtocols           *List[*UInt8]
 	StationURLSpecialProtocols *StationURL
 	Time                       *DateTime
 }
@@ -72,7 +72,7 @@ func (rvcd *RVConnectionData) Copy() RVType {
 
 	copied.StructureVersion = rvcd.StructureVersion
 	copied.StationURL = rvcd.StationURL.Copy().(*StationURL)
-	copied.SpecialProtocols = rvcd.SpecialProtocols.Copy().(*List[*PrimitiveU8])
+	copied.SpecialProtocols = rvcd.SpecialProtocols.Copy().(*List[*UInt8])
 	copied.StationURLSpecialProtocols = rvcd.StationURLSpecialProtocols.Copy().(*StationURL)
 
 	if rvcd.StructureVersion >= 1 {
@@ -142,12 +142,12 @@ func (rvcd *RVConnectionData) FormatToString(indentationLevel int) string {
 func NewRVConnectionData() *RVConnectionData {
 	rvcd := &RVConnectionData{
 		StationURL:                 NewStationURL(""),
-		SpecialProtocols:           NewList[*PrimitiveU8](),
+		SpecialProtocols:           NewList[*UInt8](),
 		StationURLSpecialProtocols: NewStationURL(""),
 		Time:                       NewDateTime(0),
 	}
 
-	rvcd.SpecialProtocols.Type = NewPrimitiveU8(0)
+	rvcd.SpecialProtocols.Type = NewUInt8(0)
 
 	return rvcd
 }

@@ -17,9 +17,9 @@ var secureEndpoint *nex.PRUDPEndPoint
 type principalPreference struct {
 	types.Structure
 	*types.Data
-	ShowOnlinePresence  *types.PrimitiveBool
-	ShowCurrentTitle    *types.PrimitiveBool
-	BlockFriendRequests *types.PrimitiveBool
+	ShowOnlinePresence  *types.Bool
+	ShowCurrentTitle    *types.Bool
+	BlockFriendRequests *types.Bool
 }
 
 func (pp *principalPreference) WriteTo(writable types.Writable) {
@@ -31,7 +31,7 @@ func (pp *principalPreference) WriteTo(writable types.Writable) {
 type comment struct {
 	types.Structure
 	*types.Data
-	Unknown     *types.PrimitiveU8
+	Unknown     *types.UInt8
 	Contents    *types.String
 	LastChanged *types.DateTime
 }
@@ -154,12 +154,12 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	(&principalPreference{
-		ShowOnlinePresence:  types.NewPrimitiveBool(true),
-		ShowCurrentTitle:    types.NewPrimitiveBool(true),
-		BlockFriendRequests: types.NewPrimitiveBool(false),
+		ShowOnlinePresence:  types.NewBool(true),
+		ShowCurrentTitle:    types.NewBool(true),
+		BlockFriendRequests: types.NewBool(false),
 	}).WriteTo(responseStream)
 	(&comment{
-		Unknown:     types.NewPrimitiveU8(0),
+		Unknown:     types.NewUInt8(0),
 		Contents:    types.NewString("Rewrite Test"),
 		LastChanged: types.NewDateTime(0),
 	}).WriteTo(responseStream)
