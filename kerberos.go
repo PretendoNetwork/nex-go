@@ -152,10 +152,10 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 			return fmt.Errorf("Failed to read Kerberos ticket internal data. %s", err.Error())
 		}
 
-		hash := md5.Sum(append(key, ticketKey.Value...))
+		hash := md5.Sum(append(key, *ticketKey...))
 		key = hash[:]
 
-		stream = NewByteStreamIn(data.Value, stream.LibraryVersions, stream.Settings)
+		stream = NewByteStreamIn(*data, stream.LibraryVersions, stream.Settings)
 	}
 
 	encryption := NewKerberosEncryption(key)
