@@ -2,24 +2,23 @@ package types
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 )
 
 // QBuffer is an implementation of rdv::qBuffer.
-// Wraps a primitive Go byte slice.
+// Type alias of []byte.
 // Same as Buffer but with a uint16 length field.
-type QBuffer struct {
-	Value []byte
-}
+type QBuffer []byte
 
 // WriteTo writes the []byte to the given writable
-func (qb *QBuffer) WriteTo(writable Writable) {
-	length := len(qb.Value)
+func (qb QBuffer) WriteTo(writable Writable) {
+	length := len(qb)
 
 	writable.WritePrimitiveUInt16LE(uint16(length))
 
 	if length > 0 {
-		writable.Write(qb.Value)
+		writable.Write(qb)
 	}
 }
 
@@ -35,14 +34,13 @@ func (qb *QBuffer) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read NEX qBuffer data. %s", err.Error())
 	}
 
-	qb.Value = data
-
+	*qb = data
 	return nil
 }
 
 // Copy returns a pointer to a copy of the qBuffer. Requires type assertion when used
-func (qb *QBuffer) Copy() RVType {
-	return NewQBuffer(qb.Value)
+func (qb QBuffer) Copy() RVType {
+	return &qb
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -51,15 +49,16 @@ func (qb *QBuffer) Equals(o RVType) bool {
 		return false
 	}
 
-	return bytes.Equal(qb.Value, o.(*QBuffer).Value)
+	return bytes.Equal(*qb, *o.(*QBuffer))
 }
 
 // String returns a string representation of the struct
-func (qb *QBuffer) String() string {
-	return fmt.Sprintf("%x", qb.Value)
+func (qb QBuffer) String() string {
+	return hex.EncodeToString(qb)
 }
 
 // NewQBuffer returns a new QBuffer
-func NewQBuffer(data []byte) *QBuffer {
-	return &QBuffer{Value: data}
+func NewQBuffer(input []byte) *QBuffer {
+	qb := QBuffer(input)
+	return &qb
 }
