@@ -23,7 +23,8 @@ func (u16 *UInt16) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the UInt16. Requires type assertion when used
 func (u16 UInt16) Copy() RVType {
-	return &u16
+	copy := u16
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewUInt16(input uint16) *UInt16 {
 	u16 := UInt16(input)
 	return &u16
 }
-

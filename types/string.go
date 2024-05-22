@@ -60,7 +60,8 @@ func (s *String) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the String. Requires type assertion when used
 func (s String) Copy() RVType {
-	return &s
+	copy := s
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance

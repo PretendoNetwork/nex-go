@@ -23,7 +23,8 @@ func (u32 *UInt32) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the UInt32. Requires type assertion when used
 func (u32 UInt32) Copy() RVType {
-	return &u32
+	copy := u32
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewUInt32(input uint32) *UInt32 {
 	u32 := UInt32(input)
 	return &u32
 }
-

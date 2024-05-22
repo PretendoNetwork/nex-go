@@ -29,7 +29,8 @@ func (dt *DateTime) ExtractFrom(readable Readable) error {
 
 // Copy returns a new copied instance of DateTime
 func (dt DateTime) Copy() RVType {
-	return &dt
+	copy := dt
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance

@@ -23,7 +23,8 @@ func (s64 *Int64) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Int64. Requires type assertion when used
 func (s64 Int64) Copy() RVType {
-	return &s64
+	copy := s64
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewInt64(input int64) *Int64 {
 	s64 := Int64(input)
 	return &s64
 }
-

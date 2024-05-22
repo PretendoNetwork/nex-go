@@ -23,7 +23,8 @@ func (s16 *Int16) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Int16. Requires type assertion when used
 func (s16 Int16) Copy() RVType {
-	return &s16
+	copy := s16
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewInt16(input int16) *Int16 {
 	s16 := Int16(input)
 	return &s16
 }
-

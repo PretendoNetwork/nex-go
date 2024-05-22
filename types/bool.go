@@ -23,7 +23,8 @@ func (b *Bool) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Bool. Requires type assertion when used
 func (b Bool) Copy() RVType {
-	return &b
+	copy := b
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewBool(input bool) *Bool {
 	b := Bool(input)
 	return &b
 }
-

@@ -23,7 +23,8 @@ func (s8 *Int8) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Int8. Requires type assertion when used
 func (s8 Int8) Copy() RVType {
-	return &s8
+	copy := s8
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewInt8(input int8) *Int8 {
 	s8 := Int8(input)
 	return &s8
 }
-
