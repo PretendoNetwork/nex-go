@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -9,14 +10,13 @@ import (
 )
 
 // QUUID is an implementation of rdv::qUUID.
+// Type alias of []byte.
 // Encodes a UUID in little-endian byte order.
-type QUUID struct {
-	Data []byte
-}
+type QUUID []byte
 
 // WriteTo writes the QUUID to the given writable
-func (qu *QUUID) WriteTo(writable Writable) {
-	writable.Write(qu.Data)
+func (qu QUUID) WriteTo(writable Writable) {
+	writable.Write(qu)
 }
 
 // ExtractFrom extracts the QUUID from the given readable
@@ -25,29 +25,22 @@ func (qu *QUUID) ExtractFrom(readable Readable) error {
 		return errors.New("Not enough data left to read qUUID")
 	}
 
-	qu.Data, _ = readable.Read(16)
-
+	*qu, _ = readable.Read(16)
 	return nil
 }
 
 // Copy returns a new copied instance of qUUID
-func (qu *QUUID) Copy() RVType {
-	copied := NewQUUID()
-
-	copied.Data = make([]byte, len(qu.Data))
-
-	copy(copied.Data, qu.Data)
-
-	return copied
+func (qu QUUID) Copy() RVType {
+	return &qu
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
-func (qu *QUUID) Equals(o RVType) bool {
+func (qu QUUID) Equals(o RVType) bool {
 	if _, ok := o.(*QUUID); !ok {
 		return false
 	}
 
-	return qu.GetStringValue() == (o.(*QUUID)).GetStringValue()
+	return bytes.Equal(qu, *o.(*QUUID))
 }
 
 // String returns a string representation of the struct
@@ -70,10 +63,10 @@ func (qu *QUUID) FormatToString(indentationLevel int) string {
 }
 
 // GetStringValue returns the UUID encoded in the qUUID
-func (qu *QUUID) GetStringValue() string {
+func (qu QUUID) GetStringValue() string {
 	// * Create copy of the data since slices.Reverse modifies the slice in-line
-	data := make([]byte, len(qu.Data))
-	copy(data, qu.Data)
+	data := make([]byte, len(qu))
+	copy(data, qu)
 
 	if len(data) != 16 {
 		// * Default dummy UUID as found in WATCH_DOGS
@@ -165,16 +158,13 @@ func (qu *QUUID) FromString(uuid string) error {
 	slices.Reverse(data[12:14])
 	slices.Reverse(data[14:16])
 
-	qu.Data = make([]byte, 0, 16)
-
-	copy(qu.Data, data)
+	*qu = data
 
 	return nil
 }
 
 // NewQUUID returns a new qUUID
-func NewQUUID() *QUUID {
-	return &QUUID{
-		Data: make([]byte, 0, 16),
-	}
+func NewQUUID(input []byte) *QUUID {
+	qu := QUUID(input)
+	return &qu
 }
