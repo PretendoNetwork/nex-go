@@ -23,7 +23,8 @@ func (u64 *UInt64) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the UInt64. Requires type assertion when used
 func (u64 UInt64) Copy() RVType {
-	return &u64
+	copy := u64
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewUInt64(input uint64) *UInt64 {
 	u64 := UInt64(input)
 	return &u64
 }
-

@@ -31,7 +31,10 @@ func (qu *QUUID) ExtractFrom(readable Readable) error {
 
 // Copy returns a new copied instance of qUUID
 func (qu QUUID) Copy() RVType {
-	return &qu
+	copied := make(QUUID, len(qu))
+	copy(copied, qu)
+
+	return &copied
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance

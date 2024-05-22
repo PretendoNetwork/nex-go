@@ -23,7 +23,8 @@ func (f *Float) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Float. Requires type assertion when used
 func (f Float) Copy() RVType {
-	return &f
+	copy := f
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewFloat(input float32) *Float {
 	f := Float(input)
 	return &f
 }
-

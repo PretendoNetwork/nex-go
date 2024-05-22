@@ -23,7 +23,8 @@ func (d *Double) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Double. Requires type assertion when used
 func (d Double) Copy() RVType {
-	return &d
+	copy := d
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewDouble(input float64) *Double {
 	d := Double(input)
 	return &d
 }
-

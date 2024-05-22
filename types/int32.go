@@ -23,7 +23,8 @@ func (s32 *Int32) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Int32. Requires type assertion when used
 func (s32 Int32) Copy() RVType {
-	return &s32
+	copy := s32
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -45,4 +46,3 @@ func NewInt32(input int32) *Int32 {
 	s32 := Int32(input)
 	return &s32
 }
-

@@ -40,7 +40,10 @@ func (qb *QBuffer) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the qBuffer. Requires type assertion when used
 func (qb QBuffer) Copy() RVType {
-	return &qb
+	copied := make(QBuffer, len(qb))
+	copy(copied, qb)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

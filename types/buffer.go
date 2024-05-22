@@ -40,7 +40,10 @@ func (b *Buffer) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Buffer. Requires type assertion when used
 func (b Buffer) Copy() RVType {
-	return &b
+	copied := make(Buffer, len(b))
+	copy(copied, b)
+
+	return &copied
 }
 
 // Equals checks if the input is equal in value to the current instance

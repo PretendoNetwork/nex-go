@@ -31,7 +31,8 @@ func (r *QResult) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the QResult. Requires type assertion when used
 func (r QResult) Copy() RVType {
-	return &r
+	copy := r
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance

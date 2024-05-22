@@ -44,7 +44,8 @@ func (p *PID) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the PID. Requires type assertion when used
 func (p PID) Copy() RVType {
-	return &p
+	copy := p
+	return &copy
 }
 
 // Equals checks if the input is equal in value to the current instance
