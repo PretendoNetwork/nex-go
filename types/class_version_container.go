@@ -9,7 +9,7 @@ import (
 // Contains version info for Structures used in verbose RMC messages.
 type ClassVersionContainer struct {
 	Structure
-	ClassVersions *Map[*String, *PrimitiveU16]
+	ClassVersions *Map[*String, *UInt16]
 }
 
 // WriteTo writes the ClassVersionContainer to the given writable
@@ -25,7 +25,7 @@ func (cvc *ClassVersionContainer) ExtractFrom(readable Readable) error {
 // Copy returns a pointer to a copy of the ClassVersionContainer. Requires type assertion when used
 func (cvc *ClassVersionContainer) Copy() RVType {
 	copied := NewClassVersionContainer()
-	copied.ClassVersions = cvc.ClassVersions.Copy().(*Map[*String, *PrimitiveU16])
+	copied.ClassVersions = cvc.ClassVersions.Copy().(*Map[*String, *UInt16])
 
 	return copied
 }
@@ -62,11 +62,11 @@ func (cvc *ClassVersionContainer) FormatToString(indentationLevel int) string {
 // NewClassVersionContainer returns a new ClassVersionContainer
 func NewClassVersionContainer() *ClassVersionContainer {
 	cvc := &ClassVersionContainer{
-		ClassVersions: NewMap[*String, *PrimitiveU16](),
+		ClassVersions: NewMap[*String, *UInt16](),
 	}
 
 	cvc.ClassVersions.KeyType = NewString("")
-	cvc.ClassVersions.ValueType = NewPrimitiveU16(0)
+	cvc.ClassVersions.ValueType = NewUInt16(0)
 
 	return cvc
 }
