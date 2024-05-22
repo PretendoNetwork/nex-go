@@ -44,12 +44,12 @@ func (qb QBuffer) Copy() RVType {
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (qb *QBuffer) Equals(o RVType) bool {
+func (qb QBuffer) Equals(o RVType) bool {
 	if _, ok := o.(*QBuffer); !ok {
 		return false
 	}
 
-	return bytes.Equal(*qb, *o.(*QBuffer))
+	return bytes.Equal(qb, *o.(*QBuffer))
 }
 
 // String returns a string representation of the struct
