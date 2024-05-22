@@ -62,7 +62,7 @@ func login(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	sourceAccount, _ := accountDetailsByUsername(strUserName.Value)
+	sourceAccount, _ := accountDetailsByUsername(string(*strUserName))
 	targetAccount, _ := accountDetailsByUsername(secureServerAccount.Username)
 
 	retval := types.NewQResultSuccess(0x00010001)

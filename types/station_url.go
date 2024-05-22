@@ -86,7 +86,7 @@ func (s *StationURL) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read StationURL. %s", err.Error())
 	}
 
-	s.FromString(str.Value)
+	s.FromString(string(*str))
 
 	return nil
 }
