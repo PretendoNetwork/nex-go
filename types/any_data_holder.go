@@ -59,11 +59,13 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read AnyDataHolder length 2. %s", err.Error())
 	}
 
-	if _, ok := AnyDataHolderObjects[adh.TypeName.Value]; !ok {
-		return fmt.Errorf("Unknown AnyDataHolder type: %s", adh.TypeName.Value)
+	typeName := string(*adh.TypeName)
+
+	if _, ok := AnyDataHolderObjects[typeName]; !ok {
+		return fmt.Errorf("Unknown AnyDataHolder type: %s", typeName)
 	}
 
-	adh.ObjectData = AnyDataHolderObjects[adh.TypeName.Value].Copy()
+	adh.ObjectData = AnyDataHolderObjects[typeName].Copy()
 
 	if err := adh.ObjectData.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read AnyDataHolder object data. %s", err.Error())
