@@ -461,7 +461,7 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 	serverKey := DeriveKerberosKey(serverAccount.PID, []byte(serverAccount.Password))
 
 	ticket := NewKerberosTicketInternalData(pep.Server)
-	if err := ticket.Decrypt(NewByteStreamIn(ticketData.Value, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
+	if err := ticket.Decrypt(NewByteStreamIn(*ticketData, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
 		return nil, nil, 0, err
 	}
 
@@ -476,7 +476,7 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 	sessionKey := ticket.SessionKey
 	kerberos := NewKerberosEncryption(sessionKey)
 
-	decryptedRequestData, err := kerberos.Decrypt(requestData.Value)
+	decryptedRequestData, err := kerberos.Decrypt(*requestData)
 	if err != nil {
 		return nil, nil, 0, err
 	}

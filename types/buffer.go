@@ -2,24 +2,23 @@ package types
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 )
 
 // Buffer is an implementation of rdv::Buffer.
-// Wraps a primitive Go byte slice.
+// Type alias of []byte.
 // Same as QBuffer but with a uint32 length field.
-type Buffer struct {
-	Value []byte
-}
+type Buffer []byte
 
 // WriteTo writes the Buffer to the given writable
-func (b *Buffer) WriteTo(writable Writable) {
-	length := len(b.Value)
+func (b Buffer) WriteTo(writable Writable) {
+	length := len(b)
 
 	writable.WritePrimitiveUInt32LE(uint32(length))
 
 	if length > 0 {
-		writable.Write(b.Value)
+		writable.Write(b)
 	}
 }
 
@@ -35,31 +34,31 @@ func (b *Buffer) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read NEX Buffer data. %s", err.Error())
 	}
 
-	b.Value = value
-
+	*b = Buffer(value)
 	return nil
 }
 
 // Copy returns a pointer to a copy of the Buffer. Requires type assertion when used
-func (b *Buffer) Copy() RVType {
-	return NewBuffer(b.Value)
+func (b Buffer) Copy() RVType {
+	return &b
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (b *Buffer) Equals(o RVType) bool {
+func (b Buffer) Equals(o RVType) bool {
 	if _, ok := o.(*Buffer); !ok {
 		return false
 	}
 
-	return bytes.Equal(b.Value, o.(*Buffer).Value)
+	return bytes.Equal(b, *o.(*Buffer))
 }
 
 // String returns a string representation of the struct
-func (b *Buffer) String() string {
-	return fmt.Sprintf("%x", b.Value)
+func (b Buffer) String() string {
+	return hex.EncodeToString(b)
 }
 
 // NewBuffer returns a new Buffer
-func NewBuffer(data []byte) *Buffer {
-	return &Buffer{Value: data}
+func NewBuffer(input []byte) *Buffer {
+	b := Buffer(input)
+	return &b
 }
