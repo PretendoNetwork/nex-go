@@ -527,6 +527,8 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
 
 	slidingWindow := packet.Sender().(*PRUDPConnection).SlidingWindow(packet.SubstreamID())
+	slidingWindow.Lock()
+	defer slidingWindow.Unlock()
 
 	for _, pendingPacket := range slidingWindow.Update(packet) {
 		if packet.Type() == constants.DataPacket {
