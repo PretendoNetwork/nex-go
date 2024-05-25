@@ -531,10 +531,10 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 	defer slidingWindow.Unlock()
 
 	for _, pendingPacket := range slidingWindow.Update(packet) {
-		if packet.Type() == constants.DataPacket {
+		if pendingPacket.Type() == constants.DataPacket {
 			var decryptedPayload []byte
 
-			if packet.Version() != 2 {
+			if pendingPacket.Version() != 2 {
 				decryptedPayload = pendingPacket.decryptPayload()
 			} else {
 				// * PRUDPLite does not encrypt payloads
@@ -548,7 +548,7 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 
 			payload := slidingWindow.AddFragment(decompressedPayload)
 
-			if packet.getFragmentID() == 0 {
+			if pendingPacket.getFragmentID() == 0 {
 				message := NewRMCMessage(pep)
 				err := message.FromBytes(payload)
 				if err != nil {
@@ -558,9 +558,9 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 
 				slidingWindow.ResetFragmentedPayload()
 
-				packet.SetRMCMessage(message)
+				pendingPacket.SetRMCMessage(message)
 
-				pep.emit("data", packet)
+				pep.emit("data", pendingPacket)
 			}
 		}
 	}
