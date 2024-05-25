@@ -421,6 +421,14 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
+
+	if packet.HasFlag(constants.PacketFlagReliable) {
+		connection := packet.Sender().(*PRUDPConnection)
+		slidingWindow := connection.SlidingWindow(packet.SubstreamID())
+		slidingWindow.Lock()
+		defer slidingWindow.Unlock()
+		slidingWindow.Update(packet)
+	}
 }
 
 func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
