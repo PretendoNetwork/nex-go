@@ -7,12 +7,11 @@ import (
 )
 
 func TestReorderPackets(t *testing.T) {
-
 	pdq := NewPacketDispatchQueue()
 
-	packet1 := makePacket(1)
-	packet2 := makePacket(2)
-	packet3 := makePacket(3)
+	packet1 := makePacket(2)
+	packet2 := makePacket(3)
+	packet3 := makePacket(4)
 
 	pdq.Queue(packet2)
 	pdq.Queue(packet3)
@@ -39,12 +38,11 @@ func TestReorderPackets(t *testing.T) {
 }
 
 func TestCallingInLoop(t *testing.T) {
-
 	pdq := NewPacketDispatchQueue()
 
-	packet1 := makePacket(1)
-	packet2 := makePacket(2)
-	packet3 := makePacket(3)
+	packet1 := makePacket(2)
+	packet2 := makePacket(3)
+	packet3 := makePacket(4)
 
 	pdq.Queue(packet2)
 	pdq.Queue(packet3)
@@ -54,11 +52,10 @@ func TestCallingInLoop(t *testing.T) {
 		pdq.Dispatched(nextPacket)
 	}
 
-	assert.Equal(t, uint16(4), pdq.counter.Value)
+	assert.Equal(t, uint16(5), pdq.nextExpectedSequenceId.Value)
 }
 
 func makePacket(sequenceID uint16) PRUDPPacketInterface {
-
 	packet, _ := NewPRUDPPacketV0(nil, nil, nil)
 	packet.SetSequenceID(sequenceID)
 

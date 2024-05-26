@@ -306,9 +306,11 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 		ack.supportedFunctions = packet.(*PRUDPPacketV1).supportedFunctions
 
 		connection.InitializeSlidingWindows(ack.maximumSubstreamID)
+		connection.InitializePacketDispatchQueues(ack.maximumSubstreamID)
 		connection.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](packet.(*PRUDPPacketV1).initialUnreliableSequenceID)
 	} else {
 		connection.InitializeSlidingWindows(0)
+		connection.InitializePacketDispatchQueues(0)
 	}
 
 	payload := make([]byte, 0)
@@ -421,6 +423,16 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
+
+	if packet.HasFlag(constants.PacketFlagReliable) {
+		connection := packet.Sender().(*PRUDPConnection)
+		connection.Lock()
+		defer connection.Unlock()
+
+		substreamID := packet.SubstreamID()
+		packetDispatchQueue := connection.PacketDispatchQueue(substreamID)
+		packetDispatchQueue.Queue(packet)
+	}
 }
 
 func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
@@ -525,20 +537,23 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 	}
 
 	connection := packet.Sender().(*PRUDPConnection)
+	connection.Lock()
+	defer connection.Unlock()
 
-	slidingWindow := packet.Sender().(*PRUDPConnection).SlidingWindow(packet.SubstreamID())
-	slidingWindow.Lock()
-	defer slidingWindow.Unlock()
+	substreamID := packet.SubstreamID()
 
-	for _, pendingPacket := range slidingWindow.Update(packet) {
-		if pendingPacket.Type() == constants.DataPacket {
+	packetDispatchQueue := connection.PacketDispatchQueue(substreamID)
+	packetDispatchQueue.Queue(packet)
+
+	for nextPacket, ok := packetDispatchQueue.GetNextToDispatch(); ok; nextPacket, ok = packetDispatchQueue.GetNextToDispatch() {
+		if nextPacket.Type() == constants.DataPacket {
 			var decryptedPayload []byte
 
-			if pendingPacket.Version() != 2 {
-				decryptedPayload = pendingPacket.decryptPayload()
+			if nextPacket.Version() != 2 {
+				decryptedPayload = nextPacket.decryptPayload()
 			} else {
 				// * PRUDPLite does not encrypt payloads
-				decryptedPayload = pendingPacket.Payload()
+				decryptedPayload = nextPacket.Payload()
 			}
 
 			decompressedPayload, err := connection.StreamSettings.CompressionAlgorithm.Decompress(decryptedPayload)
@@ -546,23 +561,26 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 				logger.Error(err.Error())
 			}
 
-			payload := slidingWindow.AddFragment(decompressedPayload)
+			incomingFragmentBuffer := connection.GetIncomingFragmentBuffer(substreamID)
+			incomingFragmentBuffer = append(incomingFragmentBuffer, decompressedPayload...)
+			connection.SetIncomingFragmentBuffer(substreamID, incomingFragmentBuffer)
 
-			if pendingPacket.getFragmentID() == 0 {
+			if nextPacket.getFragmentID() == 0 {
 				message := NewRMCMessage(pep)
-				err := message.FromBytes(payload)
+				err := message.FromBytes(incomingFragmentBuffer)
 				if err != nil {
 					// TODO - Should this return the error too?
 					logger.Error(err.Error())
 				}
 
-				slidingWindow.ResetFragmentedPayload()
+				nextPacket.SetRMCMessage(message)
+				connection.ClearOutgoingBuffer(substreamID)
 
-				pendingPacket.SetRMCMessage(message)
-
-				pep.emit("data", pendingPacket)
+				pep.emit("data", nextPacket)
 			}
 		}
+
+		packetDispatchQueue.Dispatched(nextPacket)
 	}
 }
 

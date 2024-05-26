@@ -3,6 +3,7 @@ package nex
 import (
 	"crypto/md5"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
@@ -16,24 +17,27 @@ type PRUDPConnection struct {
 	Socket                              *SocketConnection // * The connections parent socket
 	endpoint                            *PRUDPEndPoint    // * The PRUDP endpoint the connection is connected to
 	ConnectionState                     ConnectionState
-	ID                                  uint32                           // * Connection ID
-	SessionID                           uint8                            // * Random value generated at the start of the session. Client and server IDs do not need to match
-	ServerSessionID                     uint8                            // * Random value generated at the start of the session. Client and server IDs do not need to match
-	SessionKey                          []byte                           // * Secret key generated at the start of the session. Used for encrypting packets to the secure server
-	pid                                 *types.PID                       // * PID of the user
-	DefaultPRUDPVersion                 int                              // * The PRUDP version the connection was established with. Used for sending PING packets
-	StreamType                          constants.StreamType             // * rdv::Stream::Type used in this connection
-	StreamID                            uint8                            // * rdv::Stream ID, also called the "port number", used in this connection. 0-15 on PRUDPv0/v1, and 0-31 on PRUDPLite
-	StreamSettings                      *StreamSettings                  // * Settings for this virtual connection
-	Signature                           []byte                           // * Connection signature for packets coming from the client, as seen by the server
-	ServerConnectionSignature           []byte                           // * Connection signature for packets coming from the server, as seen by the client
-	UnreliablePacketBaseKey             []byte                           // * The base key used for encrypting unreliable DATA packets
-	slidingWindows                      *MutexMap[uint8, *SlidingWindow] // * Reliable packet substreams
+	ID                                  uint32                                 // * Connection ID
+	SessionID                           uint8                                  // * Random value generated at the start of the session. Client and server IDs do not need to match
+	ServerSessionID                     uint8                                  // * Random value generated at the start of the session. Client and server IDs do not need to match
+	SessionKey                          []byte                                 // * Secret key generated at the start of the session. Used for encrypting packets to the secure server
+	pid                                 *types.PID                             // * PID of the user
+	DefaultPRUDPVersion                 int                                    // * The PRUDP version the connection was established with. Used for sending PING packets
+	StreamType                          constants.StreamType                   // * rdv::Stream::Type used in this connection
+	StreamID                            uint8                                  // * rdv::Stream ID, also called the "port number", used in this connection. 0-15 on PRUDPv0/v1, and 0-31 on PRUDPLite
+	StreamSettings                      *StreamSettings                        // * Settings for this virtual connection
+	Signature                           []byte                                 // * Connection signature for packets coming from the client, as seen by the server
+	ServerConnectionSignature           []byte                                 // * Connection signature for packets coming from the server, as seen by the client
+	UnreliablePacketBaseKey             []byte                                 // * The base key used for encrypting unreliable DATA packets
+	slidingWindows                      *MutexMap[uint8, *SlidingWindow]       // * Outbound reliable packet substreams
+	packetDispatchQueues                *MutexMap[uint8, *PacketDispatchQueue] // * Inbound reliable packet substreams
+	incomingFragmentBuffers             *MutexMap[uint8, []byte]               // * Buffers which store the incoming payloads from fragmented DATA packets
 	outgoingUnreliableSequenceIDCounter *Counter[uint16]
 	outgoingPingSequenceIDCounter       *Counter[uint16]
 	heartbeatTimer                      *time.Timer
 	pingKickTimer                       *time.Timer
 	StationURLs                         *types.List[*types.StationURL]
+	mutex                               *sync.Mutex
 }
 
 // Endpoint returns the PRUDP endpoint the connections socket is connected to
@@ -87,7 +91,7 @@ func (pc *PRUDPConnection) cleanup() {
 	}
 }
 
-// InitializeSlidingWindows returns the InitializeSlidingWindows for the given substream
+// InitializeSlidingWindows initializes the SlidingWindows for all substreams
 func (pc *PRUDPConnection) InitializeSlidingWindows(maxSubstreamID uint8) {
 	// * Nuke any existing SlidingWindows
 	pc.slidingWindows = NewMutexMap[uint8, *SlidingWindow]()
@@ -97,7 +101,18 @@ func (pc *PRUDPConnection) InitializeSlidingWindows(maxSubstreamID uint8) {
 	}
 }
 
-// CreateSlidingWindow returns the CreateSlidingWindow for the given substream
+// InitializePacketDispatchQueues initializes the PacketDispatchQueues for all substreams
+func (pc *PRUDPConnection) InitializePacketDispatchQueues(maxSubstreamID uint8) {
+	// * Nuke any existing PacketDispatchQueues
+	pc.packetDispatchQueues = NewMutexMap[uint8, *PacketDispatchQueue]()
+
+	for i := 0; i < int(maxSubstreamID+1); i++ {
+		pc.CreatePacketDispatchQueue(uint8(i))
+	}
+}
+
+// CreateSlidingWindow creates a new SlidingWindow for the given substream and returns it
+// if there is not a SlidingWindow for the given substream id it creates a new one
 func (pc *PRUDPConnection) CreateSlidingWindow(substreamID uint8) *SlidingWindow {
 	slidingWindow := NewSlidingWindow()
 	slidingWindow.incomingSequenceIDCounter = NewCounter[uint16](2) // * First DATA packet from the client has sequence ID 2
@@ -121,6 +136,28 @@ func (pc *PRUDPConnection) SlidingWindow(substreamID uint8) *SlidingWindow {
 	}
 
 	return slidingWindow
+}
+
+// CreatePacketDispatchQueue creates a new PacketDispatchQueue for the given substream and returns it
+func (pc *PRUDPConnection) CreatePacketDispatchQueue(substreamID uint8) *PacketDispatchQueue {
+	pdq := NewPacketDispatchQueue()
+	pc.packetDispatchQueues.Set(substreamID, pdq)
+	return pdq
+}
+
+// PacketDispatchQueue returns the PacketDispatchQueue for the given substream
+// if there is not a PacketDispatchQueue for the given substream it creates a new one
+func (pc *PRUDPConnection) PacketDispatchQueue(substreamID uint8) *PacketDispatchQueue {
+	packetDispatchQueue, ok := pc.packetDispatchQueues.Get(substreamID)
+	if !ok {
+		// * Fail-safe. The connection may not always have
+		// * the correct number of substreams. See the
+		// * comment in handleSocketMessage of PRUDPEndPoint
+		// * for more details
+		packetDispatchQueue = pc.CreatePacketDispatchQueue(substreamID)
+	}
+
+	return packetDispatchQueue
 }
 
 // setSessionKey sets the connection's session key and updates the SlidingWindows
@@ -174,6 +211,41 @@ func (pc *PRUDPConnection) resetHeartbeat() {
 	}
 }
 
+// Lock locks the inner mutex for the Connection
+// This is used internally when reordering incoming fragmented packets to prevent
+// race conditions when multiple packets for the same fragmented message are processed at once
+func (pc *PRUDPConnection) Lock() {
+	pc.mutex.Lock()
+}
+
+// Unlock unlocks the inner mutex for the Connection
+// This is used internally when reordering incoming fragmented packets to prevent
+// race conditions when multiple packets for the same fragmented message are processed at once
+func (pc *PRUDPConnection) Unlock() {
+	pc.mutex.Unlock()
+}
+
+// Gets the incoming fragment buffer for the given substream
+func (pc *PRUDPConnection) GetIncomingFragmentBuffer(substreamID uint8) []byte {
+	buffer, ok := pc.incomingFragmentBuffers.Get(substreamID)
+	if !ok {
+		buffer = make([]byte, 0)
+		pc.incomingFragmentBuffers.Set(substreamID, buffer)
+	}
+
+	return buffer
+}
+
+// Sets the incoming fragment buffer for a given substream
+func (pc *PRUDPConnection) SetIncomingFragmentBuffer(substreamID uint8, buffer []byte) {
+	pc.incomingFragmentBuffers.Set(substreamID, buffer)
+}
+
+// Clears the outgoing buffer for a given substream
+func (pc *PRUDPConnection) ClearOutgoingBuffer(substreamID uint8) {
+	pc.incomingFragmentBuffers.Set(substreamID, make([]byte, 0))
+}
+
 func (pc *PRUDPConnection) startHeartbeat() {
 	endpoint := pc.endpoint
 
@@ -216,9 +288,12 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 		ConnectionState:                     StateNotConnected,
 		pid:                                 types.NewPID(0),
 		slidingWindows:                      NewMutexMap[uint8, *SlidingWindow](),
+		packetDispatchQueues:                NewMutexMap[uint8, *PacketDispatchQueue](),
 		outgoingUnreliableSequenceIDCounter: NewCounter[uint16](1),
 		outgoingPingSequenceIDCounter:       NewCounter[uint16](0),
+		incomingFragmentBuffers:             NewMutexMap[uint8, []byte](),
 		StationURLs:                         types.NewList[*types.StationURL](),
+		mutex:                               &sync.Mutex{},
 	}
 
 	pc.StationURLs.Type = types.NewStationURL("")
