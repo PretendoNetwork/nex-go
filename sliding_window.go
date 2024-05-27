@@ -1,8 +1,8 @@
 package nex
 
 // SlidingWindow is an implementation of rdv::SlidingWindow.
-// Currently this is a stub and does not reflect the interface and usage of rdv:SlidingWindow
-// In the original library this is used to manage sequencing of outgoing packets
+// Currently this is a stub and does not reflect the interface and usage of rdv:SlidingWindow.
+// In the original library this is used to manage sequencing of outgoing packets.
 // each virtual connection stream only uses a single SlidingWindow, but starting
 // in PRUDPv1 with NEX virtual connections may have multiple reliable substreams and thus multiple SlidingWindows.
 type SlidingWindow struct {

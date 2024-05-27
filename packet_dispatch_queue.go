@@ -1,7 +1,7 @@
 package nex
 
-// PacketDispatchQueue is an implementation of rdv::PacketDispatchQueue
-// PacketDispatchQueue is used to sequence incoming packets
+// PacketDispatchQueue is an implementation of rdv::PacketDispatchQueue.
+// PacketDispatchQueue is used to sequence incoming packets.
 // In the original library each virtual connection stream only uses a single PacketDispatchQueue, but starting
 // in PRUDPv1 NEX virtual connections may have multiple reliable substreams and thus multiple PacketDispatchQueues.
 type PacketDispatchQueue struct {
