@@ -97,7 +97,6 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	parametersStream := nex.NewByteStreamIn(parameters, secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	vecMyURLs := types.NewList[*types.StationURL]()
-	vecMyURLs.Type = types.NewStationURL("")
 	if err := vecMyURLs.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}
@@ -107,7 +106,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 		fmt.Println(err)
 	}
 
-	localStation, _ := vecMyURLs.Get(0)
+	localStation := (*vecMyURLs)[0]
 
 	address := packet.Sender().Address().(*net.UDPAddr).IP.String()
 

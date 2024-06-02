@@ -73,7 +73,6 @@ func login(packet nex.PRUDPPacketInterface) {
 
 	pConnectionData.StationURL = types.NewStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
 	pConnectionData.SpecialProtocols = types.NewList[*types.UInt8]()
-	pConnectionData.SpecialProtocols.Type = types.NewUInt8(0)
 	pConnectionData.StationURLSpecialProtocols = types.NewStationURL("")
 	pConnectionData.Time = types.NewDateTime(0).Now()
 

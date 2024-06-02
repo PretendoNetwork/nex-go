@@ -147,7 +147,5 @@ func NewRVConnectionData() *RVConnectionData {
 		Time:                       NewDateTime(0),
 	}
 
-	rvcd.SpecialProtocols.Type = NewUInt8(0)
-
 	return rvcd
 }
