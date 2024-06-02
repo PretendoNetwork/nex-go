@@ -95,7 +95,7 @@ func (l List[T]) Contains(checkValue T) bool {
 
 // String returns a string representation of the struct
 func (l List[T]) String() string {
-	return fmt.Sprintf("%v", l)
+	return fmt.Sprintf("%v", ([]T)(l))
 }
 
 // NewList returns a new List of the provided type
