@@ -114,7 +114,7 @@ func (pc *PRUDPConnection) InitializePacketDispatchQueues(maxSubstreamID uint8) 
 // CreateSlidingWindow creates a new SlidingWindow for the given substream and returns it
 // if there is not a SlidingWindow for the given substream id it creates a new one
 func (pc *PRUDPConnection) CreateSlidingWindow(substreamID uint8) *SlidingWindow {
-	slidingWindow := NewSlidingWindow()
+	slidingWindow := NewSlidingWindow(pc)
 	slidingWindow.sequenceIDCounter = NewCounter[uint16](0) // * First DATA packet from the server has sequence ID 1 (start counter at 0 and is incremeneted)
 	slidingWindow.streamSettings = pc.StreamSettings.Copy()
 
