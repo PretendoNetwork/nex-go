@@ -75,7 +75,7 @@ func (s String) Equals(o RVType) bool {
 
 // String returns a string representation of the struct
 func (s String) String() string {
-	return fmt.Sprintf("%q", s)
+	return fmt.Sprintf("%q", string(s))
 }
 
 // NewString returns a new String
