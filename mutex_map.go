@@ -168,7 +168,7 @@ func (m *MutexMap[K, V]) Clear(callback func(key K, value V)) {
 // RMutexSection read-locks the map and runs the provided callback. The map will
 // be unlocked after the callback returns. Useful for critical sections where
 // multiple map operations are needed. Do not perform write operations to the map.
-func (m *MutexMap[K, V]) RMutexSection(callback func(realMap *RawMap[K, V])) {
+func (m *MutexMap[K, V]) RMutexSection(callback func(rawMap *RawMap[K, V])) {
 	m.mutex.RLock()
 	defer m.mutex.RUnlock()
 
@@ -178,7 +178,7 @@ func (m *MutexMap[K, V]) RMutexSection(callback func(realMap *RawMap[K, V])) {
 // MutexSection write-locks the map and runs the provided callback. The map will
 // be unlocked after the callback returns. Useful for critical sections where
 // multiple map operations are needed.
-func (m *MutexMap[K, V]) MutexSection(callback func(mapInterface *RawMap[K, V])) {
+func (m *MutexMap[K, V]) MutexSection(callback func(rawMap *RawMap[K, V])) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
