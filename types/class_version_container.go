@@ -65,8 +65,5 @@ func NewClassVersionContainer() *ClassVersionContainer {
 		ClassVersions: NewMap[*String, *UInt16](),
 	}
 
-	cvc.ClassVersions.KeyType = NewString("")
-	cvc.ClassVersions.ValueType = NewUInt16(0)
-
 	return cvc
 }
