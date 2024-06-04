@@ -295,7 +295,5 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 		mutex:                               &sync.Mutex{},
 	}
 
-	pc.StationURLs.Type = types.NewStationURL("")
-
 	return pc
 }
