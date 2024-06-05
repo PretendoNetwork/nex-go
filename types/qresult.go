@@ -31,17 +31,16 @@ func (r *QResult) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the QResult. Requires type assertion when used
 func (r QResult) Copy() RVType {
-	copy := r
-	return &copy
+	return NewQResult(uint32(r))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (r QResult) Equals(o RVType) bool {
-	if _, ok := o.(*QResult); !ok {
+	if _, ok := o.(QResult); !ok {
 		return false
 	}
 
-	return r == *o.(*QResult)
+	return r == o.(QResult)
 }
 
 // IsSuccess returns true if the QResult is a success
@@ -55,7 +54,7 @@ func (r QResult) IsError() bool {
 }
 
 // String returns a string representation of the struct
-func (r *QResult) String() string {
+func (r QResult) String() string {
 	return r.FormatToString(0)
 }
 
@@ -80,17 +79,17 @@ func (r QResult) FormatToString(indentationLevel int) string {
 }
 
 // NewQResult returns a new QResult
-func NewQResult(input uint32) *QResult {
+func NewQResult(input uint32) QResult {
 	r := QResult(input)
-	return &r
+	return r
 }
 
 // NewQResultSuccess returns a new QResult set as a success
-func NewQResultSuccess(code uint32) *QResult {
+func NewQResultSuccess(code uint32) QResult {
 	return NewQResult(uint32(int(code) & ^errorMask))
 }
 
 // NewQResultError returns a new QResult set as an error
-func NewQResultError(code uint32) *QResult {
+func NewQResultError(code uint32) QResult {
 	return NewQResult(uint32(int(code) | errorMask))
 }

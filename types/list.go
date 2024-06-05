@@ -2,7 +2,6 @@ package types
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // List is an implementation of rdv::qList.
@@ -21,10 +20,16 @@ func (l List[T]) WriteTo(writable Writable) {
 	}
 }
 
-func (l List[T]) newType() T {
-	var t T
-	tType := reflect.TypeOf(t).Elem()
-	return reflect.New(tType).Interface().(T)
+func (l List[T]) extractType(t any, readable Readable) error {
+	// * This just makes List.ExtractFrom() a bit cleaner
+	// * since it doesn't have to type check
+	if ptr, ok := t.(RVTypePtr); ok {
+		return ptr.ExtractFrom(readable)
+	}
+
+	// * Maybe support other types..?
+
+	return fmt.Errorf("Unsupported List type %T", t)
 }
 
 // ExtractFrom extracts the List from the given readable
@@ -37,8 +42,8 @@ func (l *List[T]) ExtractFrom(readable Readable) error {
 	slice := make([]T, 0, length)
 
 	for i := 0; i < int(length); i++ {
-		value := l.newType()
-		if err := value.ExtractFrom(readable); err != nil {
+		var value T
+		if err := l.extractType(&value, readable); err != nil {
 			return err
 		}
 
@@ -58,16 +63,16 @@ func (l List[T]) Copy() RVType {
 		copied = append(copied, v.Copy().(T))
 	}
 
-	return &copied
+	return copied
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (l List[T]) Equals(o RVType) bool {
-	if _, ok := o.(*List[T]); !ok {
+	if _, ok := o.(List[T]); !ok {
 		return false
 	}
 
-	other := *o.(*List[T])
+	other := o.(List[T])
 
 	if len(l) != len(other) {
 		return false
@@ -99,7 +104,6 @@ func (l List[T]) String() string {
 }
 
 // NewList returns a new List of the provided type
-func NewList[T RVType]() *List[T] {
-	l := make(List[T], 0)
-	return &l
+func NewList[T RVType]() List[T] {
+	return make(List[T], 0)
 }

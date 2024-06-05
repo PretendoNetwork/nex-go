@@ -23,17 +23,17 @@ func (d *Double) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Double. Requires type assertion when used
 func (d Double) Copy() RVType {
-	copy := d
-	return &copy
+	return NewDouble(float64(d))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (d Double) Equals(o RVType) bool {
-	other, ok := o.(*Double)
+	other, ok := o.(Double)
 	if !ok {
 		return false
 	}
-	return d == *other
+
+	return d == other
 }
 
 // String returns a string representation of the Double
@@ -41,8 +41,8 @@ func (d Double) String() string {
 	return fmt.Sprintf("%f", d)
 }
 
-// NewDouble returns a new Double pointer
-func NewDouble(input float64) *Double {
+// NewDouble returns a new Double
+func NewDouble(input float64) Double {
 	d := Double(input)
-	return &d
+	return d
 }

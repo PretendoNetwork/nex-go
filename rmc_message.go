@@ -9,18 +9,18 @@ import (
 
 // RMCMessage represents a message in the RMC (Remote Method Call) protocol
 type RMCMessage struct {
-	Endpoint              EndpointInterface
-	IsRequest             bool                         // * Indicates if the message is a request message (true) or response message (false)
-	IsSuccess             bool                         // * Indicates if the message is a success message (true) for a response message
-	IsHPP                 bool                         // * Indicates if the message is an HPP message
-	ProtocolID            uint16                       // * Protocol ID of the message. Only present in "packed" variations
-	ProtocolName          *types.String                // * Protocol name of the message. Only present in "verbose" variations
-	CallID                uint32                       // * Call ID associated with the message
-	MethodID              uint32                       // * Method ID in the requested protocol. Only present in "packed" variations
-	MethodName            *types.String                // * Method name in the requested protocol. Only present in "verbose" variations
-	ErrorCode             uint32                       // * Error code for a response message
-	ClassVersionContainer *types.ClassVersionContainer // * Contains version info for Structures in the request. Only present in "verbose" variations
-	Parameters            []byte                       // * Input for the method
+	Endpoint         EndpointInterface
+	IsRequest        bool                         // * Indicates if the message is a request message (true) or response message (false)
+	IsSuccess        bool                         // * Indicates if the message is a success message (true) for a response message
+	IsHPP            bool                         // * Indicates if the message is an HPP message
+	ProtocolID       uint16                       // * Protocol ID of the message. Only present in "packed" variations
+	ProtocolName     types.String                 // * Protocol name of the message. Only present in "verbose" variations
+	CallID           uint32                       // * Call ID associated with the message
+	MethodID         uint32                       // * Method ID in the requested protocol. Only present in "packed" variations
+	MethodName       types.String                 // * Method name in the requested protocol. Only present in "verbose" variations
+	ErrorCode        uint32                       // * Error code for a response message
+	VersionContainer *types.ClassVersionContainer // * Contains version info for Structures in the request. Only present in "verbose" variations. Pointer to allow for nil checks
+	Parameters       []byte                       // * Input for the method
 	// TODO - Verbose messages suffix response method names with "*". Should we have a "HasResponsePointer" sort of field?
 }
 
@@ -164,11 +164,14 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 			return fmt.Errorf("Failed to read RMC Message (request) method name. %s", err.Error())
 		}
 
-		rmc.ClassVersionContainer = types.NewClassVersionContainer()
-		if err := rmc.ClassVersionContainer.ExtractFrom(stream); err != nil {
+		versionContainer := types.NewClassVersionContainer()
+		ptr, _ := any(&versionContainer).(types.RVTypePtr)
+
+		if err := ptr.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read RMC Message ClassVersionContainer. %s", err.Error())
 		}
 
+		rmc.VersionContainer = ptr.(*types.ClassVersionContainer)
 		rmc.Parameters = stream.ReadRemaining()
 	} else {
 		rmc.IsSuccess, err = stream.ReadPrimitiveBool()
@@ -281,8 +284,8 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 		stream.WritePrimitiveUInt32LE(rmc.CallID)
 		rmc.MethodName.WriteTo(stream)
 
-		if rmc.ClassVersionContainer != nil {
-			rmc.ClassVersionContainer.WriteTo(stream)
+		if rmc.VersionContainer != nil {
+			rmc.VersionContainer.WriteTo(stream)
 		} else {
 			// * Fail safe. This is always present even if no structures are used
 			stream.WritePrimitiveUInt32LE(0)

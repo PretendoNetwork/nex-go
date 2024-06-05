@@ -29,28 +29,27 @@ func (dt *DateTime) ExtractFrom(readable Readable) error {
 
 // Copy returns a new copied instance of DateTime
 func (dt DateTime) Copy() RVType {
-	copy := dt
-	return &copy
+	return NewDateTime(uint64(dt))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (dt DateTime) Equals(o RVType) bool {
-	if _, ok := o.(*DateTime); !ok {
+	if _, ok := o.(DateTime); !ok {
 		return false
 	}
 
-	return dt == *o.(*DateTime)
+	return dt == o.(DateTime)
 }
 
 // Make initilizes a DateTime with the input data
-func (dt *DateTime) Make(year, month, day, hour, minute, second int) *DateTime {
+func (dt *DateTime) Make(year, month, day, hour, minute, second int) DateTime {
 	*dt = DateTime(second | (minute << 6) | (hour << 12) | (day << 17) | (month << 22) | (year << 26))
 
-	return dt
+	return *dt
 }
 
 // FromTimestamp converts a Time timestamp into a NEX DateTime
-func (dt *DateTime) FromTimestamp(timestamp time.Time) *DateTime {
+func (dt DateTime) FromTimestamp(timestamp time.Time) DateTime {
 	year := timestamp.Year()
 	month := int(timestamp.Month())
 	day := timestamp.Day()
@@ -62,7 +61,7 @@ func (dt *DateTime) FromTimestamp(timestamp time.Time) *DateTime {
 }
 
 // Now returns a NEX DateTime value of the current UTC time
-func (dt *DateTime) Now() *DateTime {
+func (dt DateTime) Now() DateTime {
 	return dt.FromTimestamp(time.Now().UTC())
 }
 
@@ -97,7 +96,7 @@ func (dt DateTime) Year() int {
 }
 
 // Standard returns the DateTime as a standard time.Time
-func (dt *DateTime) Standard() time.Time {
+func (dt DateTime) Standard() time.Time {
 	return time.Date(
 		dt.Year(),
 		dt.Month(),
@@ -111,7 +110,7 @@ func (dt *DateTime) Standard() time.Time {
 }
 
 // String returns a string representation of the struct
-func (dt *DateTime) String() string {
+func (dt DateTime) String() string {
 	return dt.FormatToString(0)
 }
 
@@ -130,7 +129,7 @@ func (dt DateTime) FormatToString(indentationLevel int) string {
 }
 
 // NewDateTime returns a new DateTime instance
-func NewDateTime(input uint64) *DateTime {
+func NewDateTime(input uint64) DateTime {
 	dt := DateTime(input)
-	return &dt
+	return dt
 }

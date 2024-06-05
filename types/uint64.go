@@ -23,17 +23,17 @@ func (u64 *UInt64) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the UInt64. Requires type assertion when used
 func (u64 UInt64) Copy() RVType {
-	copy := u64
-	return &copy
+	return NewUInt64(uint64(u64))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (u64 UInt64) Equals(o RVType) bool {
-	other, ok := o.(*UInt64)
+	other, ok := o.(UInt64)
 	if !ok {
 		return false
 	}
-	return u64 == *other
+
+	return u64 == other
 }
 
 // String returns a string representation of the UInt64
@@ -41,8 +41,8 @@ func (u64 UInt64) String() string {
 	return fmt.Sprintf("%d", u64)
 }
 
-// NewUInt64 returns a new UInt64 pointer
-func NewUInt64(input uint64) *UInt64 {
+// NewUInt64 returns a new UInt64
+func NewUInt64(input uint64) UInt64 {
 	u64 := UInt64(input)
-	return &u64
+	return u64
 }

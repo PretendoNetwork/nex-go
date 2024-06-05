@@ -29,7 +29,7 @@ type PRUDPEndPoint struct {
 	errorEventHandlers           []func(err *Error)
 	ConnectionIDCounter          *Counter[uint32]
 	ServerAccount                *Account
-	AccountDetailsByPID          func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByPID          func(pid types.PID) (*Account, *Error)
 	AccountDetailsByUsername     func(username string) (*Account, *Error)
 	IsSecureEndPoint             bool
 }
@@ -435,34 +435,34 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	}
 }
 
-func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
+func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, types.PID, uint32, error) {
 	stream := NewByteStreamIn(payload, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	ticketData := types.NewBuffer(nil)
 	if err := ticketData.ExtractFrom(stream); err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	requestData := types.NewBuffer(nil)
 	if err := requestData.ExtractFrom(stream); err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	// * Sanity checks
 	serverAccount, _ := pep.AccountDetailsByUsername(pep.ServerAccount.Username)
 	if serverAccount == nil {
-		return nil, nil, 0, errors.New("Failed to find endpoint server account")
+		return nil, 0, 0, errors.New("Failed to find endpoint server account")
 	}
 
 	if serverAccount.Password != pep.ServerAccount.Password {
-		return nil, nil, 0, errors.New("Password for endpoint server account does not match the records from AccountDetailsByUsername")
+		return nil, 0, 0, errors.New("Password for endpoint server account does not match the records from AccountDetailsByUsername")
 	}
 
 	serverKey := DeriveKerberosKey(serverAccount.PID, []byte(serverAccount.Password))
 
 	ticket := NewKerberosTicketInternalData(pep.Server)
-	if err := ticket.Decrypt(NewByteStreamIn(*ticketData, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
-		return nil, nil, 0, err
+	if err := ticket.Decrypt(NewByteStreamIn(ticketData, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
+		return nil, 0, 0, err
 	}
 
 	ticketTime := ticket.Issued.Standard()
@@ -470,32 +470,32 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 
 	timeLimit := ticketTime.Add(time.Minute * 2)
 	if serverTime.After(timeLimit) {
-		return nil, nil, 0, errors.New("Kerberos ticket expired")
+		return nil, 0, 0, errors.New("Kerberos ticket expired")
 	}
 
 	sessionKey := ticket.SessionKey
 	kerberos := NewKerberosEncryption(sessionKey)
 
-	decryptedRequestData, err := kerberos.Decrypt(*requestData)
+	decryptedRequestData, err := kerberos.Decrypt(requestData)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	checkDataStream := NewByteStreamIn(decryptedRequestData, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	userPID := types.NewPID(0)
 	if err := userPID.ExtractFrom(checkDataStream); err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	_, err = checkDataStream.ReadPrimitiveUInt32LE() // * CID of secure server station url
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	responseCheck, err := checkDataStream.ReadPrimitiveUInt32LE()
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	return sessionKey, userPID, responseCheck, nil

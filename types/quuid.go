@@ -21,7 +21,7 @@ func (qu QUUID) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the QUUID from the given readable
 func (qu *QUUID) ExtractFrom(readable Readable) error {
-	if readable.Remaining() < uint64(16) {
+	if readable.Remaining() < 16 {
 		return errors.New("Not enough data left to read qUUID")
 	}
 
@@ -31,28 +31,25 @@ func (qu *QUUID) ExtractFrom(readable Readable) error {
 
 // Copy returns a new copied instance of qUUID
 func (qu QUUID) Copy() RVType {
-	copied := make(QUUID, len(qu))
-	copy(copied, qu)
-
-	return &copied
+	return NewQUUID(qu)
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
 func (qu QUUID) Equals(o RVType) bool {
-	if _, ok := o.(*QUUID); !ok {
+	if _, ok := o.(QUUID); !ok {
 		return false
 	}
 
-	return bytes.Equal(qu, *o.(*QUUID))
+	return bytes.Equal(qu, o.(QUUID))
 }
 
 // String returns a string representation of the struct
-func (qu *QUUID) String() string {
+func (qu QUUID) String() string {
 	return qu.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (qu *QUUID) FormatToString(indentationLevel int) string {
+func (qu QUUID) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
@@ -167,7 +164,9 @@ func (qu *QUUID) FromString(uuid string) error {
 }
 
 // NewQUUID returns a new qUUID
-func NewQUUID(input []byte) *QUUID {
-	qu := QUUID(input)
-	return &qu
+func NewQUUID(input []byte) QUUID {
+	qu := make(QUUID, len(input))
+	copy(qu, input)
+
+	return qu
 }

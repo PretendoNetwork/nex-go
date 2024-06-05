@@ -23,17 +23,17 @@ func (f *Float) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Float. Requires type assertion when used
 func (f Float) Copy() RVType {
-	copy := f
-	return &copy
+	return NewFloat(float32(f))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (f Float) Equals(o RVType) bool {
-	other, ok := o.(*Float)
+	other, ok := o.(Float)
 	if !ok {
 		return false
 	}
-	return f == *other
+
+	return f == other
 }
 
 // String returns a string representation of the Float
@@ -41,8 +41,8 @@ func (f Float) String() string {
 	return fmt.Sprintf("%f", f)
 }
 
-// NewFloat returns a new Float pointer
-func NewFloat(input float32) *Float {
+// NewFloat returns a new Float
+func NewFloat(input float32) Float {
 	f := Float(input)
-	return &f
+	return f
 }

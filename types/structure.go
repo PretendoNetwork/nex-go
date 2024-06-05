@@ -34,7 +34,7 @@ func (s *Structure) ExtractHeaderFrom(readable Readable) error {
 }
 
 // WriteHeaderTo writes the structure header to the given writable
-func (s *Structure) WriteHeaderTo(writable Writable, contentLength uint32) {
+func (s Structure) WriteHeaderTo(writable Writable, contentLength uint32) {
 	if writable.UseStructureHeader() {
 		writable.WritePrimitiveUInt8(s.StructureVersion)
 		writable.WritePrimitiveUInt32LE(contentLength)

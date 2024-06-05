@@ -13,7 +13,7 @@ var hppServer *nex.HPPServer
 
 type dataStoreGetNotificationURLParam struct {
 	types.Structure
-	PreviousURL *types.String
+	PreviousURL types.String
 }
 
 func (d *dataStoreGetNotificationURLParam) ExtractFrom(readable types.Readable) error {
@@ -33,10 +33,10 @@ func (d *dataStoreGetNotificationURLParam) ExtractFrom(readable types.Readable) 
 
 type dataStoreReqGetNotificationURLInfo struct {
 	types.Structure
-	URL        *types.String
-	Key        *types.String
-	Query      *types.String
-	RootCACert *types.Buffer
+	URL        types.String
+	Key        types.String
+	Query      types.String
+	RootCACert types.Buffer
 }
 
 func (d *dataStoreReqGetNotificationURLInfo) WriteTo(writable types.Writable) {

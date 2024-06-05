@@ -44,17 +44,16 @@ func (p *PID) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the PID. Requires type assertion when used
 func (p PID) Copy() RVType {
-	copy := p
-	return &copy
+	return NewPID(uint64(p))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (p PID) Equals(o RVType) bool {
-	if _, ok := o.(*PID); !ok {
+	if _, ok := o.(PID); !ok {
 		return false
 	}
 
-	return p == *o.(*PID)
+	return p == o.(PID)
 }
 
 // Value returns the numeric value of the PID as a uint64 regardless of client version
@@ -68,7 +67,7 @@ func (p PID) LegacyValue() uint32 {
 }
 
 // String returns a string representation of the struct
-func (p *PID) String() string {
+func (p PID) String() string {
 	return p.FormatToString(0)
 }
 
@@ -87,7 +86,7 @@ func (p PID) FormatToString(indentationLevel int) string {
 }
 
 // NewPID returns a PID instance. The real size of PID depends on the client version
-func NewPID(input uint64) *PID {
+func NewPID(input uint64) PID {
 	p := PID(input)
-	return &p
+	return p
 }

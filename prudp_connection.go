@@ -21,7 +21,7 @@ type PRUDPConnection struct {
 	SessionID                           uint8                                  // * Random value generated at the start of the session. Client and server IDs do not need to match
 	ServerSessionID                     uint8                                  // * Random value generated at the start of the session. Client and server IDs do not need to match
 	SessionKey                          []byte                                 // * Secret key generated at the start of the session. Used for encrypting packets to the secure server
-	pid                                 *types.PID                             // * PID of the user
+	pid                                 types.PID                              // * PID of the user
 	DefaultPRUDPVersion                 int                                    // * The PRUDP version the connection was established with. Used for sending PING packets
 	StreamType                          constants.StreamType                   // * rdv::Stream::Type used in this connection
 	StreamID                            uint8                                  // * rdv::Stream ID, also called the "port number", used in this connection. 0-15 on PRUDPv0/v1, and 0-31 on PRUDPLite
@@ -36,7 +36,7 @@ type PRUDPConnection struct {
 	outgoingPingSequenceIDCounter       *Counter[uint16]
 	heartbeatTimer                      *time.Timer
 	pingKickTimer                       *time.Timer
-	StationURLs                         *types.List[*types.StationURL]
+	StationURLs                         types.List[types.StationURL]
 	mutex                               *sync.Mutex
 }
 
@@ -51,12 +51,12 @@ func (pc *PRUDPConnection) Address() net.Addr {
 }
 
 // PID returns the clients unique PID
-func (pc *PRUDPConnection) PID() *types.PID {
+func (pc *PRUDPConnection) PID() types.PID {
 	return pc.pid
 }
 
 // SetPID sets the clients unique PID
-func (pc *PRUDPConnection) SetPID(pid *types.PID) {
+func (pc *PRUDPConnection) SetPID(pid types.PID) {
 	pc.pid = pid
 }
 
@@ -291,7 +291,7 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 		outgoingUnreliableSequenceIDCounter: NewCounter[uint16](1),
 		outgoingPingSequenceIDCounter:       NewCounter[uint16](0),
 		incomingFragmentBuffers:             NewMutexMap[uint8, []byte](),
-		StationURLs:                         types.NewList[*types.StationURL](),
+		StationURLs:                         types.NewList[types.StationURL](),
 		mutex:                               &sync.Mutex{},
 	}
 

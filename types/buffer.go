@@ -40,19 +40,16 @@ func (b *Buffer) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the Buffer. Requires type assertion when used
 func (b Buffer) Copy() RVType {
-	copied := make(Buffer, len(b))
-	copy(copied, b)
-
-	return &copied
+	return NewBuffer(b)
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (b Buffer) Equals(o RVType) bool {
-	if _, ok := o.(*Buffer); !ok {
+	if _, ok := o.(Buffer); !ok {
 		return false
 	}
 
-	return bytes.Equal(b, *o.(*Buffer))
+	return bytes.Equal(b, o.(Buffer))
 }
 
 // String returns a string representation of the struct
@@ -61,7 +58,9 @@ func (b Buffer) String() string {
 }
 
 // NewBuffer returns a new Buffer
-func NewBuffer(input []byte) *Buffer {
-	b := Buffer(input)
-	return &b
+func NewBuffer(input []byte) Buffer {
+	b := make(Buffer, len(input))
+	copy(b, input)
+
+	return b
 }

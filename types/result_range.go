@@ -9,12 +9,12 @@ import (
 // Holds information about how to make queries which may return large data.
 type ResultRange struct {
 	Structure
-	Offset *UInt32 // Offset into the dataset
-	Length *UInt32 // Number of items to return
+	Offset UInt32 // Offset into the dataset
+	Length UInt32 // Number of items to return
 }
 
 // WriteTo writes the ResultRange to the given writable
-func (rr *ResultRange) WriteTo(writable Writable) {
+func (rr ResultRange) WriteTo(writable Writable) {
 	contentWritable := writable.CopyNew()
 
 	rr.Offset.WriteTo(contentWritable)
@@ -49,42 +49,42 @@ func (rr *ResultRange) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a new copied instance of ResultRange
-func (rr *ResultRange) Copy() RVType {
+func (rr ResultRange) Copy() RVType {
 	copied := NewResultRange()
 
 	copied.StructureVersion = rr.StructureVersion
-	copied.Offset = rr.Offset.Copy().(*UInt32)
-	copied.Length = rr.Length.Copy().(*UInt32)
+	copied.Offset = rr.Offset.Copy().(UInt32)
+	copied.Length = rr.Length.Copy().(UInt32)
 
 	return copied
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (rr *ResultRange) Equals(o RVType) bool {
-	if _, ok := o.(*ResultRange); !ok {
+func (rr ResultRange) Equals(o RVType) bool {
+	if _, ok := o.(ResultRange); !ok {
 		return false
 	}
 
-	other := o.(*ResultRange)
+	other := o.(ResultRange)
 
 	if rr.StructureVersion != other.StructureVersion {
 		return false
 	}
 
-	if !rr.Offset.Equals(other.Offset) {
+	if !rr.Offset.Equals(&other.Offset) {
 		return false
 	}
 
-	return rr.Length.Equals(other.Length)
+	return rr.Length.Equals(&other.Length)
 }
 
 // String returns a string representation of the struct
-func (rr *ResultRange) String() string {
+func (rr ResultRange) String() string {
 	return rr.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (rr *ResultRange) FormatToString(indentationLevel int) string {
+func (rr ResultRange) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
@@ -100,8 +100,8 @@ func (rr *ResultRange) FormatToString(indentationLevel int) string {
 }
 
 // NewResultRange returns a new ResultRange
-func NewResultRange() *ResultRange {
-	return &ResultRange{
+func NewResultRange() ResultRange {
+	return ResultRange{
 		Offset: NewUInt32(0),
 		Length: NewUInt32(0),
 	}

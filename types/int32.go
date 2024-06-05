@@ -6,43 +6,43 @@ import "fmt"
 type Int32 int32
 
 // WriteTo writes the Int32 to the given writable
-func (s32 Int32) WriteTo(writable Writable) {
-	writable.WritePrimitiveInt32LE(int32(s32))
+func (i32 Int32) WriteTo(writable Writable) {
+	writable.WritePrimitiveInt32LE(int32(i32))
 }
 
 // ExtractFrom extracts the Int32 value from the given readable
-func (s32 *Int32) ExtractFrom(readable Readable) error {
+func (i32 *Int32) ExtractFrom(readable Readable) error {
 	value, err := readable.ReadPrimitiveInt32LE()
 	if err != nil {
 		return err
 	}
 
-	*s32 = Int32(value)
+	*i32 = Int32(value)
 	return nil
 }
 
 // Copy returns a pointer to a copy of the Int32. Requires type assertion when used
-func (s32 Int32) Copy() RVType {
-	copy := s32
-	return &copy
+func (i32 Int32) Copy() RVType {
+	return NewInt32(int32(i32))
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (s32 Int32) Equals(o RVType) bool {
-	other, ok := o.(*Int32)
+func (i32 Int32) Equals(o RVType) bool {
+	other, ok := o.(Int32)
 	if !ok {
 		return false
 	}
-	return s32 == *other
+
+	return i32 == other
 }
 
 // String returns a string representation of the Int32
-func (s32 Int32) String() string {
-	return fmt.Sprintf("%d", s32)
+func (i32 Int32) String() string {
+	return fmt.Sprintf("%d", i32)
 }
 
-// NewInt32 returns a new Int32 pointer
-func NewInt32(input int32) *Int32 {
-	s32 := Int32(input)
-	return &s32
+// NewInt32 returns a new Int32
+func NewInt32(input int32) Int32 {
+	i32 := Int32(input)
+	return i32
 }

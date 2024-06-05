@@ -2,36 +2,46 @@ package types
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 )
 
 // Map represents a Quazal Rendez-Vous/NEX Map type.
 // Type alias of map[K]V.
 // There is not an official type in either the rdv or nn::nex namespaces.
-// May have any RVType as both a key and value.
-type Map[K RVComparable, V RVType] map[K]V
+// May have any RVType as both a key and value. If either they key or
+// value types are not an RVType, they are ignored.
+//
+// Incompatible with RVType pointers!
+type Map[K comparable, V any] map[K]V
+
+func (m Map[K, V]) writeType(t any, writable Writable) {
+	// * This just makes Map.WriteTo() a bit cleaner
+	// * since it doesn't have to type check
+	if rvt, ok := t.(interface{ WriteTo(writable Writable) }); ok {
+		rvt.WriteTo(writable)
+	}
+}
 
 // WriteTo writes the Map to the given writable
 func (m Map[K, V]) WriteTo(writable Writable) {
 	writable.WritePrimitiveUInt32LE(uint32(len(m)))
 
 	for key, value := range m {
-		key.WriteTo(writable)
-		value.WriteTo(writable)
+		m.writeType(key, writable)
+		m.writeType(value, writable)
 	}
 }
 
-func (m Map[K, V]) newKeyType() K {
-	var k K
-	kType := reflect.TypeOf(k).Elem()
-	return reflect.New(kType).Interface().(K)
-}
+func (m Map[K, V]) extractType(t any, readable Readable) error {
+	// * This just makes Map.ExtractFrom() a bit cleaner
+	// * since it doesn't have to type check
+	if ptr, ok := t.(RVTypePtr); ok {
+		return ptr.ExtractFrom(readable)
+	}
 
-func (m Map[K, V]) newValueType() V {
-	var v V
-	vType := reflect.TypeOf(v).Elem()
-	return reflect.New(vType).Interface().(V)
+	// * Maybe support other types..?
+
+	return fmt.Errorf("Unsupported Map type %T", t)
 }
 
 // ExtractFrom extracts the Map from the given readable
@@ -41,20 +51,35 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 		return err
 	}
 
+	extracted := make(Map[K, V])
+
 	for i := 0; i < int(length); i++ {
-		key := m.newKeyType()
-		if err := key.ExtractFrom(readable); err != nil {
+		var key K
+		if err := m.extractType(&key, readable); err != nil {
 			return err
 		}
 
-		value := m.newValueType()
-		if err := value.ExtractFrom(readable); err != nil {
+		var value V
+		if err := m.extractType(&value, readable); err != nil {
 			return err
 		}
 
-		(*m)[key] = value
+		extracted[key] = value
 	}
 
+	*m = extracted
+
+	return nil
+}
+
+func (m Map[K, V]) copyType(t any) RVType {
+	// * This just makes Map.Copy() a bit cleaner
+	// * since it doesn't have to type check
+	if rvt, ok := t.(interface{ Copy() RVType }); ok {
+		return rvt.Copy()
+	}
+
+	// TODO - Improve this, this isn't safe
 	return nil
 }
 
@@ -63,26 +88,38 @@ func (m Map[K, V]) Copy() RVType {
 	copied := make(Map[K, V])
 
 	for key, value := range m {
-		copied[key.Copy().(K)] = value.Copy().(V)
+		copied[m.copyType(key).(K)] = m.copyType(value).(V)
 	}
 
-	return &copied
+	return copied
+}
+
+func (m Map[K, V]) typesEqual(t1, t2 any) bool {
+	// * This just makes Map.Equals() a bit cleaner
+	// * since it doesn't have to type check
+	if rvt1, ok := t1.(RVType); ok {
+		if rvt2, ok := t2.(RVType); ok {
+			return rvt1.Equals(rvt2)
+		}
+	}
+
+	return false
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (m Map[K, V]) Equals(o RVType) bool {
-	if _, ok := o.(*Map[K, V]); !ok {
+	if _, ok := o.(Map[K, V]); !ok {
 		return false
 	}
 
-	other := *o.(*Map[K, V])
+	other := o.(Map[K, V])
 
 	if len(m) != len(other) {
 		return false
 	}
 
 	for key, value := range m {
-		if otherValue, ok := other[key]; !ok || !value.Equals(otherValue) {
+		if otherValue, ok := other[key]; !ok || m.typesEqual(&value, &otherValue) {
 			return false
 		}
 	}
@@ -91,7 +128,7 @@ func (m Map[K, V]) Equals(o RVType) bool {
 }
 
 // String returns a string representation of the struct
-func (m *Map[K, V]) String() string {
+func (m Map[K, V]) String() string {
 	return m.FormatToString(0)
 }
 
@@ -119,7 +156,6 @@ func (m Map[K, V]) FormatToString(indentationLevel int) string {
 }
 
 // NewMap returns a new Map of the provided type
-func NewMap[K RVComparable, V RVType]() *Map[K, V] {
-	m := make(Map[K, V])
-	return &m
+func NewMap[K comparable, V any]() Map[K, V] {
+	return make(Map[K, V])
 }

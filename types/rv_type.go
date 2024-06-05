@@ -5,14 +5,13 @@ package types
 // This includes primitives and custom types.
 type RVType interface {
 	WriteTo(writable Writable)
-	ExtractFrom(readable Readable) error
 	Copy() RVType
 	Equals(other RVType) bool
 }
 
-// RVType represents a Quazal Rendez-Vous/NEX type which
-// implements the "comparable" type constraint.
-type RVComparable interface {
-	comparable
+// RVTypePtr represents a pointer to an RVType.
+// User to separate pointer receivers for easier type checking.
+type RVTypePtr interface {
 	RVType
+	ExtractFrom(readable Readable) error
 }

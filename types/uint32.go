@@ -23,17 +23,17 @@ func (u32 *UInt32) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the UInt32. Requires type assertion when used
 func (u32 UInt32) Copy() RVType {
-	copy := u32
-	return &copy
+	return NewUInt32(uint32(u32))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (u32 UInt32) Equals(o RVType) bool {
-	other, ok := o.(*UInt32)
+	other, ok := o.(UInt32)
 	if !ok {
 		return false
 	}
-	return u32 == *other
+
+	return u32 == other
 }
 
 // String returns a string representation of the UInt32
@@ -41,8 +41,8 @@ func (u32 UInt32) String() string {
 	return fmt.Sprintf("%d", u32)
 }
 
-// NewUInt32 returns a new UInt32 pointer
-func NewUInt32(input uint32) *UInt32 {
+// NewUInt32 returns a new UInt32
+func NewUInt32(input uint32) UInt32 {
 	u32 := UInt32(input)
-	return &u32
+	return u32
 }

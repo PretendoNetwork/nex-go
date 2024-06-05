@@ -23,17 +23,17 @@ func (u8 *UInt8) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the UInt8. Requires type assertion when used
 func (u8 UInt8) Copy() RVType {
-	copy := u8
-	return &copy
+	return NewUInt8(uint8(u8))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (u8 UInt8) Equals(o RVType) bool {
-	other, ok := o.(*UInt8)
+	other, ok := o.(UInt8)
 	if !ok {
 		return false
 	}
-	return u8 == *other
+
+	return u8 == other
 }
 
 // String returns a string representation of the UInt8
@@ -41,8 +41,8 @@ func (u8 UInt8) String() string {
 	return fmt.Sprintf("%d", u8)
 }
 
-// NewUInt8 returns a new UInt8 pointer
-func NewUInt8(input uint8) *UInt8 {
+// NewUInt8 returns a new UInt8
+func NewUInt8(input uint8) UInt8 {
 	u8 := UInt8(input)
-	return &u8
+	return u8
 }

@@ -17,7 +17,7 @@ type StationURL struct {
 	params  map[string]string
 }
 
-func (s *StationURL) numberParamValue(name string, bits int) (uint64, bool) {
+func (s StationURL) numberParamValue(name string, bits int) (uint64, bool) {
 	valueString, ok := s.ParamValue(name)
 	if !ok {
 		return 0, false
@@ -31,7 +31,7 @@ func (s *StationURL) numberParamValue(name string, bits int) (uint64, bool) {
 	return value, true
 }
 
-func (s *StationURL) uint8ParamValue(name string) (uint8, bool) {
+func (s StationURL) uint8ParamValue(name string) (uint8, bool) {
 	value, ok := s.numberParamValue(name, 8)
 	if !ok {
 		return 0, false
@@ -40,7 +40,7 @@ func (s *StationURL) uint8ParamValue(name string) (uint8, bool) {
 	return uint8(value), true
 }
 
-func (s *StationURL) uint16ParamValue(name string) (uint16, bool) {
+func (s StationURL) uint16ParamValue(name string) (uint16, bool) {
 	value, ok := s.numberParamValue(name, 16)
 	if !ok {
 		return 0, false
@@ -49,7 +49,7 @@ func (s *StationURL) uint16ParamValue(name string) (uint16, bool) {
 	return uint16(value), true
 }
 
-func (s *StationURL) uint32ParamValue(name string) (uint32, bool) {
+func (s StationURL) uint32ParamValue(name string) (uint32, bool) {
 	value, ok := s.numberParamValue(name, 32)
 	if !ok {
 		return 0, false
@@ -58,11 +58,11 @@ func (s *StationURL) uint32ParamValue(name string) (uint32, bool) {
 	return uint32(value), true
 }
 
-func (s *StationURL) uint64ParamValue(name string) (uint64, bool) {
+func (s StationURL) uint64ParamValue(name string) (uint64, bool) {
 	return s.numberParamValue(name, 64)
 }
 
-func (s *StationURL) boolParamValue(name string) bool {
+func (s StationURL) boolParamValue(name string) bool {
 	valueString, ok := s.ParamValue(name)
 	if !ok {
 		return false
@@ -72,7 +72,7 @@ func (s *StationURL) boolParamValue(name string) bool {
 }
 
 // WriteTo writes the StationURL to the given writable
-func (s *StationURL) WriteTo(writable Writable) {
+func (s StationURL) WriteTo(writable Writable) {
 	str := NewString(s.EncodeToString())
 
 	str.WriteTo(writable)
@@ -86,23 +86,23 @@ func (s *StationURL) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read StationURL. %s", err.Error())
 	}
 
-	s.FromString(string(*str))
+	s.FromString(str)
 
 	return nil
 }
 
 // Copy returns a new copied instance of StationURL
-func (s *StationURL) Copy() RVType {
-	return NewStationURL(s.EncodeToString())
+func (s StationURL) Copy() RVType {
+	return NewStationURL(String(s.EncodeToString()))
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (s *StationURL) Equals(o RVType) bool {
-	if _, ok := o.(*StationURL); !ok {
+func (s StationURL) Equals(o RVType) bool {
+	if _, ok := o.(StationURL); !ok {
 		return false
 	}
 
-	other := o.(*StationURL)
+	other := o.(StationURL)
 
 	if s.urlType != other.urlType {
 		return false
@@ -143,7 +143,7 @@ func (s *StationURL) RemoveParam(name string) {
 // Returns the string value and a bool indicating if the value existed or not.
 //
 // Originally called nn::nex::StationURL::GetParamValue
-func (s *StationURL) ParamValue(name string) (string, bool) {
+func (s StationURL) ParamValue(name string) (string, bool) {
 	if value, ok := s.params[name]; ok {
 		return value, true
 	}
@@ -159,7 +159,7 @@ func (s *StationURL) SetAddress(address string) {
 // Address gets the stations IP address.
 //
 // Originally called nn::nex::StationURL::GetAddress
-func (s *StationURL) Address() (string, bool) {
+func (s StationURL) Address() (string, bool) {
 	return s.ParamValue("address")
 }
 
@@ -185,7 +185,7 @@ func (s *StationURL) SetURLType(urlType constants.StationURLType) {
 // URLType returns the stations scheme type
 //
 // Originally called nn::nex::StationURL::GetURLType
-func (s *StationURL) URLType() constants.StationURLType {
+func (s StationURL) URLType() constants.StationURLType {
 	return s.urlType
 }
 
@@ -203,7 +203,7 @@ func (s *StationURL) SetStreamID(streamID uint8) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetStreamID
-func (s *StationURL) StreamID() (uint8, bool) {
+func (s StationURL) StreamID() (uint8, bool) {
 	return s.uint8ParamValue("sid")
 }
 
@@ -221,7 +221,7 @@ func (s *StationURL) SetStreamType(streamType constants.StreamType) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetStreamType
-func (s *StationURL) StreamType() (constants.StreamType, bool) {
+func (s StationURL) StreamType() (constants.StreamType, bool) {
 	streamType, ok := s.uint8ParamValue("stream")
 
 	// TODO - Range check on the enum?
@@ -241,7 +241,7 @@ func (s *StationURL) SetNodeID(nodeID uint16) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetNodeId
-func (s *StationURL) NodeID() (uint16, bool) {
+func (s StationURL) NodeID() (uint16, bool) {
 	return s.uint16ParamValue("NodeID")
 }
 
@@ -255,10 +255,10 @@ func (s *StationURL) SetPrincipalID(pid *PID) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetPrincipalID
-func (s *StationURL) PrincipalID() (*PID, bool) {
+func (s StationURL) PrincipalID() (PID, bool) {
 	pid, ok := s.uint64ParamValue("PID")
 	if !ok {
-		return nil, false
+		return NewPID(0), false
 	}
 
 	return NewPID(pid), true
@@ -276,7 +276,7 @@ func (s *StationURL) SetConnectionID(connectionID uint32) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetConnectionID
-func (s *StationURL) ConnectionID() (uint32, bool) {
+func (s StationURL) ConnectionID() (uint32, bool) {
 	return s.uint32ParamValue("CID")
 }
 
@@ -292,7 +292,7 @@ func (s *StationURL) SetRVConnectionID(connectionID uint32) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetRVConnectionID
-func (s *StationURL) RVConnectionID() (uint32, bool) {
+func (s StationURL) RVConnectionID() (uint32, bool) {
 	return s.uint32ParamValue("RVCID")
 }
 
@@ -306,7 +306,7 @@ func (s *StationURL) SetProbeRequestID(probeRequestID uint32) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetProbeRequestID
-func (s *StationURL) ProbeRequestID() (uint32, bool) {
+func (s StationURL) ProbeRequestID() (uint32, bool) {
 	return s.uint32ParamValue("PRID")
 }
 
@@ -322,7 +322,7 @@ func (s *StationURL) SetFastProbeResponse(fast bool) {
 // IsFastProbeResponseEnabled checks if fast probe response is enabled
 //
 // Originally called nn::nex::StationURL::GetFastProbeResponse
-func (s *StationURL) IsFastProbeResponseEnabled() bool {
+func (s StationURL) IsFastProbeResponseEnabled() bool {
 	return s.boolParamValue("fastproberesponse")
 }
 
@@ -336,7 +336,7 @@ func (s *StationURL) SetNATMapping(mapping constants.NATMappingProperties) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetNATMapping
-func (s *StationURL) NATMapping() (constants.NATMappingProperties, bool) {
+func (s StationURL) NATMapping() (constants.NATMappingProperties, bool) {
 	natm, ok := s.uint8ParamValue("natm")
 
 	// TODO - Range check on the enum?
@@ -354,7 +354,7 @@ func (s *StationURL) SetNATFiltering(filtering constants.NATFilteringProperties)
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetNATFiltering
-func (s *StationURL) NATFiltering() (constants.NATFilteringProperties, bool) {
+func (s StationURL) NATFiltering() (constants.NATFilteringProperties, bool) {
 	natf, ok := s.uint8ParamValue("natf")
 
 	// TODO - Range check on the enum?
@@ -374,7 +374,7 @@ func (s *StationURL) SetProbeRequestInitiation(probeinit bool) {
 // IsProbeRequestInitiationEnabled checks wheteher probing should be initiated.
 //
 // Originally called nn::nex::StationURL::GetProbeRequestInitiation
-func (s *StationURL) IsProbeRequestInitiationEnabled() bool {
+func (s StationURL) IsProbeRequestInitiationEnabled() bool {
 	return s.boolParamValue("probeinit")
 }
 
@@ -390,7 +390,7 @@ func (s *StationURL) SetUPnPSupport(supported bool) {
 // IsUPnPSupported checks whether UPnP is enabled on the station.
 //
 // Originally called nn::nex::StationURL::GetUPnPSupport
-func (s *StationURL) IsUPnPSupported() bool {
+func (s StationURL) IsUPnPSupported() bool {
 	return s.boolParamValue("upnp")
 }
 
@@ -408,7 +408,7 @@ func (s *StationURL) SetNATPMPSupport(supported bool) {
 // IsNATPMPSupported checks whether PMP is enabled on the station.
 //
 // Originally called nn::nex::StationURL::GetNatPMPSupport
-func (s *StationURL) IsNATPMPSupported() bool {
+func (s StationURL) IsNATPMPSupported() bool {
 	return s.boolParamValue("pmp")
 }
 
@@ -423,7 +423,7 @@ func (s *StationURL) SetType(flags uint8) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetType
-func (s *StationURL) Type() (uint8, bool) {
+func (s StationURL) Type() (uint8, bool) {
 	return s.uint8ParamValue("type")
 }
 
@@ -435,7 +435,7 @@ func (s *StationURL) SetRelayServerAddress(address string) {
 // RelayServerAddress gets the address for the relay server
 //
 // Originally called nn::nex::StationURL::GetRelayServerAddress
-func (s *StationURL) RelayServerAddress() (string, bool) {
+func (s StationURL) RelayServerAddress() (string, bool) {
 	return s.ParamValue("Rsa")
 }
 
@@ -449,7 +449,7 @@ func (s *StationURL) SetRelayServerPort(port uint16) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetRelayServerPort
-func (s *StationURL) RelayServerPort() (uint16, bool) {
+func (s StationURL) RelayServerPort() (uint16, bool) {
 	return s.uint16ParamValue("Rsp")
 }
 
@@ -461,7 +461,7 @@ func (s *StationURL) SetRelayAddress(address string) {
 // RelayAddress gets the address for the relay
 //
 // Originally called nn::nex::StationURL::GetRelayAddress
-func (s *StationURL) RelayAddress() (string, bool) {
+func (s StationURL) RelayAddress() (string, bool) {
 	return s.ParamValue("Ra")
 }
 
@@ -475,7 +475,7 @@ func (s *StationURL) SetRelayPort(port uint16) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetRelayPort
-func (s *StationURL) RelayPort() (uint16, bool) {
+func (s StationURL) RelayPort() (uint16, bool) {
 	return s.uint16ParamValue("Rp")
 }
 
@@ -491,7 +491,7 @@ func (s *StationURL) SetUseRelayServer(useRelayServer bool) {
 // IsRelayServerEnabled checks whether the connection should use a relay server.
 //
 // Originally called nn::nex::StationURL::GetUseRelayServer
-func (s *StationURL) IsRelayServerEnabled() bool {
+func (s StationURL) IsRelayServerEnabled() bool {
 	return s.boolParamValue("R")
 }
 
@@ -508,27 +508,27 @@ func (s *StationURL) SetPlatformType(platformType uint8) {
 // Returns a bool indicating if the parameter existed or not.
 //
 // Originally called nn::nex::StationURL::GetPlatformType
-func (s *StationURL) PlatformType() (uint8, bool) {
+func (s StationURL) PlatformType() (uint8, bool) {
 	return s.uint8ParamValue("Pl")
 }
 
 // IsPublic checks if the station is a public address
-func (s *StationURL) IsPublic() bool {
+func (s StationURL) IsPublic() bool {
 	return s.flags&uint8(constants.StationURLFlagPublic) == uint8(constants.StationURLFlagPublic)
 }
 
 // IsBehindNAT checks if the user is behind NAT
-func (s *StationURL) IsBehindNAT() bool {
+func (s StationURL) IsBehindNAT() bool {
 	return s.flags&uint8(constants.StationURLFlagBehindNAT) == uint8(constants.StationURLFlagBehindNAT)
 }
 
 // FromString parses the StationURL data from a string
-func (s *StationURL) FromString(str string) {
+func (s *StationURL) FromString(str String) {
 	if str == "" {
 		return
 	}
 
-	parts := strings.Split(str, ":/")
+	parts := strings.Split(string(str), ":/")
 	parametersString := ""
 
 	// * Unknown schemes seem to be supported based on
@@ -574,7 +574,7 @@ func (s *StationURL) FromString(str string) {
 }
 
 // EncodeToString encodes the StationURL into a string
-func (s *StationURL) EncodeToString() string {
+func (s StationURL) EncodeToString() string {
 	scheme := ""
 
 	// * Unknown schemes seem to be supported based on
@@ -598,12 +598,12 @@ func (s *StationURL) EncodeToString() string {
 }
 
 // String returns a string representation of the struct
-func (s *StationURL) String() string {
+func (s StationURL) String() string {
 	return s.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (s *StationURL) FormatToString(indentationLevel int) string {
+func (s StationURL) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
@@ -617,8 +617,8 @@ func (s *StationURL) FormatToString(indentationLevel int) string {
 }
 
 // NewStationURL returns a new StationURL
-func NewStationURL(str string) *StationURL {
-	stationURL := &StationURL{
+func NewStationURL(str String) StationURL {
+	stationURL := StationURL{
 		params: make(map[string]string),
 	}
 

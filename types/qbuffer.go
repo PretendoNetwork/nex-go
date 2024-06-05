@@ -40,19 +40,16 @@ func (qb *QBuffer) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the qBuffer. Requires type assertion when used
 func (qb QBuffer) Copy() RVType {
-	copied := make(QBuffer, len(qb))
-	copy(copied, qb)
-
-	return &copied
+	return NewQBuffer(qb)
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (qb QBuffer) Equals(o RVType) bool {
-	if _, ok := o.(*QBuffer); !ok {
+	if _, ok := o.(QBuffer); !ok {
 		return false
 	}
 
-	return bytes.Equal(qb, *o.(*QBuffer))
+	return bytes.Equal(qb, o.(QBuffer))
 }
 
 // String returns a string representation of the struct
@@ -61,7 +58,9 @@ func (qb QBuffer) String() string {
 }
 
 // NewQBuffer returns a new QBuffer
-func NewQBuffer(input []byte) *QBuffer {
-	qb := QBuffer(input)
-	return &qb
+func NewQBuffer(input []byte) QBuffer {
+	qb := make(QBuffer, len(input))
+	copy(qb, input)
+
+	return qb
 }

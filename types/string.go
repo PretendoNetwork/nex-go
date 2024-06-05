@@ -60,17 +60,16 @@ func (s *String) ExtractFrom(readable Readable) error {
 
 // Copy returns a pointer to a copy of the String. Requires type assertion when used
 func (s String) Copy() RVType {
-	copy := s
-	return &copy
+	return NewString(string(s))
 }
 
 // Equals checks if the input is equal in value to the current instance
 func (s String) Equals(o RVType) bool {
-	if _, ok := o.(*String); !ok {
+	if _, ok := o.(String); !ok {
 		return false
 	}
 
-	return s == *o.(*String)
+	return s == o.(String)
 }
 
 // String returns a string representation of the struct
@@ -79,7 +78,7 @@ func (s String) String() string {
 }
 
 // NewString returns a new String
-func NewString(input string) *String {
+func NewString(input string) String {
 	s := String(input)
-	return &s
+	return s
 }
