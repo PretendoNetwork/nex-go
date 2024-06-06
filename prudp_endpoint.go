@@ -153,10 +153,8 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 		return
 	}
 
-	if packet.HasFlag(constants.PacketFlagReliable) {
-		slidingWindow := connection.SlidingWindow(packet.SubstreamID())
-		slidingWindow.ResendScheduler.AcknowledgePacket(packet.SequenceID())
-	}
+	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
+	slidingWindow.ResendScheduler.AcknowledgePacket(packet.SequenceID())
 }
 
 func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
