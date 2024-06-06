@@ -62,6 +62,7 @@ func (pc *PRUDPConnection) SetPID(pid *types.PID) {
 
 // reset resets the connection state to all zero values
 func (pc *PRUDPConnection) reset() {
+	pc.packetDispatchQueues.Clear(func(key uint8, value *PacketDispatchQueue) {})
 	pc.slidingWindows.Clear(func(_ uint8, slidingWindow *SlidingWindow) {
 		slidingWindow.ResendScheduler.Stop()
 	})
