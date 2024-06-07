@@ -246,8 +246,8 @@ func (s StationURL) NodeID() (uint16, bool) {
 }
 
 // SetPrincipalID sets the stations target PID
-func (s *StationURL) SetPrincipalID(pid *PID) {
-	s.SetParamValue("PID", strconv.FormatUint(uint64(*pid), 10))
+func (s *StationURL) SetPrincipalID(pid PID) {
+	s.SetParamValue("PID", strconv.FormatUint(uint64(pid), 10))
 }
 
 // PrincipalID gets the stations target PID.
