@@ -689,7 +689,7 @@ func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 	var connection *PRUDPConnection
 
 	pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
-		if pc.pid.Value() == pid {
+		if uint64(pc.pid) == pid {
 			connection = pc
 			return true
 		}

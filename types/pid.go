@@ -56,16 +56,6 @@ func (p PID) Equals(o RVType) bool {
 	return p == o.(PID)
 }
 
-// Value returns the numeric value of the PID as a uint64 regardless of client version
-func (p PID) Value() uint64 {
-	return uint64(p)
-}
-
-// LegacyValue returns the numeric value of the PID as a uint32, for legacy clients
-func (p PID) LegacyValue() uint32 {
-	return uint32(p)
-}
-
 // String returns a string representation of the struct
 func (p PID) String() string {
 	return p.FormatToString(0)
