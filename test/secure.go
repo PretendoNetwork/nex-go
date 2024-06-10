@@ -52,6 +52,7 @@ func startSecureServer() {
 	secureEndpoint.AccountDetailsByPID = accountDetailsByPID
 	secureEndpoint.AccountDetailsByUsername = accountDetailsByUsername
 	secureEndpoint.ServerAccount = secureServerAccount
+	secureEndpoint.IsSecureEndPoint = true
 
 	secureEndpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
