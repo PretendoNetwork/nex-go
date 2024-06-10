@@ -17,6 +17,12 @@ type StationURL struct {
 	params  map[string]string
 }
 
+func (s *StationURL) ensureFields() {
+	if s.params == nil {
+		s.params = make(map[string]string)
+	}
+}
+
 func (s StationURL) numberParamValue(name string, bits int) (uint64, bool) {
 	valueString, ok := s.ParamValue(name)
 	if !ok {
@@ -112,6 +118,8 @@ func (s StationURL) Equals(o RVType) bool {
 		return false
 	}
 
+	s.ensureFields()
+
 	if len(s.params) != len(other.params) {
 		return false
 	}
@@ -128,6 +136,7 @@ func (s StationURL) Equals(o RVType) bool {
 
 // SetParamValue sets a StationURL parameter
 func (s *StationURL) SetParamValue(name, value string) {
+	s.ensureFields()
 	s.params[name] = value
 }
 
@@ -135,6 +144,7 @@ func (s *StationURL) SetParamValue(name, value string) {
 //
 // Originally called nn::nex::StationURL::Remove
 func (s *StationURL) RemoveParam(name string) {
+	s.ensureFields()
 	delete(s.params, name)
 }
 
@@ -144,6 +154,7 @@ func (s *StationURL) RemoveParam(name string) {
 //
 // Originally called nn::nex::StationURL::GetParamValue
 func (s StationURL) ParamValue(name string) (string, bool) {
+	s.ensureFields()
 	if value, ok := s.params[name]; ok {
 		return value, true
 	}
@@ -586,6 +597,8 @@ func (s StationURL) EncodeToString() string {
 	} else if s.urlType == constants.StationURLUDP {
 		scheme = "udp:/"
 	}
+
+	s.ensureFields()
 
 	fields := make([]string, 0)
 
