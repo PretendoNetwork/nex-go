@@ -22,6 +22,10 @@ func (s *StationURL) ensureFields() {
 	if s.standardParams == nil {
 		s.standardParams = make(map[string]string)
 	}
+
+	if s.customParams == nil {
+		s.customParams = make(map[string]string)
+	}
 }
 
 func (s StationURL) numberParamValue(name string, bits int) (uint64, bool) {
