@@ -79,7 +79,7 @@ func (s StationURL) boolParamValue(name string) bool {
 
 // WriteTo writes the StationURL to the given writable
 func (s StationURL) WriteTo(writable Writable) {
-	str := NewString(s.EncodeToString())
+	str := NewString(s.Format())
 
 	str.WriteTo(writable)
 }
@@ -99,7 +99,7 @@ func (s *StationURL) ExtractFrom(readable Readable) error {
 
 // Copy returns a new copied instance of StationURL
 func (s StationURL) Copy() RVType {
-	return NewStationURL(String(s.EncodeToString()))
+	return NewStationURL(String(s.Format()))
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -584,8 +584,8 @@ func (s *StationURL) FromString(str String) {
 	}
 }
 
-// EncodeToString encodes the StationURL into a string
-func (s StationURL) EncodeToString() string {
+// Format encodes the StationURL into a string
+func (s StationURL) Format() string {
 	scheme := ""
 
 	// * Unknown schemes seem to be supported based on
@@ -623,7 +623,7 @@ func (s StationURL) FormatToString(indentationLevel int) string {
 	var b strings.Builder
 
 	b.WriteString("StationURL{\n")
-	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, s.EncodeToString()))
+	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, s.Format()))
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()

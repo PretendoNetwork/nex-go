@@ -115,7 +115,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	localStation.SetPortNumber(uint16(packet.Sender().Address().(*net.UDPAddr).Port))
 
 	retval := types.NewQResultSuccess(0x00010001)
-	localStationURL := types.NewString(localStation.EncodeToString())
+	localStationURL := types.NewString(localStation.Format())
 
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
