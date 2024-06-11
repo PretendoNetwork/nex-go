@@ -12,14 +12,15 @@ import (
 //
 // Contains location of a station to connect to, with data about how to connect.
 type StationURL struct {
-	urlType constants.StationURLType
-	flags   uint8
-	params  map[string]string
+	urlType        constants.StationURLType
+	flags          uint8
+	standardParams map[string]string
+	customParams   map[string]string
 }
 
 func (s *StationURL) ensureFields() {
-	if s.params == nil {
-		s.params = make(map[string]string)
+	if s.standardParams == nil {
+		s.standardParams = make(map[string]string)
 	}
 }
 
@@ -120,12 +121,12 @@ func (s StationURL) Equals(o RVType) bool {
 
 	s.ensureFields()
 
-	if len(s.params) != len(other.params) {
+	if len(s.standardParams) != len(other.standardParams) {
 		return false
 	}
 
-	for key, value1 := range s.params {
-		value2, ok := other.params[key]
+	for key, value1 := range s.standardParams {
+		value2, ok := other.standardParams[key]
 		if !ok || value1 != value2 {
 			return false
 		}
@@ -134,10 +135,46 @@ func (s StationURL) Equals(o RVType) bool {
 	return true
 }
 
+// Set sets a StationURL parameter.
+//
+// "custom" determines whether or not the parameter is a standard
+// parameter or an application-specific parameter
+func (s *StationURL) Set(name, value string, custom bool) {
+	s.ensureFields()
+	if custom {
+		s.customParams[name] = value
+	} else {
+		s.standardParams[name] = value
+	}
+}
+
+// Get returns the value of the requested param.
+//
+// Returns the string value and a bool indicating if the value existed or not.
+//
+// "custom" determines whether or not the parameter is a standard
+// parameter or an application-specific parameter
+func (s *StationURL) Get(name string, custom bool) (string, bool) {
+	s.ensureFields()
+	var m map[string]string
+
+	if custom {
+		m = s.customParams
+	} else {
+		m = s.standardParams
+	}
+
+	if value, ok := m[name]; ok {
+		return value, true
+	}
+
+	return "", false
+}
+
 // SetParamValue sets a StationURL parameter
 func (s *StationURL) SetParamValue(name, value string) {
 	s.ensureFields()
-	s.params[name] = value
+	s.standardParams[name] = value
 }
 
 // RemoveParam removes a StationURL parameter.
@@ -145,7 +182,7 @@ func (s *StationURL) SetParamValue(name, value string) {
 // Originally called nn::nex::StationURL::Remove
 func (s *StationURL) RemoveParam(name string) {
 	s.ensureFields()
-	delete(s.params, name)
+	delete(s.standardParams, name)
 }
 
 // ParamValue returns the value of the requested param.
@@ -155,7 +192,7 @@ func (s *StationURL) RemoveParam(name string) {
 // Originally called nn::nex::StationURL::GetParamValue
 func (s StationURL) ParamValue(name string) (string, bool) {
 	s.ensureFields()
-	if value, ok := s.params[name]; ok {
+	if value, ok := s.standardParams[name]; ok {
 		return value, true
 	}
 
@@ -539,7 +576,7 @@ func (s *StationURL) Parse(str String) {
 		return
 	}
 
-	parts := strings.Split(string(str), ":/")
+	parts := strings.SplitN(string(str), ":/", 2)
 
 	// * Unknown schemes are disallowed to be parsed
 	// * according to Parse__Q3_2nn3nex10StationURLFv
@@ -566,13 +603,28 @@ func (s *StationURL) Parse(str String) {
 		return
 	}
 
-	parameters := strings.Split(parametersString, ";")
+	parts = strings.SplitN(parametersString, "#", 2)
+	standardSection := parts[0]
+	customSection := ""
 
-	for i := 0; i < len(parameters); i++ {
-		// TODO - StationURL parameters support extra data through the # delimiter. What is that? Need to support it somehow
-		name, value, _ := strings.Cut(parameters[i], "=")
+	if len(parts) == 2 {
+		customSection = parts[1]
+	}
 
-		s.SetParamValue(name, value)
+	standardParameters := strings.Split(standardSection, ";")
+
+	for i := 0; i < len(standardParameters); i++ {
+		name, value, _ := strings.Cut(standardParameters[i], "=")
+
+		s.Set(name, value, false)
+	}
+
+	customParameters := strings.Split(customSection, ";")
+
+	for i := 0; i < len(customParameters); i++ {
+		name, value, _ := strings.Cut(customParameters[i], "=")
+
+		s.Set(name, value, true)
 	}
 
 	if flags, ok := s.uint8ParamValue("type"); ok {
@@ -598,12 +650,23 @@ func (s StationURL) Format() string {
 
 	fields := make([]string, 0)
 
-	for key, value := range s.params {
-		// TODO - StationURL parameters support extra data through the # delimiter. What is that? Need to support it somehow
+	for key, value := range s.standardParams {
 		fields = append(fields, fmt.Sprintf("%s=%s", key, value))
 	}
 
-	return scheme + strings.Join(fields, ";")
+	url := scheme + strings.Join(fields, ";")
+
+	if len(s.customParams) != 0 {
+		customFields := make([]string, 0)
+
+		for key, value := range s.standardParams {
+			customFields = append(customFields, fmt.Sprintf("%s=%s", key, value))
+		}
+
+		url = url + "#" + strings.Join(customFields, ";")
+	}
+
+	return url
 }
 
 // String returns a string representation of the struct
@@ -628,7 +691,8 @@ func (s StationURL) FormatToString(indentationLevel int) string {
 // NewStationURL returns a new StationURL
 func NewStationURL(str String) StationURL {
 	stationURL := StationURL{
-		params: make(map[string]string),
+		standardParams: make(map[string]string),
+		customParams:   make(map[string]string),
 	}
 
 	stationURL.Parse(str)
