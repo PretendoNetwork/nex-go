@@ -92,7 +92,7 @@ func (s *StationURL) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read StationURL. %s", err.Error())
 	}
 
-	s.FromString(str)
+	s.Parse(str)
 
 	return nil
 }
@@ -533,36 +533,32 @@ func (s StationURL) IsBehindNAT() bool {
 	return s.flags&uint8(constants.StationURLFlagBehindNAT) == uint8(constants.StationURLFlagBehindNAT)
 }
 
-// FromString parses the StationURL data from a string
-func (s *StationURL) FromString(str String) {
+// Parse parses the StationURL data from a string
+func (s *StationURL) Parse(str String) {
 	if str == "" {
 		return
 	}
 
 	parts := strings.Split(string(str), ":/")
-	parametersString := ""
 
-	// * Unknown schemes seem to be supported based on
-	// * Format__Q3_2nn3nex10StationURLFv
-	if len(parts) == 1 {
-		parametersString = parts[0]
-		s.SetURLType(constants.UnknownStationURLType)
-	} else if len(parts) == 2 {
-		scheme := parts[0]
-		parametersString = parts[1]
-
-		if scheme == "prudp" {
-			s.SetURLType(constants.StationURLPRUDP)
-		} else if scheme == "prudps" {
-			s.SetURLType(constants.StationURLPRUDPS)
-		} else if scheme == "udp" {
-			s.SetURLType(constants.StationURLUDP)
-		} else {
-			s.SetURLType(constants.UnknownStationURLType)
-		}
-	} else {
-		// * Badly formatted station
+	// * Unknown schemes are disallowed to be parsed
+	// * according to Parse__Q3_2nn3nex10StationURLFv
+	if len(parts) != 2 {
 		return
+	}
+
+	scheme := parts[0]
+	parametersString := parts[1]
+
+	switch scheme {
+	case "prudp":
+		s.SetURLType(constants.StationURLPRUDP)
+	case "prudps":
+		s.SetURLType(constants.StationURLPRUDPS)
+	case "udp":
+		s.SetURLType(constants.StationURLUDP)
+	default:
+		return // * Unknown scheme
 	}
 
 	// * Return if there are no fields
@@ -635,7 +631,7 @@ func NewStationURL(str String) StationURL {
 		params: make(map[string]string),
 	}
 
-	stationURL.FromString(str)
+	stationURL.Parse(str)
 
 	return stationURL
 }
