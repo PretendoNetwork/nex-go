@@ -647,7 +647,7 @@ func (s *StationURL) Parse() {
 }
 
 // Format encodes the StationURL into a string
-func (s StationURL) Format() {
+func (s *StationURL) Format() {
 	scheme := ""
 
 	// * Unknown schemes seem to be supported based on
