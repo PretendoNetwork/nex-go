@@ -585,7 +585,8 @@ func (s StationURL) IsBehindNAT() bool {
 // Parse parses the StationURL data from a string
 func (s *StationURL) Parse() {
 	url := s.url
-	if url == "" {
+	if url == "" || len(url) > 1024 {
+		// TODO - Should we return an error here?
 		return
 	}
 
@@ -675,6 +676,11 @@ func (s StationURL) Format() {
 		}
 
 		url = url + "#" + strings.Join(customFields, ";")
+	}
+
+	if len(url) > 1024 {
+		// TODO - Should we return an error here?
+		return
 	}
 
 	s.url = url
