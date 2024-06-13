@@ -13,6 +13,7 @@ import (
 // Contains location of a station to connect to, with data about how to connect.
 type StationURL struct {
 	urlType        constants.StationURLType
+	url            string
 	flags          uint8
 	standardParams map[string]string
 	customParams   map[string]string
@@ -84,29 +85,30 @@ func (s StationURL) boolParamValue(name string) bool {
 
 // WriteTo writes the StationURL to the given writable
 func (s StationURL) WriteTo(writable Writable) {
-	str := NewString(s.Format())
+	url := NewString(s.URL())
 
-	str.WriteTo(writable)
+	url.WriteTo(writable)
 }
 
 // ExtractFrom extracts the StationURL from the given readable
 func (s *StationURL) ExtractFrom(readable Readable) error {
 	s.ensureFields()
 
-	str := NewString("")
+	url := NewString("")
 
-	if err := str.ExtractFrom(readable); err != nil {
+	if err := url.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read StationURL. %s", err.Error())
 	}
 
-	s.Parse(str)
+	s.SetURL(string(url))
+	s.Parse()
 
 	return nil
 }
 
 // Copy returns a new copied instance of StationURL
 func (s StationURL) Copy() RVType {
-	return NewStationURL(String(s.Format()))
+	return NewStationURL(String(s.URL()))
 }
 
 // Equals checks if the input is equal in value to the current instance
@@ -459,6 +461,17 @@ func (s StationURL) IsNATPMPSupported() bool {
 	return s.boolParamValue("pmp")
 }
 
+// SetURL sets the internal url string used for parsing
+func (s *StationURL) SetURL(url string) {
+	s.url = url
+}
+
+// URL returns the string formatted URL
+func (s StationURL) URL() string {
+	s.Format()
+	return s.url
+}
+
 // SetType sets the stations type flags
 func (s *StationURL) SetType(flags uint8) {
 	s.flags = flags // * This normally isn't done, but makes IsPublic and IsBehindNAT simpler
@@ -570,12 +583,13 @@ func (s StationURL) IsBehindNAT() bool {
 }
 
 // Parse parses the StationURL data from a string
-func (s *StationURL) Parse(str String) {
-	if str == "" {
+func (s *StationURL) Parse() {
+	url := s.url
+	if url == "" {
 		return
 	}
 
-	parts := strings.SplitN(string(str), ":/", 2)
+	parts := strings.SplitN(string(url), ":/", 2)
 
 	// * Unknown schemes are disallowed to be parsed
 	// * according to Parse__Q3_2nn3nex10StationURLFv
@@ -632,7 +646,7 @@ func (s *StationURL) Parse(str String) {
 }
 
 // Format encodes the StationURL into a string
-func (s StationURL) Format() string {
+func (s StationURL) Format() {
 	scheme := ""
 
 	// * Unknown schemes seem to be supported based on
@@ -663,7 +677,7 @@ func (s StationURL) Format() string {
 		url = url + "#" + strings.Join(customFields, ";")
 	}
 
-	return url
+	s.url = url
 }
 
 // String returns a string representation of the struct
@@ -679,20 +693,21 @@ func (s StationURL) FormatToString(indentationLevel int) string {
 	var b strings.Builder
 
 	b.WriteString("StationURL{\n")
-	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, s.Format()))
+	b.WriteString(fmt.Sprintf("%surl: %q\n", indentationValues, s.URL()))
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
 }
 
 // NewStationURL returns a new StationURL
-func NewStationURL(str String) StationURL {
+func NewStationURL(url String) StationURL {
 	stationURL := StationURL{
+		url:            string(url),
 		standardParams: make(map[string]string),
 		customParams:   make(map[string]string),
 	}
 
-	stationURL.Parse(str)
+	stationURL.Parse()
 
 	return stationURL
 }
