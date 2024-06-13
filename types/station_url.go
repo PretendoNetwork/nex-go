@@ -91,6 +91,8 @@ func (s StationURL) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the StationURL from the given readable
 func (s *StationURL) ExtractFrom(readable Readable) error {
+	s.ensureFields()
+
 	str := NewString("")
 
 	if err := str.ExtractFrom(readable); err != nil {
@@ -123,8 +125,6 @@ func (s StationURL) Equals(o RVType) bool {
 		return false
 	}
 
-	s.ensureFields()
-
 	if len(s.standardParams) != len(other.standardParams) {
 		return false
 	}
@@ -144,7 +144,6 @@ func (s StationURL) Equals(o RVType) bool {
 // "custom" determines whether or not the parameter is a standard
 // parameter or an application-specific parameter
 func (s *StationURL) Set(name, value string, custom bool) {
-	s.ensureFields()
 	if custom {
 		s.customParams[name] = value
 	} else {
@@ -159,7 +158,6 @@ func (s *StationURL) Set(name, value string, custom bool) {
 // "custom" determines whether or not the parameter is a standard
 // parameter or an application-specific parameter
 func (s *StationURL) Get(name string, custom bool) (string, bool) {
-	s.ensureFields()
 	var m map[string]string
 
 	if custom {
@@ -177,7 +175,6 @@ func (s *StationURL) Get(name string, custom bool) (string, bool) {
 
 // SetParamValue sets a StationURL parameter
 func (s *StationURL) SetParamValue(name, value string) {
-	s.ensureFields()
 	s.standardParams[name] = value
 }
 
@@ -185,7 +182,6 @@ func (s *StationURL) SetParamValue(name, value string) {
 //
 // Originally called nn::nex::StationURL::Remove
 func (s *StationURL) RemoveParam(name string) {
-	s.ensureFields()
 	delete(s.standardParams, name)
 }
 
@@ -195,7 +191,6 @@ func (s *StationURL) RemoveParam(name string) {
 //
 // Originally called nn::nex::StationURL::GetParamValue
 func (s StationURL) ParamValue(name string) (string, bool) {
-	s.ensureFields()
 	if value, ok := s.standardParams[name]; ok {
 		return value, true
 	}
@@ -649,8 +644,6 @@ func (s StationURL) Format() string {
 	} else if s.urlType == constants.StationURLUDP {
 		scheme = "udp:/"
 	}
-
-	s.ensureFields()
 
 	fields := make([]string, 0)
 
