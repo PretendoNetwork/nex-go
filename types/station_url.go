@@ -466,7 +466,9 @@ func (s *StationURL) SetURL(url string) {
 	s.url = url
 }
 
-// URL returns the string formatted URL
+// URL returns the string formatted URL.
+//
+// Originally called nn::nex::StationURL::GetURL
 func (s StationURL) URL() string {
 	s.Format()
 	return s.url
