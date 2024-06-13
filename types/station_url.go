@@ -628,17 +628,30 @@ func (s *StationURL) Parse() {
 	standardParameters := strings.Split(standardSection, ";")
 
 	for i := 0; i < len(standardParameters); i++ {
-		name, value, _ := strings.Cut(standardParameters[i], "=")
+		key, value, _ := strings.Cut(standardParameters[i], "=")
 
-		s.Set(name, value, false)
+		if key == "address" && len(value) > 256 {
+			// * The client can only hold a host name of up to 256 characters
+			// TODO - Should we return an error here?
+			return
+		}
+
+		if key == "port" {
+			if port, err := strconv.Atoi(value); err != nil || (port < 0 || port > 65535) {
+				// TODO - Should we return an error here?
+				return
+			}
+		}
+
+		s.Set(key, value, false)
 	}
 
 	customParameters := strings.Split(customSection, ";")
 
 	for i := 0; i < len(customParameters); i++ {
-		name, value, _ := strings.Cut(customParameters[i], "=")
+		key, value, _ := strings.Cut(customParameters[i], "=")
 
-		s.Set(name, value, true)
+		s.Set(key, value, true)
 	}
 
 	if flags, ok := s.uint8ParamValue("type"); ok {
@@ -672,6 +685,19 @@ func (s *StationURL) Format() {
 		customFields := make([]string, 0)
 
 		for key, value := range s.standardParams {
+			if key == "address" && len(value) > 256 {
+				// * The client can only hold a host name of up to 256 characters
+				// TODO - Should we return an error here?
+				return
+			}
+
+			if key == "port" {
+				if port, err := strconv.Atoi(value); err != nil || (port < 0 || port > 65535) {
+					// TODO - Should we return an error here?
+					return
+				}
+			}
+
 			customFields = append(customFields, fmt.Sprintf("%s=%s", key, value))
 		}
 
