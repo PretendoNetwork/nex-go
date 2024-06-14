@@ -126,7 +126,6 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 	}
 
 	packet.SetSender(connection)
-	connection.resetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagAck) || packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleAcknowledgment(packet)
@@ -142,11 +141,12 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 
 func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-	if connection.ConnectionState != StateConnected {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
+
+	if connection.ConnectionState < StateConnected {
 		return
 	}
+
+	connection.resetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleMultiAcknowledgment(packet)
@@ -207,12 +207,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 
 func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-
-	if connection.ConnectionState != StateNotConnected {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
-		return
-	}
+	connection.resetHeartbeat()
 
 	var ack PRUDPPacketInterface
 
@@ -259,11 +254,11 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
 
-	if connection.ConnectionState != StateConnecting {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
+	if connection.ConnectionState < StateConnecting {
 		return
 	}
+
+	connection.resetHeartbeat()
 
 	var ack PRUDPPacketInterface
 
@@ -387,11 +382,11 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
 
-	if connection.ConnectionState != StateConnected {
-		// TODO - Log this?
-		// * Connection is in a bad state, drop the packet and let it die
+	if connection.ConnectionState < StateConnected {
 		return
 	}
+
+	connection.resetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagReliable) {
 		pep.handleReliable(packet)
@@ -420,12 +415,19 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 }
 
 func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
+	connection := packet.Sender().(*PRUDPConnection)
+
+	if connection.ConnectionState < StateConnected {
+		return
+	}
+
+	connection.resetHeartbeat()
+
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
 	}
 
 	if packet.HasFlag(constants.PacketFlagReliable) {
-		connection := packet.Sender().(*PRUDPConnection)
 		connection.Lock()
 		defer connection.Unlock()
 
