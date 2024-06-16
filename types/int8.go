@@ -7,12 +7,12 @@ type Int8 int8
 
 // WriteTo writes the Int8 to the given writable
 func (i8 Int8) WriteTo(writable Writable) {
-	writable.WritePrimitiveInt8(int8(i8))
+	writable.WriteInt8(int8(i8))
 }
 
 // ExtractFrom extracts the Int8 value from the given readable
 func (i8 *Int8) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveInt8()
+	value, err := readable.ReadInt8()
 	if err != nil {
 		return err
 	}

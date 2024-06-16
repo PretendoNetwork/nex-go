@@ -24,7 +24,7 @@ func (m Map[K, V]) writeType(t any, writable Writable) {
 
 // WriteTo writes the Map to the given writable
 func (m Map[K, V]) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt32LE(uint32(len(m)))
+	writable.WriteUInt32LE(uint32(len(m)))
 
 	for key, value := range m {
 		m.writeType(key, writable)
@@ -46,7 +46,7 @@ func (m Map[K, V]) extractType(t any, readable Readable) error {
 
 // ExtractFrom extracts the Map from the given readable
 func (m *Map[K, V]) ExtractFrom(readable Readable) error {
-	length, err := readable.ReadPrimitiveUInt32LE()
+	length, err := readable.ReadUInt32LE()
 	if err != nil {
 		return err
 	}

@@ -167,13 +167,13 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 	if packet.SubstreamID() == 1 {
 		// * New aggregate acknowledgment packets set this to 1
 		// * and encode the real substream ID in in the payload
-		substreamID, _ := stream.ReadPrimitiveUInt8()
-		additionalIDsCount, _ := stream.ReadPrimitiveUInt8()
-		baseSequenceID, _ = stream.ReadPrimitiveUInt16LE()
+		substreamID, _ := stream.ReadUInt8()
+		additionalIDsCount, _ := stream.ReadUInt8()
+		baseSequenceID, _ = stream.ReadUInt16LE()
 		slidingWindow = connection.SlidingWindow(substreamID)
 
 		for i := 0; i < int(additionalIDsCount); i++ {
-			additionalID, _ := stream.ReadPrimitiveUInt16LE()
+			additionalID, _ := stream.ReadUInt16LE()
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	} else {
@@ -184,7 +184,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 		baseSequenceID = packet.SequenceID()
 
 		for stream.Remaining() > 0 {
-			additionalID, _ := stream.ReadPrimitiveUInt16LE()
+			additionalID, _ := stream.ReadUInt16LE()
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	}
@@ -488,12 +488,12 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, types.PID,
 		return nil, 0, 0, err
 	}
 
-	_, err = checkDataStream.ReadPrimitiveUInt32LE() // * CID of secure server station url
+	_, err = checkDataStream.ReadUInt32LE() // * CID of secure server station url
 	if err != nil {
 		return nil, 0, 0, err
 	}
 
-	responseCheck, err := checkDataStream.ReadPrimitiveUInt32LE()
+	responseCheck, err := checkDataStream.ReadUInt32LE()
 	if err != nil {
 		return nil, 0, 0, err
 	}

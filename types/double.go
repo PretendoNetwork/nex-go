@@ -7,12 +7,12 @@ type Double float64
 
 // WriteTo writes the Double to the given writable
 func (d Double) WriteTo(writable Writable) {
-	writable.WritePrimitiveFloat64LE(float64(d))
+	writable.WriteFloat64LE(float64(d))
 }
 
 // ExtractFrom extracts the Double value from the given readable
 func (d *Double) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveFloat64LE()
+	value, err := readable.ReadFloat64LE()
 	if err != nil {
 		return err
 	}

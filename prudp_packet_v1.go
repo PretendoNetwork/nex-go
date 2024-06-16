@@ -134,7 +134,7 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 		return errors.New("Failed to read PRUDPv1 magic. Not have enough data")
 	}
 
-	version, err := p.readStream.ReadPrimitiveUInt8()
+	version, err := p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPv1 version. %s", err.Error())
 	}
@@ -143,24 +143,24 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 		return fmt.Errorf("Invalid PRUDPv1 version. Expected 1, got %d", version)
 	}
 
-	p.optionsLength, err = p.readStream.ReadPrimitiveUInt8()
+	p.optionsLength, err = p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPv1 options length. %s", err.Error())
 	}
 
-	p.payloadLength, err = p.readStream.ReadPrimitiveUInt16LE()
+	p.payloadLength, err = p.readStream.ReadUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPv1 payload length. %s", err.Error())
 	}
 
-	source, err := p.readStream.ReadPrimitiveUInt8()
+	source, err := p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 source. %s", err.Error())
 	}
 
 	p.sourceVirtualPort = VirtualPort(source)
 
-	destination, err := p.readStream.ReadPrimitiveUInt8()
+	destination, err := p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 destination. %s", err.Error())
 	}
@@ -168,7 +168,7 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 	p.destinationVirtualPort = VirtualPort(destination)
 
 	// TODO - Does QRV also encode it this way in PRUDPv1?
-	typeAndFlags, err := p.readStream.ReadPrimitiveUInt16LE()
+	typeAndFlags, err := p.readStream.ReadUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 type and flags. %s", err.Error())
 	}
@@ -176,17 +176,17 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 	p.flags = typeAndFlags >> 4
 	p.packetType = typeAndFlags & 0xF
 
-	p.sessionID, err = p.readStream.ReadPrimitiveUInt8()
+	p.sessionID, err = p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 session ID. %s", err.Error())
 	}
 
-	p.substreamID, err = p.readStream.ReadPrimitiveUInt8()
+	p.substreamID, err = p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 substream ID. %s", err.Error())
 	}
 
-	p.sequenceID, err = p.readStream.ReadPrimitiveUInt16LE()
+	p.sequenceID, err = p.readStream.ReadUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv1 sequence ID. %s", err.Error())
 	}
@@ -197,15 +197,15 @@ func (p *PRUDPPacketV1) decodeHeader() error {
 func (p *PRUDPPacketV1) encodeHeader() []byte {
 	stream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
-	stream.WritePrimitiveUInt8(1) // * Version
-	stream.WritePrimitiveUInt8(p.optionsLength)
-	stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
-	stream.WritePrimitiveUInt8(uint8(p.sourceVirtualPort))
-	stream.WritePrimitiveUInt8(uint8(p.destinationVirtualPort))
-	stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4)) // TODO - Does QRV also encode it this way in PRUDPv1?
-	stream.WritePrimitiveUInt8(p.sessionID)
-	stream.WritePrimitiveUInt8(p.substreamID)
-	stream.WritePrimitiveUInt16LE(p.sequenceID)
+	stream.WriteUInt8(1) // * Version
+	stream.WriteUInt8(p.optionsLength)
+	stream.WriteUInt16LE(uint16(len(p.payload)))
+	stream.WriteUInt8(uint8(p.sourceVirtualPort))
+	stream.WriteUInt8(uint8(p.destinationVirtualPort))
+	stream.WriteUInt16LE(p.packetType | (p.flags << 4)) // TODO - Does QRV also encode it this way in PRUDPv1?
+	stream.WriteUInt8(p.sessionID)
+	stream.WriteUInt8(p.substreamID)
+	stream.WriteUInt16LE(p.sequenceID)
 
 	return stream.Bytes()
 }
@@ -215,19 +215,19 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 	optionsStream := NewByteStreamIn(data, p.server.LibraryVersions, p.server.ByteStreamSettings)
 
 	for optionsStream.Remaining() > 0 {
-		optionID, err := optionsStream.ReadPrimitiveUInt8()
+		optionID, err := optionsStream.ReadUInt8()
 		if err != nil {
 			return err
 		}
 
-		_, err = optionsStream.ReadPrimitiveUInt8() // * Options size. We already know the size based on the ID, though
+		_, err = optionsStream.ReadUInt8() // * Options size. We already know the size based on the ID, though
 		if err != nil {
 			return err
 		}
 
 		if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 			if optionID == 0 {
-				p.supportedFunctions, err = optionsStream.ReadPrimitiveUInt32LE()
+				p.supportedFunctions, err = optionsStream.ReadUInt32LE()
 
 				p.minorVersion = p.supportedFunctions & 0xFF
 				p.supportedFunctions = p.supportedFunctions >> 8
@@ -238,19 +238,19 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 			}
 
 			if optionID == 4 {
-				p.maximumSubstreamID, err = optionsStream.ReadPrimitiveUInt8()
+				p.maximumSubstreamID, err = optionsStream.ReadUInt8()
 			}
 		}
 
 		if p.packetType == constants.ConnectPacket {
 			if optionID == 3 {
-				p.initialUnreliableSequenceID, err = optionsStream.ReadPrimitiveUInt16LE()
+				p.initialUnreliableSequenceID, err = optionsStream.ReadUInt16LE()
 			}
 		}
 
 		if p.packetType == constants.DataPacket {
 			if optionID == 2 {
-				p.fragmentID, err = optionsStream.ReadPrimitiveUInt8()
+				p.fragmentID, err = optionsStream.ReadUInt8()
 			}
 		}
 
@@ -269,12 +269,12 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 	optionsStream := NewByteStreamOut(p.server.LibraryVersions, p.server.ByteStreamSettings)
 
 	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
-		optionsStream.WritePrimitiveUInt8(0)
-		optionsStream.WritePrimitiveUInt8(4)
-		optionsStream.WritePrimitiveUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
+		optionsStream.WriteUInt8(0)
+		optionsStream.WriteUInt8(4)
+		optionsStream.WriteUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
 
-		optionsStream.WritePrimitiveUInt8(1)
-		optionsStream.WritePrimitiveUInt8(16)
+		optionsStream.WriteUInt8(1)
+		optionsStream.WriteUInt8(16)
 		optionsStream.Grow(16)
 		optionsStream.WriteBytesNext(p.connectionSignature)
 
@@ -287,20 +287,20 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 		// * parsed, though, order REALLY doesn't matter.
 		// * NintendoClients expects option 3 before 4, though
 		if p.packetType == constants.ConnectPacket {
-			optionsStream.WritePrimitiveUInt8(3)
-			optionsStream.WritePrimitiveUInt8(2)
-			optionsStream.WritePrimitiveUInt16LE(p.initialUnreliableSequenceID)
+			optionsStream.WriteUInt8(3)
+			optionsStream.WriteUInt8(2)
+			optionsStream.WriteUInt16LE(p.initialUnreliableSequenceID)
 		}
 
-		optionsStream.WritePrimitiveUInt8(4)
-		optionsStream.WritePrimitiveUInt8(1)
-		optionsStream.WritePrimitiveUInt8(p.maximumSubstreamID)
+		optionsStream.WriteUInt8(4)
+		optionsStream.WriteUInt8(1)
+		optionsStream.WriteUInt8(p.maximumSubstreamID)
 	}
 
 	if p.packetType == constants.DataPacket {
-		optionsStream.WritePrimitiveUInt8(2)
-		optionsStream.WritePrimitiveUInt8(1)
-		optionsStream.WritePrimitiveUInt8(p.fragmentID)
+		optionsStream.WriteUInt8(2)
+		optionsStream.WriteUInt8(1)
+		optionsStream.WriteUInt8(p.fragmentID)
 	}
 
 	return optionsStream.Bytes()

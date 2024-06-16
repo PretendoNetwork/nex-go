@@ -13,12 +13,12 @@ type DateTime uint64
 
 // WriteTo writes the DateTime to the given writable
 func (dt DateTime) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt64LE(uint64(dt))
+	writable.WriteUInt64LE(uint64(dt))
 }
 
 // ExtractFrom extracts the DateTime from the given readable
 func (dt *DateTime) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveUInt64LE()
+	value, err := readable.ReadUInt64LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read DateTime value. %s", err.Error())
 	}

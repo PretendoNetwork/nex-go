@@ -7,12 +7,12 @@ type Bool bool
 
 // WriteTo writes the Bool to the given writable
 func (b Bool) WriteTo(writable Writable) {
-	writable.WritePrimitiveBool(bool(b))
+	writable.WriteBool(bool(b))
 }
 
 // ExtractFrom extracts the Bool value from the given readable
 func (b *Bool) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveBool()
+	value, err := readable.ReadBool()
 	if err != nil {
 		return err
 	}

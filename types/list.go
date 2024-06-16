@@ -13,7 +13,7 @@ type List[T RVType] []T
 
 // WriteTo writes the List to the given writable
 func (l List[T]) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt32LE(uint32(len(l)))
+	writable.WriteUInt32LE(uint32(len(l)))
 
 	for _, v := range l {
 		v.WriteTo(writable)
@@ -34,7 +34,7 @@ func (l List[T]) extractType(t any, readable Readable) error {
 
 // ExtractFrom extracts the List from the given readable
 func (l *List[T]) ExtractFrom(readable Readable) error {
-	length, err := readable.ReadPrimitiveUInt32LE()
+	length, err := readable.ReadUInt32LE()
 	if err != nil {
 		return err
 	}

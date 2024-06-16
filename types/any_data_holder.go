@@ -36,8 +36,8 @@ func (adh AnyDataHolder) WriteTo(writable Writable) {
 	length2 := uint32(len(objectData))
 
 	adh.TypeName.WriteTo(writable)
-	writable.WritePrimitiveUInt32LE(length1)
-	writable.WritePrimitiveUInt32LE(length2)
+	writable.WriteUInt32LE(length1)
+	writable.WriteUInt32LE(length2)
 	writable.Write(objectData)
 }
 

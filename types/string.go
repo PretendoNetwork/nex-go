@@ -16,9 +16,9 @@ func (s String) WriteTo(writable Writable) {
 	strLength := len(s)
 
 	if writable.StringLengthSize() == 4 {
-		writable.WritePrimitiveUInt32LE(uint32(strLength))
+		writable.WriteUInt32LE(uint32(strLength))
 	} else {
-		writable.WritePrimitiveUInt16LE(uint16(strLength))
+		writable.WriteUInt16LE(uint16(strLength))
 	}
 
 	writable.Write([]byte(s))
@@ -30,11 +30,11 @@ func (s *String) ExtractFrom(readable Readable) error {
 	var err error
 
 	if readable.StringLengthSize() == 4 {
-		l, e := readable.ReadPrimitiveUInt32LE()
+		l, e := readable.ReadUInt32LE()
 		length = uint64(l)
 		err = e
 	} else {
-		l, e := readable.ReadPrimitiveUInt16LE()
+		l, e := readable.ReadUInt16LE()
 		length = uint64(l)
 		err = e
 	}

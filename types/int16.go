@@ -7,12 +7,12 @@ type Int16 int16
 
 // WriteTo writes the Int16 to the given writable
 func (i16 Int16) WriteTo(writable Writable) {
-	writable.WritePrimitiveInt16LE(int16(i16))
+	writable.WriteInt16LE(int16(i16))
 }
 
 // ExtractFrom extracts the Int16 value from the given readable
 func (i16 *Int16) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveInt16LE()
+	value, err := readable.ReadInt16LE()
 	if err != nil {
 		return err
 	}

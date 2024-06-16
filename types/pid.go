@@ -14,9 +14,9 @@ type PID uint64
 // WriteTo writes the PID to the given writable
 func (p PID) WriteTo(writable Writable) {
 	if writable.PIDSize() == 8 {
-		writable.WritePrimitiveUInt64LE(uint64(p))
+		writable.WriteUInt64LE(uint64(p))
 	} else {
-		writable.WritePrimitiveUInt32LE(uint32(p))
+		writable.WriteUInt32LE(uint32(p))
 	}
 }
 
@@ -26,9 +26,9 @@ func (p *PID) ExtractFrom(readable Readable) error {
 	var err error
 
 	if readable.PIDSize() == 8 {
-		pid, err = readable.ReadPrimitiveUInt64LE()
+		pid, err = readable.ReadUInt64LE()
 	} else {
-		p, e := readable.ReadPrimitiveUInt32LE()
+		p, e := readable.ReadUInt32LE()
 
 		pid = uint64(p)
 		err = e

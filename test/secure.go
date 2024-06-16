@@ -120,7 +120,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	retval.WriteTo(responseStream)
-	responseStream.WritePrimitiveUInt32LE(connection.ID)
+	responseStream.WriteUInt32LE(connection.ID)
 	localStationURL.WriteTo(responseStream)
 
 	response.IsSuccess = true
@@ -163,13 +163,13 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 		Contents:    types.NewString("Rewrite Test"),
 		LastChanged: types.NewDateTime(0),
 	}).WriteTo(responseStream)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(blockList)
-	responseStream.WritePrimitiveBool(false) // * Unknown
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(notifications)
-	responseStream.WritePrimitiveBool(false) // * Unknown
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(blockList)
+	responseStream.WriteBool(false) // * Unknown
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(notifications)
+	responseStream.WriteBool(false) // * Unknown
 
 	response.IsSuccess = true
 	response.IsRequest = false
@@ -201,7 +201,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
-	responseStream.WritePrimitiveUInt8(0) // * Unknown
+	responseStream.WriteUInt8(0) // * Unknown
 
 	response.IsSuccess = true
 	response.IsRequest = false

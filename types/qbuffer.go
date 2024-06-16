@@ -15,7 +15,7 @@ type QBuffer []byte
 func (qb QBuffer) WriteTo(writable Writable) {
 	length := len(qb)
 
-	writable.WritePrimitiveUInt16LE(uint16(length))
+	writable.WriteUInt16LE(uint16(length))
 
 	if length > 0 {
 		writable.Write(qb)
@@ -24,7 +24,7 @@ func (qb QBuffer) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the QBuffer from the given readable
 func (qb *QBuffer) ExtractFrom(readable Readable) error {
-	length, err := readable.ReadPrimitiveUInt16LE()
+	length, err := readable.ReadUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read NEX qBuffer length. %s", err.Error())
 	}

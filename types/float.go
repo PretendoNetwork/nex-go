@@ -7,12 +7,12 @@ type Float float32
 
 // WriteTo writes the Float to the given writable
 func (f Float) WriteTo(writable Writable) {
-	writable.WritePrimitiveFloat32LE(float32(f))
+	writable.WriteFloat32LE(float32(f))
 }
 
 // ExtractFrom extracts the Float value from the given readable
 func (f *Float) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveFloat32LE()
+	value, err := readable.ReadFloat32LE()
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@ type Buffer []byte
 func (b Buffer) WriteTo(writable Writable) {
 	length := len(b)
 
-	writable.WritePrimitiveUInt32LE(uint32(length))
+	writable.WriteUInt32LE(uint32(length))
 
 	if length > 0 {
 		writable.Write(b)
@@ -24,7 +24,7 @@ func (b Buffer) WriteTo(writable Writable) {
 
 // ExtractFrom extracts the Buffer from the given readable
 func (b *Buffer) ExtractFrom(readable Readable) error {
-	length, err := readable.ReadPrimitiveUInt32LE()
+	length, err := readable.ReadUInt32LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read NEX Buffer length. %s", err.Error())
 	}

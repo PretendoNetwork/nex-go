@@ -7,12 +7,12 @@ type Int32 int32
 
 // WriteTo writes the Int32 to the given writable
 func (i32 Int32) WriteTo(writable Writable) {
-	writable.WritePrimitiveInt32LE(int32(i32))
+	writable.WriteInt32LE(int32(i32))
 }
 
 // ExtractFrom extracts the Int32 value from the given readable
 func (i32 *Int32) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveInt32LE()
+	value, err := readable.ReadInt32LE()
 	if err != nil {
 		return err
 	}

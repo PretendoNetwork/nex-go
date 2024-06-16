@@ -57,7 +57,7 @@ func (rmc *RMCMessage) FromBytes(data []byte) error {
 func (rmc *RMCMessage) decodePacked(data []byte) error {
 	stream := NewByteStreamIn(data, rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
-	length, err := stream.ReadPrimitiveUInt32LE()
+	length, err := stream.ReadUInt32LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read RMC Message size. %s", err.Error())
 	}
@@ -66,7 +66,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 		return errors.New("RMC Message has unexpected size")
 	}
 
-	protocolID, err := stream.ReadPrimitiveUInt8()
+	protocolID, err := stream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read RMC Message protocol ID. %s", err.Error())
 	}
@@ -74,7 +74,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 	rmc.ProtocolID = uint16(protocolID & ^byte(0x80))
 
 	if rmc.ProtocolID == 0x7F {
-		rmc.ProtocolID, err = stream.ReadPrimitiveUInt16LE()
+		rmc.ProtocolID, err = stream.ReadUInt16LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read RMC Message extended protocol ID. %s", err.Error())
 		}
@@ -82,12 +82,12 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 
 	if protocolID&0x80 != 0 {
 		rmc.IsRequest = true
-		rmc.CallID, err = stream.ReadPrimitiveUInt32LE()
+		rmc.CallID, err = stream.ReadUInt32LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read RMC Message (request) call ID. %s", err.Error())
 		}
 
-		rmc.MethodID, err = stream.ReadPrimitiveUInt32LE()
+		rmc.MethodID, err = stream.ReadUInt32LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read RMC Message (request) method ID. %s", err.Error())
 		}
@@ -95,18 +95,18 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 		rmc.Parameters = stream.ReadRemaining()
 	} else {
 		rmc.IsRequest = false
-		rmc.IsSuccess, err = stream.ReadPrimitiveBool()
+		rmc.IsSuccess, err = stream.ReadBool()
 		if err != nil {
 			return fmt.Errorf("Failed to read RMC Message (response) error check. %s", err.Error())
 		}
 
 		if rmc.IsSuccess {
-			rmc.CallID, err = stream.ReadPrimitiveUInt32LE()
+			rmc.CallID, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
 			}
 
-			rmc.MethodID, err = stream.ReadPrimitiveUInt32LE()
+			rmc.MethodID, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) method ID. %s", err.Error())
 			}
@@ -115,12 +115,12 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 			rmc.Parameters = stream.ReadRemaining()
 
 		} else {
-			rmc.ErrorCode, err = stream.ReadPrimitiveUInt32LE()
+			rmc.ErrorCode, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) error code. %s", err.Error())
 			}
 
-			rmc.CallID, err = stream.ReadPrimitiveUInt32LE()
+			rmc.CallID, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
 			}
@@ -134,7 +134,7 @@ func (rmc *RMCMessage) decodePacked(data []byte) error {
 func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 	stream := NewByteStreamIn(data, rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
-	length, err := stream.ReadPrimitiveUInt32LE()
+	length, err := stream.ReadUInt32LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read RMC Message size. %s", err.Error())
 	}
@@ -148,13 +148,13 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 		return fmt.Errorf("Failed to read RMC Message protocol name. %s", err.Error())
 	}
 
-	rmc.IsRequest, err = stream.ReadPrimitiveBool()
+	rmc.IsRequest, err = stream.ReadBool()
 	if err != nil {
 		return fmt.Errorf("Failed to read RMC Message \"is request\" bool. %s", err.Error())
 	}
 
 	if rmc.IsRequest {
-		rmc.CallID, err = stream.ReadPrimitiveUInt32LE()
+		rmc.CallID, err = stream.ReadUInt32LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read RMC Message (request) call ID. %s", err.Error())
 		}
@@ -174,13 +174,13 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 		rmc.VersionContainer = ptr.(*types.ClassVersionContainer)
 		rmc.Parameters = stream.ReadRemaining()
 	} else {
-		rmc.IsSuccess, err = stream.ReadPrimitiveBool()
+		rmc.IsSuccess, err = stream.ReadBool()
 		if err != nil {
 			return fmt.Errorf("Failed to read RMC Message (response) error check. %s", err.Error())
 		}
 
 		if rmc.IsSuccess {
-			rmc.CallID, err = stream.ReadPrimitiveUInt32LE()
+			rmc.CallID, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
 			}
@@ -193,12 +193,12 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 			rmc.Parameters = stream.ReadRemaining()
 
 		} else {
-			rmc.ErrorCode, err = stream.ReadPrimitiveUInt32LE()
+			rmc.ErrorCode, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) error code. %s", err.Error())
 			}
 
-			rmc.CallID, err = stream.ReadPrimitiveUInt32LE()
+			rmc.CallID, err = stream.ReadUInt32LE()
 			if err != nil {
 				return fmt.Errorf("Failed to read RMC Message (response) call ID. %s", err.Error())
 			}
@@ -231,35 +231,35 @@ func (rmc *RMCMessage) encodePacked() []byte {
 	// * do it for accuracy.
 	if !rmc.IsHPP || (rmc.IsHPP && rmc.IsRequest) {
 		if rmc.ProtocolID < 0x80 {
-			stream.WritePrimitiveUInt8(uint8(rmc.ProtocolID | protocolIDFlag))
+			stream.WriteUInt8(uint8(rmc.ProtocolID | protocolIDFlag))
 		} else {
-			stream.WritePrimitiveUInt8(uint8(0x7F | protocolIDFlag))
-			stream.WritePrimitiveUInt16LE(rmc.ProtocolID)
+			stream.WriteUInt8(uint8(0x7F | protocolIDFlag))
+			stream.WriteUInt16LE(rmc.ProtocolID)
 		}
 	}
 
 	if rmc.IsRequest {
-		stream.WritePrimitiveUInt32LE(rmc.CallID)
-		stream.WritePrimitiveUInt32LE(rmc.MethodID)
+		stream.WriteUInt32LE(rmc.CallID)
+		stream.WriteUInt32LE(rmc.MethodID)
 
 		if rmc.Parameters != nil && len(rmc.Parameters) > 0 {
 			stream.Grow(int64(len(rmc.Parameters)))
 			stream.WriteBytesNext(rmc.Parameters)
 		}
 	} else {
-		stream.WritePrimitiveBool(rmc.IsSuccess)
+		stream.WriteBool(rmc.IsSuccess)
 
 		if rmc.IsSuccess {
-			stream.WritePrimitiveUInt32LE(rmc.CallID)
-			stream.WritePrimitiveUInt32LE(rmc.MethodID | 0x8000)
+			stream.WriteUInt32LE(rmc.CallID)
+			stream.WriteUInt32LE(rmc.MethodID | 0x8000)
 
 			if rmc.Parameters != nil && len(rmc.Parameters) > 0 {
 				stream.Grow(int64(len(rmc.Parameters)))
 				stream.WriteBytesNext(rmc.Parameters)
 			}
 		} else {
-			stream.WritePrimitiveUInt32LE(uint32(rmc.ErrorCode))
-			stream.WritePrimitiveUInt32LE(rmc.CallID)
+			stream.WriteUInt32LE(uint32(rmc.ErrorCode))
+			stream.WriteUInt32LE(rmc.CallID)
 		}
 	}
 
@@ -267,7 +267,7 @@ func (rmc *RMCMessage) encodePacked() []byte {
 
 	message := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
-	message.WritePrimitiveUInt32LE(uint32(len(serialized)))
+	message.WriteUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
 	message.WriteBytesNext(serialized)
 
@@ -278,17 +278,17 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 	stream := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
 	rmc.ProtocolName.WriteTo(stream)
-	stream.WritePrimitiveBool(rmc.IsRequest)
+	stream.WriteBool(rmc.IsRequest)
 
 	if rmc.IsRequest {
-		stream.WritePrimitiveUInt32LE(rmc.CallID)
+		stream.WriteUInt32LE(rmc.CallID)
 		rmc.MethodName.WriteTo(stream)
 
 		if rmc.VersionContainer != nil {
 			rmc.VersionContainer.WriteTo(stream)
 		} else {
 			// * Fail safe. This is always present even if no structures are used
-			stream.WritePrimitiveUInt32LE(0)
+			stream.WriteUInt32LE(0)
 		}
 
 		if rmc.Parameters != nil && len(rmc.Parameters) > 0 {
@@ -296,10 +296,10 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 			stream.WriteBytesNext(rmc.Parameters)
 		}
 	} else {
-		stream.WritePrimitiveBool(rmc.IsSuccess)
+		stream.WriteBool(rmc.IsSuccess)
 
 		if rmc.IsSuccess {
-			stream.WritePrimitiveUInt32LE(rmc.CallID)
+			stream.WriteUInt32LE(rmc.CallID)
 			rmc.MethodName.WriteTo(stream)
 
 			if rmc.Parameters != nil && len(rmc.Parameters) > 0 {
@@ -307,8 +307,8 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 				stream.WriteBytesNext(rmc.Parameters)
 			}
 		} else {
-			stream.WritePrimitiveUInt32LE(uint32(rmc.ErrorCode))
-			stream.WritePrimitiveUInt32LE(rmc.CallID)
+			stream.WriteUInt32LE(uint32(rmc.ErrorCode))
+			stream.WriteUInt32LE(rmc.CallID)
 		}
 	}
 
@@ -316,7 +316,7 @@ func (rmc *RMCMessage) encodeVerbose() []byte {
 
 	message := NewByteStreamOut(rmc.Endpoint.LibraryVersions(), rmc.Endpoint.ByteStreamSettings())
 
-	message.WritePrimitiveUInt32LE(uint32(len(serialized)))
+	message.WriteUInt32LE(uint32(len(serialized)))
 	message.Grow(int64(len(serialized)))
 	message.WriteBytesNext(serialized)
 

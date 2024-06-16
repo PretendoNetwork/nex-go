@@ -7,12 +7,12 @@ type UInt16 uint16
 
 // WriteTo writes the UInt16 to the given writable
 func (u16 UInt16) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt16LE(uint16(u16))
+	writable.WriteUInt16LE(uint16(u16))
 }
 
 // ExtractFrom extracts the UInt16 value from the given readable
 func (u16 *UInt16) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveUInt16LE()
+	value, err := readable.ReadUInt16LE()
 	if err != nil {
 		return err
 	}

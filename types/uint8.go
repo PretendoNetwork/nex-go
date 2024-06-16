@@ -7,12 +7,12 @@ type UInt8 uint8
 
 // WriteTo writes the UInt8 to the given writable
 func (u8 UInt8) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt8(uint8(u8))
+	writable.WriteUInt8(uint8(u8))
 }
 
 // ExtractFrom extracts the UInt8 value from the given readable
 func (u8 *UInt8) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveUInt8()
+	value, err := readable.ReadUInt8()
 	if err != nil {
 		return err
 	}

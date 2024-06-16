@@ -7,12 +7,12 @@ type UInt32 uint32
 
 // WriteTo writes the UInt32 to the given writable
 func (u32 UInt32) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt32LE(uint32(u32))
+	writable.WriteUInt32LE(uint32(u32))
 }
 
 // ExtractFrom extracts the UInt32 value from the given readable
 func (u32 *UInt32) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveUInt32LE()
+	value, err := readable.ReadUInt32LE()
 	if err != nil {
 		return err
 	}

@@ -7,12 +7,12 @@ type Int64 int64
 
 // WriteTo writes the Int64 to the given writable
 func (i64 Int64) WriteTo(writable Writable) {
-	writable.WritePrimitiveInt64LE(int64(i64))
+	writable.WriteInt64LE(int64(i64))
 }
 
 // ExtractFrom extracts the Int64 value from the given readable
 func (i64 *Int64) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveInt64LE()
+	value, err := readable.ReadInt64LE()
 	if err != nil {
 		return err
 	}

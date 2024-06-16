@@ -7,12 +7,12 @@ type UInt64 uint64
 
 // WriteTo writes the UInt64 to the given writable
 func (u64 UInt64) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt64LE(uint64(u64))
+	writable.WriteUInt64LE(uint64(u64))
 }
 
 // ExtractFrom extracts the UInt64 value from the given readable
 func (u64 *UInt64) ExtractFrom(readable Readable) error {
-	value, err := readable.ReadPrimitiveUInt64LE()
+	value, err := readable.ReadUInt64LE()
 	if err != nil {
 		return err
 	}

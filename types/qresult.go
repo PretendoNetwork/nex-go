@@ -15,12 +15,12 @@ type QResult uint32
 
 // WriteTo writes the QResult to the given writable
 func (r QResult) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt32LE(uint32(r))
+	writable.WriteUInt32LE(uint32(r))
 }
 
 // ExtractFrom extracts the QResult from the given readable
 func (r *QResult) ExtractFrom(readable Readable) error {
-	code, err := readable.ReadPrimitiveUInt32LE()
+	code, err := readable.ReadUInt32LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read QResult code. %s", err.Error())
 	}
