@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 	"github.com/lxzan/gws"
@@ -222,6 +223,14 @@ func (ps *PRUDPServer) Send(packet PacketInterface) {
 			}
 
 			ps.sendPacket(packet)
+
+			// * This delay is here to prevent the server from overloading the client with too many packets.
+			// * The 16ms (1/60th of a second) value is chosen based on testing with the friends server and is a good balance between
+			// * Not being too slow and also not dropping any packets because we've overloaded the client. This may be because it
+			// * roughly matches the framerate that most games target (60fps)
+			if i < fragments {
+				time.Sleep(16 * time.Millisecond)
+			}
 		}
 	}
 }
