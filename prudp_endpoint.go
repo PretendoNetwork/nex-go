@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
@@ -189,20 +188,8 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 		}
 	}
 
-	// * MutexMap.Each locks the mutex, can't remove while reading.
-	// * Have to just loop again
-	slidingWindow.ResendScheduler.packets.Each(func(sequenceID uint16, pending *PendingPacket) bool {
-		if sequenceID <= baseSequenceID && !slices.Contains(sequenceIDs, sequenceID) {
-			sequenceIDs = append(sequenceIDs, sequenceID)
-		}
-
-		return false
-	})
-
-	// * Actually remove the packets from the pool
-	for _, sequenceID := range sequenceIDs {
-		slidingWindow.ResendScheduler.AcknowledgePacket(sequenceID)
-	}
+	slidingWindow.ResendScheduler.AcknowledgeUpTo(baseSequenceID)
+	slidingWindow.ResendScheduler.AcknowledgeMany(sequenceIDs)
 }
 
 func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
