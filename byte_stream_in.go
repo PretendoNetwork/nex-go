@@ -68,8 +68,8 @@ func (bsi *ByteStreamIn) Read(length uint64) ([]byte, error) {
 	return bsi.ReadBytesNext(int64(length)), nil
 }
 
-// ReadPrimitiveUInt8 reads a uint8
-func (bsi *ByteStreamIn) ReadPrimitiveUInt8() (uint8, error) {
+// ReadUInt8 reads a uint8
+func (bsi *ByteStreamIn) ReadUInt8() (uint8, error) {
 	if bsi.Remaining() < 1 {
 		return 0, errors.New("Not enough data to read uint8")
 	}
@@ -77,8 +77,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveUInt8() (uint8, error) {
 	return uint8(bsi.ReadByteNext()), nil
 }
 
-// ReadPrimitiveUInt16LE reads a Little-Endian encoded uint16
-func (bsi *ByteStreamIn) ReadPrimitiveUInt16LE() (uint16, error) {
+// ReadUInt16LE reads a Little-Endian encoded uint16
+func (bsi *ByteStreamIn) ReadUInt16LE() (uint16, error) {
 	if bsi.Remaining() < 2 {
 		return 0, errors.New("Not enough data to read uint16")
 	}
@@ -86,8 +86,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveUInt16LE() (uint16, error) {
 	return bsi.ReadU16LENext(1)[0], nil
 }
 
-// ReadPrimitiveUInt32LE reads a Little-Endian encoded uint32
-func (bsi *ByteStreamIn) ReadPrimitiveUInt32LE() (uint32, error) {
+// ReadUInt32LE reads a Little-Endian encoded uint32
+func (bsi *ByteStreamIn) ReadUInt32LE() (uint32, error) {
 	if bsi.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read uint32")
 	}
@@ -95,8 +95,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveUInt32LE() (uint32, error) {
 	return bsi.ReadU32LENext(1)[0], nil
 }
 
-// ReadPrimitiveUInt64LE reads a Little-Endian encoded uint64
-func (bsi *ByteStreamIn) ReadPrimitiveUInt64LE() (uint64, error) {
+// ReadUInt64LE reads a Little-Endian encoded uint64
+func (bsi *ByteStreamIn) ReadUInt64LE() (uint64, error) {
 	if bsi.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read uint64")
 	}
@@ -104,8 +104,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveUInt64LE() (uint64, error) {
 	return bsi.ReadU64LENext(1)[0], nil
 }
 
-// ReadPrimitiveInt8 reads a uint8
-func (bsi *ByteStreamIn) ReadPrimitiveInt8() (int8, error) {
+// ReadInt8 reads a uint8
+func (bsi *ByteStreamIn) ReadInt8() (int8, error) {
 	if bsi.Remaining() < 1 {
 		return 0, errors.New("Not enough data to read int8")
 	}
@@ -113,8 +113,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveInt8() (int8, error) {
 	return int8(bsi.ReadByteNext()), nil
 }
 
-// ReadPrimitiveInt16LE reads a Little-Endian encoded int16
-func (bsi *ByteStreamIn) ReadPrimitiveInt16LE() (int16, error) {
+// ReadInt16LE reads a Little-Endian encoded int16
+func (bsi *ByteStreamIn) ReadInt16LE() (int16, error) {
 	if bsi.Remaining() < 2 {
 		return 0, errors.New("Not enough data to read int16")
 	}
@@ -122,8 +122,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveInt16LE() (int16, error) {
 	return int16(bsi.ReadU16LENext(1)[0]), nil
 }
 
-// ReadPrimitiveInt32LE reads a Little-Endian encoded int32
-func (bsi *ByteStreamIn) ReadPrimitiveInt32LE() (int32, error) {
+// ReadInt32LE reads a Little-Endian encoded int32
+func (bsi *ByteStreamIn) ReadInt32LE() (int32, error) {
 	if bsi.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read int32")
 	}
@@ -131,8 +131,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveInt32LE() (int32, error) {
 	return int32(bsi.ReadU32LENext(1)[0]), nil
 }
 
-// ReadPrimitiveInt64LE reads a Little-Endian encoded int64
-func (bsi *ByteStreamIn) ReadPrimitiveInt64LE() (int64, error) {
+// ReadInt64LE reads a Little-Endian encoded int64
+func (bsi *ByteStreamIn) ReadInt64LE() (int64, error) {
 	if bsi.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read int64")
 	}
@@ -140,8 +140,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveInt64LE() (int64, error) {
 	return int64(bsi.ReadU64LENext(1)[0]), nil
 }
 
-// ReadPrimitiveFloat32LE reads a Little-Endian encoded float32
-func (bsi *ByteStreamIn) ReadPrimitiveFloat32LE() (float32, error) {
+// ReadFloat32LE reads a Little-Endian encoded float32
+func (bsi *ByteStreamIn) ReadFloat32LE() (float32, error) {
 	if bsi.Remaining() < 4 {
 		return 0, errors.New("Not enough data to read float32")
 	}
@@ -149,8 +149,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveFloat32LE() (float32, error) {
 	return bsi.ReadF32LENext(1)[0], nil
 }
 
-// ReadPrimitiveFloat64LE reads a Little-Endian encoded float64
-func (bsi *ByteStreamIn) ReadPrimitiveFloat64LE() (float64, error) {
+// ReadFloat64LE reads a Little-Endian encoded float64
+func (bsi *ByteStreamIn) ReadFloat64LE() (float64, error) {
 	if bsi.Remaining() < 8 {
 		return 0, errors.New("Not enough data to read float64")
 	}
@@ -158,8 +158,8 @@ func (bsi *ByteStreamIn) ReadPrimitiveFloat64LE() (float64, error) {
 	return bsi.ReadF64LENext(1)[0], nil
 }
 
-// ReadPrimitiveBool reads a bool
-func (bsi *ByteStreamIn) ReadPrimitiveBool() (bool, error) {
+// ReadBool reads a bool
+func (bsi *ByteStreamIn) ReadBool() (bool, error) {
 	if bsi.Remaining() < 1 {
 		return false, errors.New("Not enough data to read bool")
 	}

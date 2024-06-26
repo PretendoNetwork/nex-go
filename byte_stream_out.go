@@ -56,68 +56,68 @@ func (bso *ByteStreamOut) Write(data []byte) {
 	bso.WriteBytesNext(data)
 }
 
-// WritePrimitiveUInt8 writes a uint8
-func (bso *ByteStreamOut) WritePrimitiveUInt8(u8 uint8) {
+// WriteUInt8 writes a uint8
+func (bso *ByteStreamOut) WriteUInt8(u8 uint8) {
 	bso.Grow(1)
 	bso.WriteByteNext(byte(u8))
 }
 
-// WritePrimitiveUInt16LE writes a uint16 as LE
-func (bso *ByteStreamOut) WritePrimitiveUInt16LE(u16 uint16) {
+// WriteUInt16LE writes a uint16 as LE
+func (bso *ByteStreamOut) WriteUInt16LE(u16 uint16) {
 	bso.Grow(2)
 	bso.WriteU16LENext([]uint16{u16})
 }
 
-// WritePrimitiveUInt32LE writes a uint32 as LE
-func (bso *ByteStreamOut) WritePrimitiveUInt32LE(u32 uint32) {
+// WriteUInt32LE writes a uint32 as LE
+func (bso *ByteStreamOut) WriteUInt32LE(u32 uint32) {
 	bso.Grow(4)
 	bso.WriteU32LENext([]uint32{u32})
 }
 
-// WritePrimitiveUInt64LE writes a uint64 as LE
-func (bso *ByteStreamOut) WritePrimitiveUInt64LE(u64 uint64) {
+// WriteUInt64LE writes a uint64 as LE
+func (bso *ByteStreamOut) WriteUInt64LE(u64 uint64) {
 	bso.Grow(8)
 	bso.WriteU64LENext([]uint64{u64})
 }
 
-// WritePrimitiveInt8 writes a int8
-func (bso *ByteStreamOut) WritePrimitiveInt8(s8 int8) {
+// WriteInt8 writes a int8
+func (bso *ByteStreamOut) WriteInt8(s8 int8) {
 	bso.Grow(1)
 	bso.WriteByteNext(byte(s8))
 }
 
-// WritePrimitiveInt16LE writes a uint16 as LE
-func (bso *ByteStreamOut) WritePrimitiveInt16LE(s16 int16) {
+// WriteInt16LE writes a uint16 as LE
+func (bso *ByteStreamOut) WriteInt16LE(s16 int16) {
 	bso.Grow(2)
 	bso.WriteU16LENext([]uint16{uint16(s16)})
 }
 
-// WritePrimitiveInt32LE writes a int32 as LE
-func (bso *ByteStreamOut) WritePrimitiveInt32LE(s32 int32) {
+// WriteInt32LE writes a int32 as LE
+func (bso *ByteStreamOut) WriteInt32LE(s32 int32) {
 	bso.Grow(4)
 	bso.WriteU32LENext([]uint32{uint32(s32)})
 }
 
-// WritePrimitiveInt64LE writes a int64 as LE
-func (bso *ByteStreamOut) WritePrimitiveInt64LE(s64 int64) {
+// WriteInt64LE writes a int64 as LE
+func (bso *ByteStreamOut) WriteInt64LE(s64 int64) {
 	bso.Grow(8)
 	bso.WriteU64LENext([]uint64{uint64(s64)})
 }
 
-// WritePrimitiveFloat32LE writes a float32 as LE
-func (bso *ByteStreamOut) WritePrimitiveFloat32LE(f32 float32) {
+// WriteFloat32LE writes a float32 as LE
+func (bso *ByteStreamOut) WriteFloat32LE(f32 float32) {
 	bso.Grow(4)
 	bso.WriteF32LENext([]float32{f32})
 }
 
-// WritePrimitiveFloat64LE writes a float64 as LE
-func (bso *ByteStreamOut) WritePrimitiveFloat64LE(f64 float64) {
+// WriteFloat64LE writes a float64 as LE
+func (bso *ByteStreamOut) WriteFloat64LE(f64 float64) {
 	bso.Grow(8)
 	bso.WriteF64LENext([]float64{f64})
 }
 
-// WritePrimitiveBool writes a bool
-func (bso *ByteStreamOut) WritePrimitiveBool(b bool) {
+// WriteBool writes a bool
+func (bso *ByteStreamOut) WriteBool(b bool) {
 	var bVar uint8
 	if b {
 		bVar = 1
