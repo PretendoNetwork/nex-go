@@ -2,6 +2,7 @@ package nex
 
 import (
 	"net"
+	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 )
@@ -36,6 +37,12 @@ type PRUDPPacketInterface interface {
 	SetPayload(payload []byte)
 	RMCMessage() *RMCMessage
 	SetRMCMessage(message *RMCMessage)
+	SendCount() uint32
+	incrementSendCount()
+	SentAt() time.Time
+	setSentAt(time time.Time)
+	getTimeout() *Timeout
+	setTimeout(timeout *Timeout)
 	decode() error
 	setSignature(signature []byte)
 	calculateConnectionSignature(addr net.Addr) ([]byte, error)

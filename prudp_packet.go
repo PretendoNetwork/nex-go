@@ -2,6 +2,7 @@ package nex
 
 import (
 	"crypto/rc4"
+	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 )
@@ -24,6 +25,9 @@ type PRUDPPacket struct {
 	fragmentID             uint8
 	payload                []byte
 	message                *RMCMessage
+	sendCount              uint32
+	sentAt                 time.Time
+	timeout                *Timeout
 }
 
 // SetSender sets the Client who sent the packet
@@ -182,6 +186,32 @@ func (p *PRUDPPacket) RMCMessage() *RMCMessage {
 // SetRMCMessage sets the packets RMC Message
 func (p *PRUDPPacket) SetRMCMessage(message *RMCMessage) {
 	p.message = message
+}
+
+// SendCount returns the number of times this packet has been sent
+func (p *PRUDPPacket) SendCount() uint32 {
+	return p.sendCount
+}
+
+func (p *PRUDPPacket) incrementSendCount() {
+	p.sendCount++
+}
+
+// SentAt returns the latest time that this packet has been sent
+func (p *PRUDPPacket) SentAt() time.Time {
+	return p.sentAt
+}
+
+func (p *PRUDPPacket) setSentAt(time time.Time) {
+	p.sentAt = time
+}
+
+func (p *PRUDPPacket) getTimeout() *Timeout {
+	return p.timeout
+}
+
+func (p *PRUDPPacket) setTimeout(timeout *Timeout) {
+	p.timeout = timeout
 }
 
 func (p *PRUDPPacket) processUnreliableCrypto() []byte {

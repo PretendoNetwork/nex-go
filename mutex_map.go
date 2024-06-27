@@ -26,6 +26,22 @@ func (m *MutexMap[K, V]) Get(key K) (V, bool) {
 	return value, ok
 }
 
+// GetOrSetDefault returns the value for the given key if it exists. If it does not exist, it creates a default
+// with the provided function and sets it for that key
+func (m *MutexMap[K, V]) GetOrSetDefault(key K, createDefault func() V) V {
+	m.Lock()
+	defer m.Unlock()
+
+	value, ok := m.real[key]
+
+	if !ok {
+		value = createDefault()
+		m.real[key] = value
+	}
+
+	return value
+}
+
 // Has checks if a key exists in the map
 func (m *MutexMap[K, V]) Has(key K) bool {
 	m.RLock()

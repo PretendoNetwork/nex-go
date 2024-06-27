@@ -1,148 +1,105 @@
 package nex
 
 import (
+	"context"
 	"time"
 )
 
 // TODO - REMOVE THIS ENTIRELY AND REPLACE IT WITH AN IMPLEMENTATION OF rdv::Timeout AND rdv::TimeoutManager AND USE MORE STREAM SETTINGS!
 
-// PendingPacket represends a packet scheduled to be resent
-type PendingPacket struct {
-	packet         PRUDPPacketInterface
-	lastSendTime   time.Time
-	resendCount    uint32
-	isAcknowledged bool
-	interval       time.Duration
-	ticker         *time.Ticker
-	rs             *ResendScheduler
-}
-
-func (pi *PendingPacket) startResendTimer() {
-	pi.lastSendTime = time.Now()
-	pi.ticker = time.NewTicker(pi.interval)
-
-	for range pi.ticker.C {
-		finished := false
-
-		if pi.isAcknowledged {
-			pi.ticker.Stop()
-			pi.rs.packets.Delete(pi.packet.SequenceID())
-			finished = true
-		} else {
-			finished = pi.rs.resendPacket(pi)
-		}
-
-		if finished {
-			return
-		}
-	}
-}
-
 // ResendScheduler manages the resending of reliable PRUDP packets
 type ResendScheduler struct {
-	packets *MutexMap[uint16, *PendingPacket]
-}
-
-// Stop kills the resend scheduler and stops all pending packets
-func (rs *ResendScheduler) Stop() {
-	stillPending := make([]uint16, rs.packets.Size())
-
-	rs.packets.Each(func(sequenceID uint16, packet *PendingPacket) bool {
-		if !packet.isAcknowledged {
-			stillPending = append(stillPending, sequenceID)
-		}
-
-		return false
-	})
-
-	for _, sequenceID := range stillPending {
-		if pendingPacket, ok := rs.packets.Get(sequenceID); ok {
-			pendingPacket.isAcknowledged = true // * Prevent an edge case where the ticker is already being processed
-
-			if pendingPacket.ticker != nil {
-				// * This should never happen, but popped up in CTGP-7 testing?
-				// * Did the GC clear this before we called it?
-				pendingPacket.ticker.Stop()
-			}
-
-			rs.packets.Delete(sequenceID)
-		}
-	}
+	ctx            context.Context
+	cancel         context.CancelFunc
+	packets        *MutexMap[uint16, PRUDPPacketInterface]
+	streamSettings *StreamSettings
 }
 
 // AddPacket adds a packet to the scheduler and begins it's timer
 func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
-	connection := packet.Sender().(*PRUDPConnection)
-	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
+	endpoint := packet.Sender().Endpoint().(*PRUDPEndPoint)
 
-	pendingPacket := &PendingPacket{
-		packet: packet,
-		rs:     rs,
-		// TODO: This may not be accurate, needs more research
-		interval: time.Duration(slidingWindow.streamSettings.KeepAliveTimeout) * time.Millisecond,
-	}
+	rto := endpoint.ComputeRetransmitTimeout(packet)
+	ctx, cancel := context.WithTimeout(rs.ctx, rto)
 
-	rs.packets.Set(packet.SequenceID(), pendingPacket)
+	timeout := NewTimeout()
+	timeout.SetRTO(rto)
+	timeout.ctx = ctx
+	timeout.cancel = cancel
+	packet.setTimeout(timeout)
 
-	go pendingPacket.startResendTimer()
+	rs.packets.Set(packet.SequenceID(), packet)
+	go rs.start(packet)
 }
 
 // AcknowledgePacket marks a pending packet as acknowledged. It will be ignored at the next resend attempt
 func (rs *ResendScheduler) AcknowledgePacket(sequenceID uint16) {
-	if pendingPacket, ok := rs.packets.Get(sequenceID); ok {
-		pendingPacket.isAcknowledged = true
+	if packet, ok := rs.packets.Get(sequenceID); ok {
+		// * Acknowledge the packet
+		rs.packets.Delete(sequenceID)
+
+		// * Update the RTT on the connection if the packet hasn't been resent
+		if packet.SendCount() <= rs.streamSettings.RTTRetransmit {
+			rttm := time.Since(packet.SentAt())
+			packet.Sender().(*PRUDPConnection).rtt.Adjust(rttm)
+		}
 	}
 }
 
-func (rs *ResendScheduler) resendPacket(pendingPacket *PendingPacket) bool {
-	if pendingPacket.isAcknowledged {
-		// * Prevent a race condition where resendPacket may be called
-		// * at the same time a packet is acknowledged
-		return false
-	}
+func (rs *ResendScheduler) start(packet PRUDPPacketInterface) {
+	<-packet.getTimeout().ctx.Done()
 
-	packet := pendingPacket.packet
 	connection := packet.Sender().(*PRUDPConnection)
-	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
+	connection.Lock()
+	defer connection.Unlock()
 
-	if pendingPacket.resendCount >= slidingWindow.streamSettings.MaxPacketRetransmissions {
-		// * The maximum resend count has been reached, consider the connection dead.
-		pendingPacket.ticker.Stop()
-		rs.packets.Delete(packet.SequenceID())
-		connection.cleanup() // * "removed" event is dispatched here
-
-		connection.endpoint.deleteConnectionByID(connection.ID)
-
-		return true
+	// * If the connection is closed stop trying to resend
+	if connection.ConnectionState != StateConnected {
+		return
 	}
 
-	// TODO: This may not be accurate, needs more research
-	if time.Since(pendingPacket.lastSendTime) >= time.Duration(slidingWindow.streamSettings.KeepAliveTimeout)*time.Millisecond {
-		// * Resend the packet to the connection
-		server := connection.endpoint.Server
-		data := packet.Bytes()
-		server.sendRaw(connection.Socket, data)
+	if rs.packets.Has(packet.SequenceID()) {
+		// * This is `<` instead of `<=` for accuracy with observed behavior, even though we're comparing send count vs _resend_ max
+		if packet.SendCount() < rs.streamSettings.MaxPacketRetransmissions {
+			endpoint := packet.Sender().Endpoint().(*PRUDPEndPoint)
 
-		pendingPacket.resendCount++
+			packet.incrementSendCount()
+			packet.setSentAt(time.Now())
+			rto := endpoint.ComputeRetransmitTimeout(packet)
 
-		var retransmitTimeoutMultiplier float32
-		if pendingPacket.resendCount < slidingWindow.streamSettings.ExtraRestransmitTimeoutTrigger {
-			retransmitTimeoutMultiplier = slidingWindow.streamSettings.RetransmitTimeoutMultiplier
+			ctx, cancel := context.WithTimeout(rs.ctx, rto)
+			timeout := packet.getTimeout()
+			timeout.timeout = rto
+			timeout.ctx = ctx
+			timeout.cancel = cancel
+
+			// * Schedule the packet to be resent
+			go rs.start(packet)
+
+			// * Resend the packet to the connection
+			server := connection.endpoint.Server
+			data := packet.Bytes()
+			server.sendRaw(connection.Socket, data)
 		} else {
-			retransmitTimeoutMultiplier = slidingWindow.streamSettings.ExtraRetransmitTimeoutMultiplier
+			// * Packet has been retried too many times, consider the connection dead
+			connection.cleanup()
 		}
-		pendingPacket.interval += time.Duration(uint32(float32(slidingWindow.streamSettings.KeepAliveTimeout)*retransmitTimeoutMultiplier)) * time.Millisecond
-
-		pendingPacket.ticker.Reset(pendingPacket.interval)
-		pendingPacket.lastSendTime = time.Now()
 	}
+}
 
-	return false
+// Stop kills the resend scheduler and stops all pending packets
+func (rs *ResendScheduler) Stop() {
+	rs.cancel()
+	rs.packets.Clear(func(key uint16, value PRUDPPacketInterface) {})
 }
 
 // NewResendScheduler creates a new ResendScheduler
 func NewResendScheduler() *ResendScheduler {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &ResendScheduler{
-		packets: NewMutexMap[uint16, *PendingPacket](),
+		ctx:            ctx,
+		cancel:         cancel,
+		packets:        NewMutexMap[uint16, PRUDPPacketInterface](),
+		streamSettings: NewStreamSettings(),
 	}
 }
