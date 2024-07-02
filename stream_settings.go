@@ -51,7 +51,7 @@ func (ss *StreamSettings) Copy() *StreamSettings {
 
 // NewStreamSettings returns a new instance of StreamSettings with default params
 func NewStreamSettings() *StreamSettings {
-	// * Default values based on WATCH_DOGS. Not all values are used currently, and only
+	// * Default values based on WATCH_DOGS other than where stated. Not all values are used currently, and only
 	// * exist to mimic what is seen in that game. Many are planned for future use.
 	return &StreamSettings{
 		ExtraRetransmitTimeoutTrigger:    0x32,
@@ -67,6 +67,6 @@ func NewStreamSettings() *StreamSettings {
 		CompressionAlgorithm:             compression.NewDummyCompression(),
 		RTTRetransmit:                    2, // * This value is taken from Xenoblade Chronicles, WATCH_DOGS sets this to 0x32 but it is then ignored. Setting this to 2 matches the TCP spec by not using resent packets in RTT calculations.
 		RetransmitTimeoutMultiplier:      1.25,
-		MaxSilenceTime:                   10000,
+		MaxSilenceTime:                   10000, // * This value is taken from Xenoblade Chronicles, WATCH_DOGS sets this to 5000.
 	}
 }
