@@ -19,7 +19,7 @@ func (t *Timeout) SetRTO(timeout time.Duration) {
 }
 
 // GetRTO gets the timeout field of this instance
-func (t *Timeout) GetRTO() time.Duration {
+func (t *Timeout) RTO() time.Duration {
 	return t.timeout
 }
 
