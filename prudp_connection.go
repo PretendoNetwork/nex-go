@@ -29,11 +29,13 @@ type PRUDPConnection struct {
 	Signature                           []byte                                 // * Connection signature for packets coming from the client, as seen by the server
 	ServerConnectionSignature           []byte                                 // * Connection signature for packets coming from the server, as seen by the client
 	UnreliablePacketBaseKey             []byte                                 // * The base key used for encrypting unreliable DATA packets
+	rtt                                 *RTT                                   // * The round-trip transmission time of this connection
 	slidingWindows                      *MutexMap[uint8, *SlidingWindow]       // * Outbound reliable packet substreams
 	packetDispatchQueues                *MutexMap[uint8, *PacketDispatchQueue] // * Inbound reliable packet substreams
 	incomingFragmentBuffers             *MutexMap[uint8, []byte]               // * Buffers which store the incoming payloads from fragmented DATA packets
 	outgoingUnreliableSequenceIDCounter *Counter[uint16]
 	outgoingPingSequenceIDCounter       *Counter[uint16]
+	lastSentPingTime                    time.Time
 	heartbeatTimer                      *time.Timer
 	pingKickTimer                       *time.Timer
 	StationURLs                         *types.List[*types.StationURL]
@@ -62,12 +64,13 @@ func (pc *PRUDPConnection) SetPID(pid *types.PID) {
 
 // reset resets the connection state to all zero values
 func (pc *PRUDPConnection) reset() {
+	pc.ConnectionState = StateNotConnected
 	pc.packetDispatchQueues.Clear(func(_ uint8, packetDispatchQueue *PacketDispatchQueue) {
 		packetDispatchQueue.Purge()
 	})
 
 	pc.slidingWindows.Clear(func(_ uint8, slidingWindow *SlidingWindow) {
-		slidingWindow.ResendScheduler.Stop()
+		slidingWindow.TimeoutManager.Stop()
 	})
 
 	pc.Signature = make([]byte, 0)
@@ -289,6 +292,7 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 	pc := &PRUDPConnection{
 		Socket:                              socket,
 		ConnectionState:                     StateNotConnected,
+		rtt:                                 NewRTT(),
 		pid:                                 types.NewPID(0),
 		slidingWindows:                      NewMutexMap[uint8, *SlidingWindow](),
 		packetDispatchQueues:                NewMutexMap[uint8, *PacketDispatchQueue](),

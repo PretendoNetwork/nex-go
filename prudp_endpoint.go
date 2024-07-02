@@ -19,20 +19,25 @@ import (
 // and secure servers. However the functionality of rdv::PRUDPEndPoint and nn::nex::SecureEndPoint is seemingly
 // identical. Rather than duplicate the logic from PRUDPEndpoint, a IsSecureEndpoint flag has been added instead.
 type PRUDPEndPoint struct {
-	Server                       *PRUDPServer
-	StreamID                     uint8
-	DefaultStreamSettings        *StreamSettings
-	Connections                  *MutexMap[string, *PRUDPConnection]
-	packetHandlers               map[uint16]func(packet PRUDPPacketInterface)
-	packetEventHandlers          map[string][]func(packet PacketInterface)
-	connectionEndedEventHandlers []func(connection *PRUDPConnection)
-	errorEventHandlers           []func(err *Error)
-	ConnectionIDCounter          *Counter[uint32]
-	ServerAccount                *Account
-	AccountDetailsByPID          func(pid *types.PID) (*Account, *Error)
-	AccountDetailsByUsername     func(username string) (*Account, *Error)
-	IsSecureEndPoint             bool
+	Server                            *PRUDPServer
+	StreamID                          uint8
+	DefaultStreamSettings             *StreamSettings
+	Connections                       *MutexMap[string, *PRUDPConnection]
+	packetHandlers                    map[uint16]func(packet PRUDPPacketInterface)
+	packetEventHandlers               map[string][]func(packet PacketInterface)
+	connectionEndedEventHandlers      []func(connection *PRUDPConnection)
+	errorEventHandlers                []func(err *Error)
+	ConnectionIDCounter               *Counter[uint32]
+	ServerAccount                     *Account
+	AccountDetailsByPID               func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByUsername          func(username string) (*Account, *Error)
+	IsSecureEndPoint                  bool
+	CalcRetransmissionTimeoutCallback CalcRetransmissionTimeoutCallback
 }
+
+// CalcRetransmissionTimeoutCallback is an optional callback which can be used to override the RTO calculation
+// for packets sent by this `PRUDPEndpoint`
+type CalcRetransmissionTimeoutCallback func(rtt float64, sendCount uint32) time.Duration
 
 // RegisterServiceProtocol registers a NEX service with the endpoint
 func (pep *PRUDPEndPoint) RegisterServiceProtocol(protocol ServiceProtocol) {
@@ -111,19 +116,19 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 	streamType := packet.SourceVirtualPortStreamType()
 	streamID := packet.SourceVirtualPortStreamID()
 	discriminator := fmt.Sprintf("%s-%d-%d", socket.Address.String(), streamType, streamID)
-	connection, ok := pep.Connections.Get(discriminator)
-
-	if !ok {
-		connection = NewPRUDPConnection(socket)
+	connection := pep.Connections.GetOrSetDefault(discriminator, func() *PRUDPConnection {
+		connection := NewPRUDPConnection(socket)
 		connection.endpoint = pep
 		connection.ID = pep.ConnectionIDCounter.Next()
 		connection.DefaultPRUDPVersion = packet.Version()
 		connection.StreamType = streamType
 		connection.StreamID = streamID
 		connection.StreamSettings = pep.DefaultStreamSettings.Copy()
+		return connection
+	})
 
-		pep.Connections.Set(discriminator, connection)
-	}
+	connection.Lock()
+	defer connection.Unlock()
 
 	packet.SetSender(connection)
 
@@ -153,8 +158,14 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 		return
 	}
 
-	slidingWindow := connection.SlidingWindow(packet.SubstreamID())
-	slidingWindow.ResendScheduler.AcknowledgePacket(packet.SequenceID())
+	if packet.Type() == constants.PingPacket {
+		if packet.SequenceID() == connection.outgoingPingSequenceIDCounter.Value {
+			connection.rtt.Adjust(time.Since(connection.lastSentPingTime))
+		}
+	} else {
+		slidingWindow := connection.SlidingWindow(packet.SubstreamID())
+		slidingWindow.TimeoutManager.AcknowledgePacket(packet.SequenceID())
+	}
 }
 
 func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface) {
@@ -191,7 +202,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 
 	// * MutexMap.Each locks the mutex, can't remove while reading.
 	// * Have to just loop again
-	slidingWindow.ResendScheduler.packets.Each(func(sequenceID uint16, pending *PendingPacket) bool {
+	slidingWindow.TimeoutManager.packets.Each(func(sequenceID uint16, pending PRUDPPacketInterface) bool {
 		if sequenceID <= baseSequenceID && !slices.Contains(sequenceIDs, sequenceID) {
 			sequenceIDs = append(sequenceIDs, sequenceID)
 		}
@@ -201,7 +212,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 
 	// * Actually remove the packets from the pool
 	for _, sequenceID := range sequenceIDs {
-		slidingWindow.ResendScheduler.AcknowledgePacket(sequenceID)
+		slidingWindow.TimeoutManager.AcknowledgePacket(sequenceID)
 	}
 }
 
@@ -397,7 +408,6 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 
 func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	// TODO - Should we check the state here, or just let the connection disconnect at any time?
-	// TODO - Should we bother to set the connections state here? It's being destroyed anyway
 
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.acknowledgePacket(packet)
@@ -407,6 +417,8 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	streamID := packet.SourceVirtualPortStreamID()
 	discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
 	if connection, ok := pep.Connections.Get(discriminator); ok {
+		// * We make sure to update the connection state here because we could still be attempting to
+		// * resend packets.
 		connection.cleanup()
 		pep.Connections.Delete(discriminator)
 	}
@@ -539,8 +551,6 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 	}
 
 	connection := packet.Sender().(*PRUDPConnection)
-	connection.Lock()
-	defer connection.Unlock()
 
 	substreamID := packet.SubstreamID()
 
@@ -700,6 +710,39 @@ func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 	})
 
 	return connection
+}
+
+// ComputeRetransmitTimeout computes the RTO (Retransmit timeout) for a given packet
+func (pep *PRUDPEndPoint) ComputeRetransmitTimeout(packet PRUDPPacketInterface) time.Duration {
+	connection := packet.Sender().(*PRUDPConnection)
+	rtt := connection.rtt
+
+	if callback := pep.CalcRetransmissionTimeoutCallback; callback != nil {
+		rttAverage := rtt.GetRTTSmoothedAvg()
+		rttDeviation := rtt.GetRTTSmoothedDev()
+		return callback(rttAverage+rttDeviation*4.0, packet.SendCount())
+	}
+
+	var retransmitTimeBase int64
+	if packet.Type() == constants.SynPacket {
+		retransmitTimeBase = int64(pep.DefaultStreamSettings.SynInitialRTT)
+	} else {
+		retransmitTimeBase = int64(pep.DefaultStreamSettings.InitialRTT)
+		if rtt.Initialized() {
+			retransmitTimeBase = int64(rtt.Average()/time.Millisecond) / 8
+		}
+	}
+
+	retransmitTimeBaseMultiplier := packet.SendCount()
+
+	var retransmitMultiplier float64
+	if packet.SendCount() < pep.DefaultStreamSettings.ExtraRetransmitTimeoutTrigger {
+		retransmitMultiplier = float64(pep.DefaultStreamSettings.RetransmitTimeoutMultiplier)
+	} else {
+		retransmitMultiplier = float64(pep.DefaultStreamSettings.ExtraRetransmitTimeoutMultiplier)
+	}
+
+	return time.Duration(float64(retransmitTimeBase*int64(retransmitTimeBaseMultiplier))*retransmitMultiplier) * time.Millisecond
 }
 
 // AccessKey returns the servers sandbox access key

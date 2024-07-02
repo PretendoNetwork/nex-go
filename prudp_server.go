@@ -251,6 +251,7 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 			packetCopy.SetSequenceID(connection.outgoingUnreliableSequenceIDCounter.Next())
 		} else if packetCopy.Type() == constants.PingPacket {
 			packetCopy.SetSequenceID(connection.outgoingPingSequenceIDCounter.Next())
+			connection.lastSentPingTime = time.Now()
 		} else {
 			packetCopy.SetSequenceID(0)
 		}
@@ -288,9 +289,12 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
 	}
 
+	packetCopy.incrementSendCount()
+	packetCopy.setSentAt(time.Now())
+
 	if packetCopy.HasFlag(constants.PacketFlagReliable) && packetCopy.HasFlag(constants.PacketFlagNeedsAck) {
 		slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
-		slidingWindow.ResendScheduler.AddPacket(packetCopy)
+		slidingWindow.TimeoutManager.SchedulePacketTimeout(packetCopy)
 	}
 
 	ps.sendRaw(packetCopy.Sender().(*PRUDPConnection).Socket, packetCopy.Bytes())
