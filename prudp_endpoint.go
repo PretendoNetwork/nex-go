@@ -32,16 +32,12 @@ type PRUDPEndPoint struct {
 	AccountDetailsByPID               func(pid *types.PID) (*Account, *Error)
 	AccountDetailsByUsername          func(username string) (*Account, *Error)
 	IsSecureEndPoint                  bool
-	calcRetransmissionTimeoutCallback CalcRetransmissionTimeoutCallback
+	CalcRetransmissionTimeoutCallback CalcRetransmissionTimeoutCallback
 }
 
 // CalcRetransmissionTimeoutCallback is an optional callback which can be used to override the RTO calculation
 // for packets sent by this `PRUDPEndpoint`
 type CalcRetransmissionTimeoutCallback func(rtt float64, sendCount uint32) time.Duration
-
-func (pep *PRUDPEndPoint) SetCalcRetransmissionTimeoutCallback(callback CalcRetransmissionTimeoutCallback) {
-	pep.calcRetransmissionTimeoutCallback = callback
-}
 
 // RegisterServiceProtocol registers a NEX service with the endpoint
 func (pep *PRUDPEndPoint) RegisterServiceProtocol(protocol ServiceProtocol) {
@@ -168,7 +164,7 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 		}
 	} else {
 		slidingWindow := connection.SlidingWindow(packet.SubstreamID())
-		slidingWindow.ResendScheduler.AcknowledgePacket(packet.SequenceID())
+		slidingWindow.TimeoutManager.AcknowledgePacket(packet.SequenceID())
 	}
 }
 
@@ -206,7 +202,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 
 	// * MutexMap.Each locks the mutex, can't remove while reading.
 	// * Have to just loop again
-	slidingWindow.ResendScheduler.packets.Each(func(sequenceID uint16, pending PRUDPPacketInterface) bool {
+	slidingWindow.TimeoutManager.packets.Each(func(sequenceID uint16, pending PRUDPPacketInterface) bool {
 		if sequenceID <= baseSequenceID && !slices.Contains(sequenceIDs, sequenceID) {
 			sequenceIDs = append(sequenceIDs, sequenceID)
 		}
@@ -216,7 +212,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 
 	// * Actually remove the packets from the pool
 	for _, sequenceID := range sequenceIDs {
-		slidingWindow.ResendScheduler.AcknowledgePacket(sequenceID)
+		slidingWindow.TimeoutManager.AcknowledgePacket(sequenceID)
 	}
 }
 
@@ -721,7 +717,7 @@ func (pep *PRUDPEndPoint) ComputeRetransmitTimeout(packet PRUDPPacketInterface) 
 	connection := packet.Sender().(*PRUDPConnection)
 	rtt := connection.rtt
 
-	if callback := pep.calcRetransmissionTimeoutCallback; callback != nil {
+	if callback := pep.CalcRetransmissionTimeoutCallback; callback != nil {
 		rttAverage := rtt.GetRTTSmoothedAvg()
 		rttDeviation := rtt.GetRTTSmoothedDev()
 		return callback(rttAverage+rttDeviation*4.0, packet.SendCount())

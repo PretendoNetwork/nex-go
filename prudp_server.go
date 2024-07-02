@@ -294,7 +294,7 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 
 	if packetCopy.HasFlag(constants.PacketFlagReliable) && packetCopy.HasFlag(constants.PacketFlagNeedsAck) {
 		slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
-		slidingWindow.ResendScheduler.AddPacket(packetCopy)
+		slidingWindow.TimeoutManager.SchedulePacketTimeout(packetCopy)
 	}
 
 	ps.sendRaw(packetCopy.Sender().(*PRUDPConnection).Socket, packetCopy.Bytes())

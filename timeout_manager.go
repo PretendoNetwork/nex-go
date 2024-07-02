@@ -5,22 +5,20 @@ import (
 	"time"
 )
 
-// TODO - REMOVE THIS ENTIRELY AND REPLACE IT WITH AN IMPLEMENTATION OF rdv::Timeout AND rdv::TimeoutManager AND USE MORE STREAM SETTINGS!
-
-// ResendScheduler manages the resending of reliable PRUDP packets
-type ResendScheduler struct {
+// TimeoutManager is an implementation of rdv::TimeoutManager and manages the resending of reliable PRUDP packets
+type TimeoutManager struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	packets        *MutexMap[uint16, PRUDPPacketInterface]
 	streamSettings *StreamSettings
 }
 
-// AddPacket adds a packet to the scheduler and begins it's timer
-func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
+// SchedulePacketTimeout adds a packet to the scheduler and begins it's timer
+func (tm *TimeoutManager) SchedulePacketTimeout(packet PRUDPPacketInterface) {
 	endpoint := packet.Sender().Endpoint().(*PRUDPEndPoint)
 
 	rto := endpoint.ComputeRetransmitTimeout(packet)
-	ctx, cancel := context.WithTimeout(rs.ctx, rto)
+	ctx, cancel := context.WithTimeout(tm.ctx, rto)
 
 	timeout := NewTimeout()
 	timeout.SetRTO(rto)
@@ -28,25 +26,25 @@ func (rs *ResendScheduler) AddPacket(packet PRUDPPacketInterface) {
 	timeout.cancel = cancel
 	packet.setTimeout(timeout)
 
-	rs.packets.Set(packet.SequenceID(), packet)
-	go rs.start(packet)
+	tm.packets.Set(packet.SequenceID(), packet)
+	go tm.start(packet)
 }
 
 // AcknowledgePacket marks a pending packet as acknowledged. It will be ignored at the next resend attempt
-func (rs *ResendScheduler) AcknowledgePacket(sequenceID uint16) {
-	if packet, ok := rs.packets.Get(sequenceID); ok {
+func (tm *TimeoutManager) AcknowledgePacket(sequenceID uint16) {
+	if packet, ok := tm.packets.Get(sequenceID); ok {
 		// * Acknowledge the packet
-		rs.packets.Delete(sequenceID)
+		tm.packets.Delete(sequenceID)
 
 		// * Update the RTT on the connection if the packet hasn't been resent
-		if packet.SendCount() <= rs.streamSettings.RTTRetransmit {
+		if packet.SendCount() <= tm.streamSettings.RTTRetransmit {
 			rttm := time.Since(packet.SentAt())
 			packet.Sender().(*PRUDPConnection).rtt.Adjust(rttm)
 		}
 	}
 }
 
-func (rs *ResendScheduler) start(packet PRUDPPacketInterface) {
+func (tm *TimeoutManager) start(packet PRUDPPacketInterface) {
 	<-packet.getTimeout().ctx.Done()
 
 	connection := packet.Sender().(*PRUDPConnection)
@@ -58,23 +56,23 @@ func (rs *ResendScheduler) start(packet PRUDPPacketInterface) {
 		return
 	}
 
-	if rs.packets.Has(packet.SequenceID()) {
+	if tm.packets.Has(packet.SequenceID()) {
 		// * This is `<` instead of `<=` for accuracy with observed behavior, even though we're comparing send count vs _resend_ max
-		if packet.SendCount() < rs.streamSettings.MaxPacketRetransmissions {
+		if packet.SendCount() < tm.streamSettings.MaxPacketRetransmissions {
 			endpoint := packet.Sender().Endpoint().(*PRUDPEndPoint)
 
 			packet.incrementSendCount()
 			packet.setSentAt(time.Now())
 			rto := endpoint.ComputeRetransmitTimeout(packet)
 
-			ctx, cancel := context.WithTimeout(rs.ctx, rto)
+			ctx, cancel := context.WithTimeout(tm.ctx, rto)
 			timeout := packet.getTimeout()
 			timeout.timeout = rto
 			timeout.ctx = ctx
 			timeout.cancel = cancel
 
 			// * Schedule the packet to be resent
-			go rs.start(packet)
+			go tm.start(packet)
 
 			// * Resend the packet to the connection
 			server := connection.endpoint.Server
@@ -88,15 +86,15 @@ func (rs *ResendScheduler) start(packet PRUDPPacketInterface) {
 }
 
 // Stop kills the resend scheduler and stops all pending packets
-func (rs *ResendScheduler) Stop() {
-	rs.cancel()
-	rs.packets.Clear(func(key uint16, value PRUDPPacketInterface) {})
+func (tm *TimeoutManager) Stop() {
+	tm.cancel()
+	tm.packets.Clear(func(key uint16, value PRUDPPacketInterface) {})
 }
 
-// NewResendScheduler creates a new ResendScheduler
-func NewResendScheduler() *ResendScheduler {
+// NewTimeoutManager creates a new TimeoutManager
+func NewTimeoutManager() *TimeoutManager {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &ResendScheduler{
+	return &TimeoutManager{
 		ctx:            ctx,
 		cancel:         cancel,
 		packets:        NewMutexMap[uint16, PRUDPPacketInterface](),

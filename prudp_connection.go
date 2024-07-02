@@ -70,7 +70,7 @@ func (pc *PRUDPConnection) reset() {
 	})
 
 	pc.slidingWindows.Clear(func(_ uint8, slidingWindow *SlidingWindow) {
-		slidingWindow.ResendScheduler.Stop()
+		slidingWindow.TimeoutManager.Stop()
 	})
 
 	pc.Signature = make([]byte, 0)
