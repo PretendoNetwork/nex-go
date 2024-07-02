@@ -67,6 +67,6 @@ func NewStreamSettings() *StreamSettings {
 		CompressionAlgorithm:             compression.NewDummyCompression(),
 		RTTRetransmit:                    2, // * This value is taken from Xenoblade Chronicles, WATCH_DOGS sets this to 0x32 but it is then ignored. Setting this to 2 matches the TCP spec by not using resent packets in RTT calculations.
 		RetransmitTimeoutMultiplier:      1.25,
-		MaxSilenceTime:                   5000,
+		MaxSilenceTime:                   10000,
 	}
 }
