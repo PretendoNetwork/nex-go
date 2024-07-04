@@ -9,8 +9,8 @@ import (
 // Holds information about how to make queries which may return large data.
 type ResultRange struct {
 	Structure
-	Offset UInt32 // Offset into the dataset
-	Length UInt32 // Number of items to return
+	Offset UInt32 `json:"offset" db:"offset" bson:"offset" xml:"Offset"` // * Offset into the dataset
+	Length UInt32 `json:"length" db:"length" bson:"length" xml:"Length"` // * Number of items to return
 }
 
 // WriteTo writes the ResultRange to the given writable

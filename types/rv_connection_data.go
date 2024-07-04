@@ -9,10 +9,10 @@ import (
 // Contains the locations and data of Rendez-Vous connection.
 type RVConnectionData struct {
 	Structure
-	StationURL                 StationURL
-	SpecialProtocols           List[UInt8]
-	StationURLSpecialProtocols StationURL
-	Time                       DateTime
+	StationURL                 StationURL  `json:"station_url" db:"station_url" bson:"station_url" xml:"StationURL"`
+	SpecialProtocols           List[UInt8] `json:"special_protocols" db:"special_protocols" bson:"special_protocols" xml:"SpecialProtocols"`
+	StationURLSpecialProtocols StationURL  `json:"station_url_special_protocols" db:"station_url_special_protocols" bson:"station_url_special_protocols" xml:"StationURLSpecialProtocols"`
+	Time                       DateTime    `json:"time" db:"time" bson:"time" xml:"Time"`
 }
 
 // WriteTo writes the RVConnectionData to the given writable

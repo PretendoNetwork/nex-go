@@ -19,10 +19,10 @@ func RegisterDataHolderType(name string, rvType RVType) {
 // `Data` Structure, but this is not always the case. The contained Structures name & length are sent with the
 // Structure body, so the receiver can properly decode it.
 type AnyDataHolder struct {
-	TypeName   String
-	Length1    UInt32 // Length of ObjectData + Length2
-	Length2    UInt32 // Length of ObjectData
-	ObjectData RVType
+	TypeName   String `json:"type_name" db:"type_name" bson:"type_name" xml:"TypeName"`
+	Length1    UInt32 `json:"length1" db:"length1" bson:"length1" xml:"Length1"` // * Length of ObjectData + Length2
+	Length2    UInt32 `json:"length2" db:"length2" bson:"length2" xml:"Length2"` // * Length of ObjectData
+	ObjectData RVType `json:"object_data" db:"object_data" bson:"object_data" xml:"ObjectData"`
 }
 
 // WriteTo writes the AnyDataHolder to the given writable

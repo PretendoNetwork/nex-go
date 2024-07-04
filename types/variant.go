@@ -17,8 +17,8 @@ func RegisterVariantType(id UInt8, rvType RVType) {
 // Variant is an implementation of rdv::Variant.
 // This type can hold many other types, denoted by a type ID.
 type Variant struct {
-	TypeID UInt8
-	Type   RVType
+	TypeID UInt8  `json:"type_id" db:"type_id" bson:"type_id" xml:"TypeID"`
+	Type   RVType `json:"type" db:"type" bson:"type" xml:"Type"`
 }
 
 // WriteTo writes the Variant to the given writable

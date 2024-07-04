@@ -9,7 +9,7 @@ import (
 // Contains version info for Structures used in verbose RMC messages.
 type ClassVersionContainer struct {
 	Structure
-	ClassVersions Map[String, UInt16]
+	ClassVersions Map[String, UInt16] `json:"class_versions" db:"class_versions" bson:"class_versions" xml:"ClassVersions"`
 }
 
 // WriteTo writes the ClassVersionContainer to the given writable

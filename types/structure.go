@@ -7,7 +7,7 @@ import (
 
 // Structure represents a Quazal Rendez-Vous/NEX Structure (custom class) base struct.
 type Structure struct {
-	StructureVersion uint8
+	StructureVersion uint8 `json:"structure_version" db:"structure_version" bson:"structure_version" xml:"StructureVersion"`
 }
 
 // ExtractHeaderFrom extracts the structure header from the given readable
