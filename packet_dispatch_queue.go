@@ -30,6 +30,11 @@ func (pdq *PacketDispatchQueue) Dispatched(packet PRUDPPacketInterface) {
 	delete(pdq.queue, packet.SequenceID())
 }
 
+// Purge clears the queue of all pending packets.
+func (pdq *PacketDispatchQueue) Purge() {
+	clear(pdq.queue)
+}
+
 // NewPacketDispatchQueue initializes a new PacketDispatchQueue with a starting counter value.
 func NewPacketDispatchQueue() *PacketDispatchQueue {
 	return &PacketDispatchQueue{

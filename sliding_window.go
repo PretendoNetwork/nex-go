@@ -8,7 +8,7 @@ package nex
 type SlidingWindow struct {
 	sequenceIDCounter *Counter[uint16]
 	streamSettings    *StreamSettings
-	ResendScheduler   *ResendScheduler
+	TimeoutManager    *TimeoutManager
 }
 
 // SetCipherKey sets the reliable substreams RC4 cipher keys
@@ -35,7 +35,7 @@ func (sw *SlidingWindow) Encrypt(data []byte) ([]byte, error) {
 func NewSlidingWindow() *SlidingWindow {
 	sw := &SlidingWindow{
 		sequenceIDCounter: NewCounter[uint16](0),
-		ResendScheduler:   NewResendScheduler(),
+		TimeoutManager:    NewTimeoutManager(),
 	}
 
 	return sw
