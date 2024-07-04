@@ -29,7 +29,7 @@ type PRUDPEndPoint struct {
 	errorEventHandlers                []func(err *Error)
 	ConnectionIDCounter               *Counter[uint32]
 	ServerAccount                     *Account
-	AccountDetailsByPID               func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByPID               func(pid types.PID) (*Account, *Error)
 	AccountDetailsByUsername          func(username string) (*Account, *Error)
 	IsSecureEndPoint                  bool
 	CalcRetransmissionTimeoutCallback CalcRetransmissionTimeoutCallback
