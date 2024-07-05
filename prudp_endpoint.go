@@ -440,9 +440,6 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	}
 
 	if packet.HasFlag(constants.PacketFlagReliable) {
-		connection.Lock()
-		defer connection.Unlock()
-
 		substreamID := packet.SubstreamID()
 		packetDispatchQueue := connection.PacketDispatchQueue(substreamID)
 		packetDispatchQueue.Queue(packet)
