@@ -74,9 +74,9 @@ func (ps *PRUDPServer) ListenUDP(port int) {
 
 func (ps *PRUDPServer) listenDatagram(quit chan struct{}) {
 	var err error
+	buffer := make([]byte, 64000)
 
 	for err == nil {
-		buffer := make([]byte, 64000)
 		var read int
 		var addr *net.UDPAddr
 
