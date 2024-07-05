@@ -32,7 +32,9 @@ func (tm *TimeoutManager) SchedulePacketTimeout(packet PRUDPPacketInterface) {
 
 // AcknowledgePacket marks a pending packet as acknowledged. It will be ignored at the next resend attempt
 func (tm *TimeoutManager) AcknowledgePacket(sequenceID uint16) {
+	// * Acknowledge the packet
 	tm.packets.RunAndDelete(sequenceID, func(_ uint16, packet PRUDPPacketInterface) {
+		// * Update the RTT on the connection if the packet hasn't been resent
 		if packet.SendCount() >= tm.streamSettings.RTTRetransmit {
 			rttm := time.Since(packet.SentAt())
 			packet.Sender().(*PRUDPConnection).rtt.Adjust(rttm)
