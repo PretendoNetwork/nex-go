@@ -32,24 +32,18 @@ func (tm *TimeoutManager) SchedulePacketTimeout(packet PRUDPPacketInterface) {
 
 // AcknowledgePacket marks a pending packet as acknowledged. It will be ignored at the next resend attempt
 func (tm *TimeoutManager) AcknowledgePacket(sequenceID uint16) {
-	if packet, ok := tm.packets.Get(sequenceID); ok {
-		// * Acknowledge the packet
-		tm.packets.Delete(sequenceID)
-
-		// * Update the RTT on the connection if the packet hasn't been resent
-		if packet.SendCount() <= tm.streamSettings.RTTRetransmit {
+	tm.packets.RunAndDelete(sequenceID, func(_ uint16, packet PRUDPPacketInterface) {
+		if packet.SendCount() >= tm.streamSettings.RTTRetransmit {
 			rttm := time.Since(packet.SentAt())
 			packet.Sender().(*PRUDPConnection).rtt.Adjust(rttm)
 		}
-	}
+	})
 }
 
 func (tm *TimeoutManager) start(packet PRUDPPacketInterface) {
 	<-packet.getTimeout().ctx.Done()
 
 	connection := packet.Sender().(*PRUDPConnection)
-	connection.Lock()
-	defer connection.Unlock()
 
 	// * If the connection is closed stop trying to resend
 	if connection.ConnectionState != StateConnected {
@@ -80,6 +74,8 @@ func (tm *TimeoutManager) start(packet PRUDPPacketInterface) {
 			server.sendRaw(connection.Socket, data)
 		} else {
 			// * Packet has been retried too many times, consider the connection dead
+			connection.Lock()
+			defer connection.Unlock()
 			connection.cleanup()
 		}
 	}
