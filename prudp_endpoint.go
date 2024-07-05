@@ -87,21 +87,21 @@ func (pep *PRUDPEndPoint) on(name string, handler func(packet PacketInterface)) 
 func (pep *PRUDPEndPoint) emit(name string, packet PRUDPPacketInterface) {
 	if handlers, ok := pep.packetEventHandlers[name]; ok {
 		for _, handler := range handlers {
-			go handler(packet)
+			handler(packet)
 		}
 	}
 }
 
 func (pep *PRUDPEndPoint) emitConnectionEnded(connection *PRUDPConnection) {
 	for _, handler := range pep.connectionEndedEventHandlers {
-		go handler(connection)
+		handler(connection)
 	}
 }
 
 // EmitError calls all the endpoints error event handlers with the provided error
 func (pep *PRUDPEndPoint) EmitError(err *Error) {
 	for _, handler := range pep.errorEventHandlers {
-		go handler(err)
+		handler(err)
 	}
 }
 
