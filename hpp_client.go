@@ -10,7 +10,7 @@ import (
 type HPPClient struct {
 	address  *net.TCPAddr
 	endpoint *HPPServer
-	pid      *types.PID
+	pid      types.PID
 }
 
 // Endpoint returns the server the client is connecting to
@@ -24,12 +24,12 @@ func (c *HPPClient) Address() net.Addr {
 }
 
 // PID returns the clients NEX PID
-func (c *HPPClient) PID() *types.PID {
+func (c *HPPClient) PID() types.PID {
 	return c.pid
 }
 
 // SetPID sets the clients NEX PID
-func (c *HPPClient) SetPID(pid *types.PID) {
+func (c *HPPClient) SetPID(pid types.PID) {
 	c.pid = pid
 }
 

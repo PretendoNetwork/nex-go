@@ -1,6 +1,7 @@
 package types
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -18,14 +19,14 @@ func RegisterDataHolderType(name string, rvType RVType) {
 // `Data` Structure, but this is not always the case. The contained Structures name & length are sent with the
 // Structure body, so the receiver can properly decode it.
 type AnyDataHolder struct {
-	TypeName   *String
-	Length1    *PrimitiveU32 // Length of ObjectData + Length2
-	Length2    *PrimitiveU32 // Length of ObjectData
-	ObjectData RVType
+	TypeName   String `json:"type_name" db:"type_name" bson:"type_name" xml:"TypeName"`
+	Length1    UInt32 `json:"length1" db:"length1" bson:"length1" xml:"Length1"` // * Length of ObjectData + Length2
+	Length2    UInt32 `json:"length2" db:"length2" bson:"length2" xml:"Length2"` // * Length of ObjectData
+	ObjectData RVType `json:"object_data" db:"object_data" bson:"object_data" xml:"ObjectData"`
 }
 
 // WriteTo writes the AnyDataHolder to the given writable
-func (adh *AnyDataHolder) WriteTo(writable Writable) {
+func (adh AnyDataHolder) WriteTo(writable Writable) {
 	contentWritable := writable.CopyNew()
 
 	adh.ObjectData.WriteTo(contentWritable)
@@ -35,8 +36,8 @@ func (adh *AnyDataHolder) WriteTo(writable Writable) {
 	length2 := uint32(len(objectData))
 
 	adh.TypeName.WriteTo(writable)
-	writable.WritePrimitiveUInt32LE(length1)
-	writable.WritePrimitiveUInt32LE(length2)
+	writable.WriteUInt32LE(length1)
+	writable.WriteUInt32LE(length2)
 	writable.Write(objectData)
 }
 
@@ -59,13 +60,20 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read AnyDataHolder length 2. %s", err.Error())
 	}
 
-	if _, ok := AnyDataHolderObjects[adh.TypeName.Value]; !ok {
-		return fmt.Errorf("Unknown AnyDataHolder type: %s", adh.TypeName.Value)
+	typeName := string(adh.TypeName)
+
+	if _, ok := AnyDataHolderObjects[typeName]; !ok {
+		return fmt.Errorf("Unknown AnyDataHolder type: %s", typeName)
 	}
 
-	adh.ObjectData = AnyDataHolderObjects[adh.TypeName.Value].Copy()
+	adh.ObjectData = AnyDataHolderObjects[typeName].Copy()
 
-	if err := adh.ObjectData.ExtractFrom(readable); err != nil {
+	ptr, ok := any(&adh.ObjectData).(RVTypePtr)
+	if !ok {
+		return errors.New("AnyDataHolder object data is not a valid RVType. Missing ExtractFrom pointer receiver")
+	}
+
+	if err := ptr.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read AnyDataHolder object data. %s", err.Error())
 	}
 
@@ -73,24 +81,24 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a new copied instance of AnyDataHolder
-func (adh *AnyDataHolder) Copy() RVType {
+func (adh AnyDataHolder) Copy() RVType {
 	copied := NewAnyDataHolder()
 
-	copied.TypeName = adh.TypeName.Copy().(*String)
-	copied.Length1 = adh.Length1.Copy().(*PrimitiveU32)
-	copied.Length2 = adh.Length2.Copy().(*PrimitiveU32)
+	copied.TypeName = adh.TypeName.Copy().(String)
+	copied.Length1 = adh.Length1.Copy().(UInt32)
+	copied.Length2 = adh.Length2.Copy().(UInt32)
 	copied.ObjectData = adh.ObjectData.Copy()
 
 	return copied
 }
 
 // Equals checks if the passed Structure contains the same data as the current instance
-func (adh *AnyDataHolder) Equals(o RVType) bool {
-	if _, ok := o.(*AnyDataHolder); !ok {
+func (adh AnyDataHolder) Equals(o RVType) bool {
+	if _, ok := o.(AnyDataHolder); !ok {
 		return false
 	}
 
-	other := o.(*AnyDataHolder)
+	other := o.(AnyDataHolder)
 
 	if !adh.TypeName.Equals(other.TypeName) {
 		return false
@@ -108,12 +116,12 @@ func (adh *AnyDataHolder) Equals(o RVType) bool {
 }
 
 // String returns a string representation of the struct
-func (adh *AnyDataHolder) String() string {
+func (adh AnyDataHolder) String() string {
 	return adh.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (adh *AnyDataHolder) FormatToString(indentationLevel int) string {
+func (adh AnyDataHolder) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
@@ -131,10 +139,10 @@ func (adh *AnyDataHolder) FormatToString(indentationLevel int) string {
 }
 
 // NewAnyDataHolder returns a new AnyDataHolder
-func NewAnyDataHolder() *AnyDataHolder {
-	return &AnyDataHolder{
+func NewAnyDataHolder() AnyDataHolder {
+	return AnyDataHolder{
 		TypeName: NewString(""),
-		Length1:  NewPrimitiveU32(0),
-		Length2:  NewPrimitiveU32(0),
+		Length1:  NewUInt32(0),
+		Length2:  NewUInt32(0),
 	}
 }
