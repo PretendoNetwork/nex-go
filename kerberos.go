@@ -192,12 +192,13 @@ func NewKerberosTicketInternalData(server *PRUDPServer) *KerberosTicketInternalD
 // DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
 func DeriveKerberosKey(pid types.PID, password []byte) []byte {
 	iterationCount := int(65000 + pid%1024)
-	key := make([]byte, md5.Size)
-	copy(key, password)
+	key := password
+	hash := make([]byte, md5.Size)
 
 	for i := 0; i < iterationCount; i++ {
-		hash := md5.Sum(key)
-		copy(key, hash[:])
+		sum := md5.Sum(key)
+		copy(hash, sum[:])
+    key = hash
 	}
 
 	return key
