@@ -36,6 +36,19 @@ func (u32 UInt32) Equals(o RVType) bool {
 	return u32 == other
 }
 
+// CopyRef copies the current value of the UInt32
+// and returns a pointer to the new copy
+func (u32 UInt32) CopyRef() RVTypePtr {
+	return &u32
+}
+
+// Deref takes a pointer to the UInt32
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (u32 *UInt32) Deref() RVType {
+	return *u32
+}
+
 // String returns a string representation of the UInt32
 func (u32 UInt32) String() string {
 	return fmt.Sprintf("%d", u32)

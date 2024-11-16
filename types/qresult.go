@@ -43,6 +43,19 @@ func (r QResult) Equals(o RVType) bool {
 	return r == o.(QResult)
 }
 
+// CopyRef copies the current value of the QResult
+// and returns a pointer to the new copy
+func (r QResult) CopyRef() RVTypePtr {
+	return &r
+}
+
+// Deref takes a pointer to the QResult
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (r *QResult) Deref() RVType {
+	return *r
+}
+
 // IsSuccess returns true if the QResult is a success
 func (r QResult) IsSuccess() bool {
 	return int(r)&errorMask == 0

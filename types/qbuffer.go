@@ -52,6 +52,19 @@ func (qb QBuffer) Equals(o RVType) bool {
 	return bytes.Equal(qb, o.(QBuffer))
 }
 
+// CopyRef copies the current value of the QBuffer
+// and returns a pointer to the new copy
+func (qb QBuffer) CopyRef() RVTypePtr {
+	return &qb
+}
+
+// Deref takes a pointer to the QBuffer
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (qb *QBuffer) Deref() RVType {
+	return *qb
+}
+
 // String returns a string representation of the struct
 func (qb QBuffer) String() string {
 	return hex.EncodeToString(qb)

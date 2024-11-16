@@ -39,6 +39,19 @@ func (cvc ClassVersionContainer) Equals(o RVType) bool {
 	return cvc.ClassVersions.Equals(o)
 }
 
+// CopyRef copies the current value of the ClassVersionContainer
+// and returns a pointer to the new copy
+func (cvc ClassVersionContainer) CopyRef() RVTypePtr {
+	return &cvc
+}
+
+// Deref takes a pointer to the ClassVersionContainer
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (cvc *ClassVersionContainer) Deref() RVType {
+	return *cvc
+}
+
 // String returns a string representation of the struct
 func (cvc ClassVersionContainer) String() string {
 	return cvc.FormatToString(0)

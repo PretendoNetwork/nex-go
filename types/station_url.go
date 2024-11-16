@@ -141,6 +141,19 @@ func (s StationURL) Equals(o RVType) bool {
 	return true
 }
 
+// CopyRef copies the current value of the StationURL
+// and returns a pointer to the new copy
+func (s StationURL) CopyRef() RVTypePtr {
+	return &s
+}
+
+// Deref takes a pointer to the StationURL
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (s *StationURL) Deref() RVType {
+	return *s
+}
+
 // Set sets a StationURL parameter.
 //
 // "custom" determines whether or not the parameter is a standard

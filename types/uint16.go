@@ -36,6 +36,19 @@ func (u16 UInt16) Equals(o RVType) bool {
 	return u16 == other
 }
 
+// CopyRef copies the current value of the UInt16
+// and returns a pointer to the new copy
+func (u16 UInt16) CopyRef() RVTypePtr {
+	return &u16
+}
+
+// Deref takes a pointer to the UInt16
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (u16 *UInt16) Deref() RVType {
+	return *u16
+}
+
 // String returns a string representation of the UInt16
 func (u16 UInt16) String() string {
 	return fmt.Sprintf("%d", u16)

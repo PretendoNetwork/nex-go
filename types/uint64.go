@@ -36,6 +36,19 @@ func (u64 UInt64) Equals(o RVType) bool {
 	return u64 == other
 }
 
+// CopyRef copies the current value of the UInt64
+// and returns a pointer to the new copy
+func (u64 UInt64) CopyRef() RVTypePtr {
+	return &u64
+}
+
+// Deref takes a pointer to the UInt64
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (u64 *UInt64) Deref() RVType {
+	return *u64
+}
+
 // String returns a string representation of the UInt64
 func (u64 UInt64) String() string {
 	return fmt.Sprintf("%d", u64)

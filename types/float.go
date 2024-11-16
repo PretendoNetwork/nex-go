@@ -36,6 +36,19 @@ func (f Float) Equals(o RVType) bool {
 	return f == other
 }
 
+// CopyRef copies the current value of the Float
+// and returns a pointer to the new copy
+func (f Float) CopyRef() RVTypePtr {
+	return &f
+}
+
+// Deref takes a pointer to the Float
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (f *Float) Deref() RVType {
+	return *f
+}
+
 // String returns a string representation of the Float
 func (f Float) String() string {
 	return fmt.Sprintf("%f", f)

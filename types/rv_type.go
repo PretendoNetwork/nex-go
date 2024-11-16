@@ -6,12 +6,14 @@ package types
 type RVType interface {
 	WriteTo(writable Writable)
 	Copy() RVType
+	CopyRef() RVTypePtr
 	Equals(other RVType) bool
 }
 
 // RVTypePtr represents a pointer to an RVType.
-// User to separate pointer receivers for easier type checking.
+// Used to separate pointer receivers for easier type checking.
 type RVTypePtr interface {
 	RVType
 	ExtractFrom(readable Readable) error
+	Deref() RVType
 }

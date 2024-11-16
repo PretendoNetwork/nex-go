@@ -36,6 +36,19 @@ func (i8 Int8) Equals(o RVType) bool {
 	return i8 == other
 }
 
+// CopyRef copies the current value of the Int8
+// and returns a pointer to the new copy
+func (i8 Int8) CopyRef() RVTypePtr {
+	return &i8
+}
+
+// Deref takes a pointer to the Int8
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (i8 *Int8) Deref() RVType {
+	return *i8
+}
+
 // String returns a string representation of the Int8
 func (i8 Int8) String() string {
 	return fmt.Sprintf("%d", i8)

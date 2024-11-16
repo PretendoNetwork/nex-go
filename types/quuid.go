@@ -43,6 +43,19 @@ func (qu QUUID) Equals(o RVType) bool {
 	return bytes.Equal(qu, o.(QUUID))
 }
 
+// CopyRef copies the current value of the QUUID
+// and returns a pointer to the new copy
+func (qu QUUID) CopyRef() RVTypePtr {
+	return &qu
+}
+
+// Deref takes a pointer to the QUUID
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (qu *QUUID) Deref() RVType {
+	return *qu
+}
+
 // String returns a string representation of the struct
 func (qu QUUID) String() string {
 	return qu.FormatToString(0)

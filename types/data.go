@@ -44,6 +44,19 @@ func (d Data) Equals(o RVType) bool {
 	return d.StructureVersion == other.StructureVersion
 }
 
+// CopyRef copies the current value of the Data
+// and returns a pointer to the new copy
+func (d Data) CopyRef() RVTypePtr {
+	return &d
+}
+
+// Deref takes a pointer to the Data
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (d *Data) Deref() RVType {
+	return *d
+}
+
 // String returns a string representation of the struct
 func (d Data) String() string {
 	return d.FormatToString(0)

@@ -41,6 +41,19 @@ func (dt DateTime) Equals(o RVType) bool {
 	return dt == o.(DateTime)
 }
 
+// CopyRef copies the current value of the DateTime
+// and returns a pointer to the new copy
+func (dt DateTime) CopyRef() RVTypePtr {
+	return &dt
+}
+
+// Deref takes a pointer to the DateTime
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (dt *DateTime) Deref() RVType {
+	return *dt
+}
+
 // Make initilizes a DateTime with the input data
 func (dt *DateTime) Make(year, month, day, hour, minute, second int) DateTime {
 	*dt = DateTime(second | (minute << 6) | (hour << 12) | (day << 17) | (month << 22) | (year << 26))

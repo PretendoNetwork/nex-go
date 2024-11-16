@@ -36,6 +36,19 @@ func (i32 Int32) Equals(o RVType) bool {
 	return i32 == other
 }
 
+// CopyRef copies the current value of the Int32
+// and returns a pointer to the new copy
+func (i32 Int32) CopyRef() RVTypePtr {
+	return &i32
+}
+
+// Deref takes a pointer to the Int32
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (i32 *Int32) Deref() RVType {
+	return *i32
+}
+
 // String returns a string representation of the Int32
 func (i32 Int32) String() string {
 	return fmt.Sprintf("%d", i32)

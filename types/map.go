@@ -75,7 +75,7 @@ func (m *Map[K, V]) ExtractFrom(readable Readable) error {
 func (m Map[K, V]) copyType(t any) RVType {
 	// * This just makes Map.Copy() a bit cleaner
 	// * since it doesn't have to type check
-	if rvt, ok := t.(interface{ Copy() RVType }); ok {
+	if rvt, ok := t.(RVType); ok {
 		return rvt.Copy()
 	}
 
@@ -125,6 +125,19 @@ func (m Map[K, V]) Equals(o RVType) bool {
 	}
 
 	return true
+}
+
+// CopyRef copies the current value of the Map
+// and returns a pointer to the new copy
+func (m Map[K, V]) CopyRef() RVTypePtr {
+	return &m
+}
+
+// Deref takes a pointer to the Map
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (m *Map[K, V]) Deref() RVType {
+	return *m
 }
 
 // String returns a string representation of the struct

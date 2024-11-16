@@ -84,7 +84,7 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 func (adh AnyDataHolder) Copy() RVType {
 	copied := NewAnyDataHolder()
 
-	copied.TypeName = adh.TypeName.Copy().(String)
+	copied.TypeName = adh.TypeName
 	copied.Length1 = adh.Length1.Copy().(UInt32)
 	copied.Length2 = adh.Length2.Copy().(UInt32)
 	copied.ObjectData = adh.ObjectData.Copy()
@@ -113,6 +113,19 @@ func (adh AnyDataHolder) Equals(o RVType) bool {
 	}
 
 	return adh.ObjectData.Equals(other.ObjectData)
+}
+
+// CopyRef copies the current value of the AnyDataHolder
+// and returns a pointer to the new copy
+func (adh AnyDataHolder) CopyRef() RVTypePtr {
+	return &adh
+}
+
+// Deref takes a pointer to the AnyDataHolder
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (adh *AnyDataHolder) Deref() RVType {
+	return *adh
 }
 
 // String returns a string representation of the struct

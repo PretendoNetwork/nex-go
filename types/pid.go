@@ -56,6 +56,19 @@ func (p PID) Equals(o RVType) bool {
 	return p == o.(PID)
 }
 
+// CopyRef copies the current value of the PID
+// and returns a pointer to the new copy
+func (p PID) CopyRef() RVTypePtr {
+	return &p
+}
+
+// Deref takes a pointer to the PID
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (p *PID) Deref() RVType {
+	return *p
+}
+
 // String returns a string representation of the struct
 func (p PID) String() string {
 	return p.FormatToString(0)

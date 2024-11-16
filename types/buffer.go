@@ -52,6 +52,19 @@ func (b Buffer) Equals(o RVType) bool {
 	return bytes.Equal(b, o.(Buffer))
 }
 
+// CopyRef copies the current value of the Buffer
+// and returns a pointer to the new copy
+func (b Buffer) CopyRef() RVTypePtr {
+	return &b
+}
+
+// Deref takes a pointer to the Buffer
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (b *Buffer) Deref() RVType {
+	return *b
+}
+
 // String returns a string representation of the struct
 func (b Buffer) String() string {
 	return hex.EncodeToString(b)

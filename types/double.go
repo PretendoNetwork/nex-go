@@ -36,6 +36,19 @@ func (d Double) Equals(o RVType) bool {
 	return d == other
 }
 
+// CopyRef copies the current value of the Double
+// and returns a pointer to the new copy
+func (d Double) CopyRef() RVTypePtr {
+	return &d
+}
+
+// Deref takes a pointer to the Double
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (d *Double) Deref() RVType {
+	return *d
+}
+
 // String returns a string representation of the Double
 func (d Double) String() string {
 	return fmt.Sprintf("%f", d)

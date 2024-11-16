@@ -78,6 +78,19 @@ func (rr ResultRange) Equals(o RVType) bool {
 	return rr.Length.Equals(&other.Length)
 }
 
+// CopyRef copies the current value of the ResultRange
+// and returns a pointer to the new copy
+func (rr ResultRange) CopyRef() RVTypePtr {
+	return &rr
+}
+
+// Deref takes a pointer to the ResultRange
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (rr *ResultRange) Deref() RVType {
+	return *rr
+}
+
 // String returns a string representation of the struct
 func (rr ResultRange) String() string {
 	return rr.FormatToString(0)

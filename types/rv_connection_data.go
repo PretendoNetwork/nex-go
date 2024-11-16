@@ -113,6 +113,19 @@ func (rvcd RVConnectionData) Equals(o RVType) bool {
 	return true
 }
 
+// CopyRef copies the current value of the RVConnectionData
+// and returns a pointer to the new copy
+func (rvcd RVConnectionData) CopyRef() RVTypePtr {
+	return &rvcd
+}
+
+// Deref takes a pointer to the RVConnectionData
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (rvcd *RVConnectionData) Deref() RVType {
+	return *rvcd
+}
+
 // String returns a string representation of the struct
 func (rvcd RVConnectionData) String() string {
 	return rvcd.FormatToString(0)

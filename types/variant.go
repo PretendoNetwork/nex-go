@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -48,16 +47,14 @@ func (v *Variant) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Invalid Variant type ID %d", typeID)
 	}
 
-	v.Type = VariantTypes[typeID].Copy()
-
-	ptr, ok := any(&v.Type).(RVTypePtr)
-	if !ok {
-		return errors.New("Variant type data is not a valid RVType. Missing ExtractFrom pointer receiver")
-	}
-
+	// * Create a new copy and get a pointer to it.
+	// * Required so that we have access to ExtractFrom
+	ptr := VariantTypes[typeID].CopyRef()
 	if err := ptr.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read Variant type data. %s", err.Error())
 	}
+
+	v.Type = ptr.Deref() // * Dereference the RVTypePtr pointer back into a non-pointer type
 
 	return nil
 }
@@ -92,6 +89,19 @@ func (v Variant) Equals(o RVType) bool {
 	}
 
 	return true
+}
+
+// CopyRef copies the current value of the Variant
+// and returns a pointer to the new copy
+func (v Variant) CopyRef() RVTypePtr {
+	return &v
+}
+
+// Deref takes a pointer to the Variant
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (v *Variant) Deref() RVType {
+	return *v
 }
 
 // String returns a string representation of the struct

@@ -36,6 +36,19 @@ func (i16 Int16) Equals(o RVType) bool {
 	return i16 == other
 }
 
+// CopyRef copies the current value of the Int16
+// and returns a pointer to the new copy
+func (i16 Int16) CopyRef() RVTypePtr {
+	return &i16
+}
+
+// Deref takes a pointer to the Int16
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (i16 *Int16) Deref() RVType {
+	return *i16
+}
+
 // String returns a string representation of the Int16
 func (i16 Int16) String() string {
 	return fmt.Sprintf("%d", i16)

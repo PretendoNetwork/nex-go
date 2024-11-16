@@ -36,6 +36,19 @@ func (b Bool) Equals(o RVType) bool {
 	return b == other
 }
 
+// CopyRef copies the current value of the Bool
+// and returns a pointer to the new copy
+func (b Bool) CopyRef() RVTypePtr {
+	return &b
+}
+
+// Deref takes a pointer to the Bool
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (b *Bool) Deref() RVType {
+	return *b
+}
+
 // String returns a string representation of the Bool
 func (b Bool) String() string {
 	return fmt.Sprintf("%t", b)

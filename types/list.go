@@ -87,6 +87,19 @@ func (l List[T]) Equals(o RVType) bool {
 	return true
 }
 
+// CopyRef copies the current value of the List
+// and returns a pointer to the new copy
+func (l List[T]) CopyRef() RVTypePtr {
+	return &l
+}
+
+// Deref takes a pointer to the List
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (l *List[T]) Deref() RVType {
+	return *l
+}
+
 // Contains checks if the provided value exists in the List
 func (l List[T]) Contains(checkValue T) bool {
 	for _, v := range l {

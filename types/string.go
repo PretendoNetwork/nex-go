@@ -72,6 +72,19 @@ func (s String) Equals(o RVType) bool {
 	return s == o.(String)
 }
 
+// CopyRef copies the current value of the String
+// and returns a pointer to the new copy
+func (s String) CopyRef() RVTypePtr {
+	return &s
+}
+
+// Deref takes a pointer to the String
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (s *String) Deref() RVType {
+	return *s
+}
+
 // String returns a string representation of the struct
 func (s String) String() string {
 	return fmt.Sprintf("%q", string(s))

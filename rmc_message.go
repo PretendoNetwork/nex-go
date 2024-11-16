@@ -165,13 +165,11 @@ func (rmc *RMCMessage) decodeVerbose(data []byte) error {
 		}
 
 		versionContainer := types.NewClassVersionContainer()
-		ptr, _ := any(&versionContainer).(types.RVTypePtr)
-
-		if err := ptr.ExtractFrom(stream); err != nil {
+		if err := versionContainer.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read RMC Message ClassVersionContainer. %s", err.Error())
 		}
 
-		rmc.VersionContainer = ptr.(*types.ClassVersionContainer)
+		rmc.VersionContainer = &versionContainer
 		rmc.Parameters = stream.ReadRemaining()
 	} else {
 		rmc.IsSuccess, err = stream.ReadBool()
