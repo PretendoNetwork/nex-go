@@ -39,7 +39,8 @@ func (i32 Int32) Equals(o RVType) bool {
 // CopyRef copies the current value of the Int32
 // and returns a pointer to the new copy
 func (i32 Int32) CopyRef() RVTypePtr {
-	return &i32
+	copied := NewInt32(int32(i32))
+	return &copied
 }
 
 // Deref takes a pointer to the Int32

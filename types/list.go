@@ -90,7 +90,13 @@ func (l List[T]) Equals(o RVType) bool {
 // CopyRef copies the current value of the List
 // and returns a pointer to the new copy
 func (l List[T]) CopyRef() RVTypePtr {
-	return &l
+	copied := make(List[T], 0)
+
+	for _, v := range l {
+		copied = append(copied, v.Copy().(T))
+	}
+
+	return &copied
 }
 
 // Deref takes a pointer to the List

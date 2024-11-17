@@ -94,7 +94,15 @@ func (v Variant) Equals(o RVType) bool {
 // CopyRef copies the current value of the Variant
 // and returns a pointer to the new copy
 func (v Variant) CopyRef() RVTypePtr {
-	return &v
+	copied := NewVariant()
+
+	copied.TypeID = v.TypeID.Copy().(UInt8)
+
+	if v.Type != nil {
+		copied.Type = v.Type.Copy()
+	}
+
+	return &copied
 }
 
 // Deref takes a pointer to the Variant

@@ -44,7 +44,8 @@ func (dt DateTime) Equals(o RVType) bool {
 // CopyRef copies the current value of the DateTime
 // and returns a pointer to the new copy
 func (dt DateTime) CopyRef() RVTypePtr {
-	return &dt
+	copied := NewDateTime(uint64(dt))
+	return &copied
 }
 
 // Deref takes a pointer to the DateTime

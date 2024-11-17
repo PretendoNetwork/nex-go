@@ -18,5 +18,5 @@ type Writable interface {
 	WriteFloat32LE(value float32) // Writes a primitive Go float32
 	WriteFloat64LE(value float64) // Writes a primitive Go float64
 	WriteBool(value bool)         // Writes a primitive Go bool
-	Bytes() []byte                // Returns the data written t othe buffer
+	Bytes() []byte                // Returns the data written to the buffer
 }

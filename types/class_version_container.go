@@ -42,7 +42,10 @@ func (cvc ClassVersionContainer) Equals(o RVType) bool {
 // CopyRef copies the current value of the ClassVersionContainer
 // and returns a pointer to the new copy
 func (cvc ClassVersionContainer) CopyRef() RVTypePtr {
-	return &cvc
+	copied := NewClassVersionContainer()
+	copied.ClassVersions = cvc.ClassVersions.Copy().(Map[String, UInt16])
+
+	return &copied
 }
 
 // Deref takes a pointer to the ClassVersionContainer

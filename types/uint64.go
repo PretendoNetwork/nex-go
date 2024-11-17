@@ -39,7 +39,8 @@ func (u64 UInt64) Equals(o RVType) bool {
 // CopyRef copies the current value of the UInt64
 // and returns a pointer to the new copy
 func (u64 UInt64) CopyRef() RVTypePtr {
-	return &u64
+	copied := NewUInt64(uint64(u64))
+	return &copied
 }
 
 // Deref takes a pointer to the UInt64

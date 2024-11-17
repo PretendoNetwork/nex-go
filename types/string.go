@@ -75,7 +75,8 @@ func (s String) Equals(o RVType) bool {
 // CopyRef copies the current value of the String
 // and returns a pointer to the new copy
 func (s String) CopyRef() RVTypePtr {
-	return &s
+	copied := NewString(string(s))
+	return &copied
 }
 
 // Deref takes a pointer to the String

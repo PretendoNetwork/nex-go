@@ -39,7 +39,8 @@ func (f Float) Equals(o RVType) bool {
 // CopyRef copies the current value of the Float
 // and returns a pointer to the new copy
 func (f Float) CopyRef() RVTypePtr {
-	return &f
+	copied := NewFloat(float32(f))
+	return &copied
 }
 
 // Deref takes a pointer to the Float

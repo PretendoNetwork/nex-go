@@ -12,7 +12,7 @@ import (
 // value types are not an RVType, they are ignored.
 //
 // Incompatible with RVType pointers!
-type Map[K comparable, V any] map[K]V
+type Map[K comparable, V RVType] map[K]V
 
 func (m Map[K, V]) writeType(t any, writable Writable) {
 	// * This just makes Map.WriteTo() a bit cleaner
@@ -88,7 +88,7 @@ func (m Map[K, V]) Copy() RVType {
 	copied := make(Map[K, V])
 
 	for key, value := range m {
-		copied[m.copyType(key).(K)] = m.copyType(value).(V)
+		copied[m.copyType(key).(K)] = value.Copy().(V)
 	}
 
 	return copied
@@ -130,7 +130,13 @@ func (m Map[K, V]) Equals(o RVType) bool {
 // CopyRef copies the current value of the Map
 // and returns a pointer to the new copy
 func (m Map[K, V]) CopyRef() RVTypePtr {
-	return &m
+	copied := make(Map[K, V])
+
+	for key, value := range m {
+		copied[m.copyType(key).(K)] = value.Copy().(V)
+	}
+
+	return &copied
 }
 
 // Deref takes a pointer to the Map
@@ -169,6 +175,6 @@ func (m Map[K, V]) FormatToString(indentationLevel int) string {
 }
 
 // NewMap returns a new Map of the provided type
-func NewMap[K comparable, V any]() Map[K, V] {
+func NewMap[K comparable, V RVType]() Map[K, V] {
 	return make(Map[K, V])
 }

@@ -81,7 +81,13 @@ func (rr ResultRange) Equals(o RVType) bool {
 // CopyRef copies the current value of the ResultRange
 // and returns a pointer to the new copy
 func (rr ResultRange) CopyRef() RVTypePtr {
-	return &rr
+	copied := NewResultRange()
+
+	copied.StructureVersion = rr.StructureVersion
+	copied.Offset = rr.Offset.Copy().(UInt32)
+	copied.Length = rr.Length.Copy().(UInt32)
+
+	return &copied
 }
 
 // Deref takes a pointer to the ResultRange

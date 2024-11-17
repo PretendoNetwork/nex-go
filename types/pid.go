@@ -59,7 +59,8 @@ func (p PID) Equals(o RVType) bool {
 // CopyRef copies the current value of the PID
 // and returns a pointer to the new copy
 func (p PID) CopyRef() RVTypePtr {
-	return &p
+	copied := NewPID(uint64(p))
+	return &copied
 }
 
 // Deref takes a pointer to the PID

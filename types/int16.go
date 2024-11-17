@@ -39,7 +39,8 @@ func (i16 Int16) Equals(o RVType) bool {
 // CopyRef copies the current value of the Int16
 // and returns a pointer to the new copy
 func (i16 Int16) CopyRef() RVTypePtr {
-	return &i16
+	copied := NewInt16(int16(i16))
+	return &copied
 }
 
 // Deref takes a pointer to the Int16

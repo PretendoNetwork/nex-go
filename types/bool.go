@@ -39,7 +39,8 @@ func (b Bool) Equals(o RVType) bool {
 // CopyRef copies the current value of the Bool
 // and returns a pointer to the new copy
 func (b Bool) CopyRef() RVTypePtr {
-	return &b
+	copied := NewBool(bool(b))
+	return &copied
 }
 
 // Deref takes a pointer to the Bool

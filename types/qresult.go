@@ -46,7 +46,8 @@ func (r QResult) Equals(o RVType) bool {
 // CopyRef copies the current value of the QResult
 // and returns a pointer to the new copy
 func (r QResult) CopyRef() RVTypePtr {
-	return &r
+	copied := NewQResult(uint32(r))
+	return &copied
 }
 
 // Deref takes a pointer to the QResult

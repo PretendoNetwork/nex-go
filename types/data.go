@@ -47,7 +47,10 @@ func (d Data) Equals(o RVType) bool {
 // CopyRef copies the current value of the Data
 // and returns a pointer to the new copy
 func (d Data) CopyRef() RVTypePtr {
-	return &d
+	copied := NewData()
+	copied.StructureVersion = d.StructureVersion
+
+	return &copied
 }
 
 // Deref takes a pointer to the Data
