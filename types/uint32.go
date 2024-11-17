@@ -39,7 +39,7 @@ func (u32 UInt32) Equals(o RVType) bool {
 // CopyRef copies the current value of the UInt32
 // and returns a pointer to the new copy
 func (u32 UInt32) CopyRef() RVTypePtr {
-	copied := NewUInt32(uint32(u32))
+	copied := u32.Copy().(UInt32)
 	return &copied
 }
 

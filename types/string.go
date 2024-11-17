@@ -75,7 +75,7 @@ func (s String) Equals(o RVType) bool {
 // CopyRef copies the current value of the String
 // and returns a pointer to the new copy
 func (s String) CopyRef() RVTypePtr {
-	copied := NewString(string(s))
+	copied := s.Copy().(String)
 	return &copied
 }
 

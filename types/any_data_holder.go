@@ -118,13 +118,7 @@ func (adh AnyDataHolder) Equals(o RVType) bool {
 // CopyRef copies the current value of the AnyDataHolder
 // and returns a pointer to the new copy
 func (adh AnyDataHolder) CopyRef() RVTypePtr {
-	copied := NewAnyDataHolder()
-
-	copied.TypeName = adh.TypeName
-	copied.Length1 = adh.Length1.Copy().(UInt32)
-	copied.Length2 = adh.Length2.Copy().(UInt32)
-	copied.ObjectData = adh.ObjectData.Copy()
-
+	copied := adh.Copy().(AnyDataHolder)
 	return &copied
 }
 

@@ -59,7 +59,7 @@ func (p PID) Equals(o RVType) bool {
 // CopyRef copies the current value of the PID
 // and returns a pointer to the new copy
 func (p PID) CopyRef() RVTypePtr {
-	copied := NewPID(uint64(p))
+	copied := p.Copy().(PID)
 	return &copied
 }
 

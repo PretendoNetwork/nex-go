@@ -39,7 +39,7 @@ func (i64 Int64) Equals(o RVType) bool {
 // CopyRef copies the current value of the Int64
 // and returns a pointer to the new copy
 func (i64 Int64) CopyRef() RVTypePtr {
-	copied := NewInt64(int64(i64))
+	copied := i64.Copy().(Int64)
 	return &copied
 }
 

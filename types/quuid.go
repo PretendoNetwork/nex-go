@@ -46,7 +46,7 @@ func (qu QUUID) Equals(o RVType) bool {
 // CopyRef copies the current value of the QUUID
 // and returns a pointer to the new copy
 func (qu QUUID) CopyRef() RVTypePtr {
-	copied := NewQUUID(qu)
+	copied := qu.Copy().(QUUID)
 	return &copied
 }
 

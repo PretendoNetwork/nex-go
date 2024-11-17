@@ -39,7 +39,7 @@ func (i8 Int8) Equals(o RVType) bool {
 // CopyRef copies the current value of the Int8
 // and returns a pointer to the new copy
 func (i8 Int8) CopyRef() RVTypePtr {
-	copied := NewInt8(int8(i8))
+	copied := i8.Copy().(Int8)
 	return &copied
 }
 

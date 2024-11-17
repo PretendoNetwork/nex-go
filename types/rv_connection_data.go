@@ -116,17 +116,7 @@ func (rvcd RVConnectionData) Equals(o RVType) bool {
 // CopyRef copies the current value of the RVConnectionData
 // and returns a pointer to the new copy
 func (rvcd RVConnectionData) CopyRef() RVTypePtr {
-	copied := NewRVConnectionData()
-
-	copied.StructureVersion = rvcd.StructureVersion
-	copied.StationURL = rvcd.StationURL.Copy().(StationURL)
-	copied.SpecialProtocols = rvcd.SpecialProtocols.Copy().(List[UInt8])
-	copied.StationURLSpecialProtocols = rvcd.StationURLSpecialProtocols.Copy().(StationURL)
-
-	if rvcd.StructureVersion >= 1 {
-		copied.Time = *rvcd.Time.Copy().(*DateTime)
-	}
-
+	copied := rvcd.Copy().(RVConnectionData)
 	return &copied
 }
 

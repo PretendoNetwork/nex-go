@@ -144,7 +144,7 @@ func (s StationURL) Equals(o RVType) bool {
 // CopyRef copies the current value of the StationURL
 // and returns a pointer to the new copy
 func (s StationURL) CopyRef() RVTypePtr {
-	copied := NewStationURL(String(s.URL()))
+	copied := s.Copy().(StationURL)
 	return &copied
 }
 

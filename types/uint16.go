@@ -39,7 +39,7 @@ func (u16 UInt16) Equals(o RVType) bool {
 // CopyRef copies the current value of the UInt16
 // and returns a pointer to the new copy
 func (u16 UInt16) CopyRef() RVTypePtr {
-	copied := NewUInt16(uint16(u16))
+	copied := u16.Copy().(UInt16)
 	return &copied
 }
 

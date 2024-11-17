@@ -130,12 +130,7 @@ func (m Map[K, V]) Equals(o RVType) bool {
 // CopyRef copies the current value of the Map
 // and returns a pointer to the new copy
 func (m Map[K, V]) CopyRef() RVTypePtr {
-	copied := make(Map[K, V])
-
-	for key, value := range m {
-		copied[m.copyType(key).(K)] = value.Copy().(V)
-	}
-
+	copied := m.Copy().(Map[K, V])
 	return &copied
 }
 

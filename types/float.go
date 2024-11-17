@@ -39,7 +39,7 @@ func (f Float) Equals(o RVType) bool {
 // CopyRef copies the current value of the Float
 // and returns a pointer to the new copy
 func (f Float) CopyRef() RVTypePtr {
-	copied := NewFloat(float32(f))
+	copied := f.Copy().(Float)
 	return &copied
 }
 

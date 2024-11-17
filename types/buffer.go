@@ -55,7 +55,7 @@ func (b Buffer) Equals(o RVType) bool {
 // CopyRef copies the current value of the Buffer
 // and returns a pointer to the new copy
 func (b Buffer) CopyRef() RVTypePtr {
-	copied := NewBuffer(b)
+	copied := b.Copy().(Buffer)
 	return &copied
 }
 

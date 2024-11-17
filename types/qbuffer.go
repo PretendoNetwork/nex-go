@@ -55,7 +55,7 @@ func (qb QBuffer) Equals(o RVType) bool {
 // CopyRef copies the current value of the QBuffer
 // and returns a pointer to the new copy
 func (qb QBuffer) CopyRef() RVTypePtr {
-	copied := NewQBuffer(qb)
+	copied := qb.Copy().(QBuffer)
 	return &copied
 }
 

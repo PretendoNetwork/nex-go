@@ -39,7 +39,7 @@ func (i32 Int32) Equals(o RVType) bool {
 // CopyRef copies the current value of the Int32
 // and returns a pointer to the new copy
 func (i32 Int32) CopyRef() RVTypePtr {
-	copied := NewInt32(int32(i32))
+	copied := i32.Copy().(Int32)
 	return &copied
 }
 
