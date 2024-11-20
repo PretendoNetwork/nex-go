@@ -198,7 +198,7 @@ func DeriveKerberosKey(pid types.PID, password []byte) []byte {
 	for i := 0; i < iterationCount; i++ {
 		sum := md5.Sum(key)
 		copy(hash, sum[:])
-    key = hash
+		key = hash
 	}
 
 	return key
