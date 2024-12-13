@@ -46,7 +46,9 @@ func startAuthenticationServer() {
 	authServer.SessionKeyLength = 16
 	authServer.AccessKey = "ridfebb9"
 	authServer.BindPRUDPEndPoint(authEndpoint)
-	authServer.Listen(60000)
+	if !mocking {
+		authServer.Listen(60000)
+	}
 }
 
 func login(packet nex.PRUDPPacketInterface) {

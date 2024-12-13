@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/PretendoNetwork/plogger-go v1.0.4
+	github.com/google/gopacket v1.1.19
 	github.com/lxzan/gws v1.8.3
 	github.com/rasky/go-lzo v0.0.0-20200203143853-96a758eda86e
 	github.com/stretchr/testify v1.8.4

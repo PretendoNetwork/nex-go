@@ -84,7 +84,9 @@ func startSecureServer() {
 	secureServer.SessionKeyLength = 16
 	secureServer.AccessKey = "ridfebb9"
 	secureServer.BindPRUDPEndPoint(secureEndpoint)
-	secureServer.Listen(60001)
+	if !mocking {
+		secureServer.Listen(60001)
+	}
 }
 
 func registerEx(packet nex.PRUDPPacketInterface) {

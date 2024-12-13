@@ -29,6 +29,7 @@ type PRUDPServer struct {
 	PRUDPV0Settings               *PRUDPV0Settings
 	PRUDPV1Settings               *PRUDPV1Settings
 	UseVerboseRMC                 bool
+	mockSendRaw                   func(socket *SocketConnection, data []byte) error
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server
@@ -85,7 +86,7 @@ func (ps *PRUDPServer) listenDatagram(quit chan struct{}) {
 			packetData := make([]byte, read)
 			copy(packetData, buffer[:read])
 
-			err = ps.handleSocketMessage(packetData, addr, nil)
+			err = ps.HandleSocketMessage(packetData, addr, nil)
 		}
 	}
 
@@ -116,6 +117,12 @@ func (ps *PRUDPServer) ListenWebSocketSecure(port int, certFile, keyFile string)
 	ps.websocketServer.listenSecure(port, certFile, keyFile)
 }
 
+func (ps *PRUDPServer) ListenMock(sendRaw func(socket *SocketConnection, data []byte) error) {
+	ps.initPRUDPv1ConnectionSignatureKey()
+
+	ps.mockSendRaw = sendRaw
+}
+
 func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 	// * Ensure the server has a key for PRUDPv1 connection signatures
 	if len(ps.PRUDPv1ConnectionSignatureKey) != 16 {
@@ -127,7 +134,7 @@ func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 	}
 }
 
-func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
+func (ps *PRUDPServer) HandleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
 	readStream := NewByteStreamIn(packetData, ps.LibraryVersions, ps.ByteStreamSettings)
 
 	var packets []PRUDPPacketInterface
@@ -307,7 +314,9 @@ func (ps *PRUDPServer) sendRaw(socket *SocketConnection, data []byte) {
 
 	var err error
 
-	if address, ok := socket.Address.(*net.UDPAddr); ok && ps.udpSocket != nil {
+	if ps.mockSendRaw != nil {
+		err = ps.mockSendRaw(socket, data)
+	} else if address, ok := socket.Address.(*net.UDPAddr); ok && ps.udpSocket != nil {
 		_, err = ps.udpSocket.WriteToUDP(data, address)
 	} else if socket.WebSocketConnection != nil {
 		err = socket.WebSocketConnection.WriteMessage(gws.OpcodeBinary, data)

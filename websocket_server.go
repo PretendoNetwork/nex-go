@@ -58,7 +58,7 @@ func (wseh *wsEventHandler) OnMessage(socket *gws.Conn, message *gws.Message) {
 	// * If this is not done, then the byte slice sometimes
 	// * gets modified in unexpected places
 	packetData := append([]byte(nil), message.Bytes()...)
-	err := wseh.prudpServer.handleSocketMessage(packetData, socket.RemoteAddr(), socket)
+	err := wseh.prudpServer.HandleSocketMessage(packetData, socket.RemoteAddr(), socket)
 	if err != nil {
 		logger.Error(err.Error())
 	}
