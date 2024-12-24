@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -66,16 +65,13 @@ func (adh *AnyDataHolder) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Unknown AnyDataHolder type: %s", typeName)
 	}
 
-	adh.ObjectData = AnyDataHolderObjects[typeName].Copy()
-
-	ptr, ok := any(&adh.ObjectData).(RVTypePtr)
-	if !ok {
-		return errors.New("AnyDataHolder object data is not a valid RVType. Missing ExtractFrom pointer receiver")
-	}
+	ptr := AnyDataHolderObjects[typeName].CopyRef()
 
 	if err := ptr.ExtractFrom(readable); err != nil {
 		return fmt.Errorf("Failed to read AnyDataHolder object data. %s", err.Error())
 	}
+
+	adh.ObjectData = ptr.Deref()
 
 	return nil
 }
