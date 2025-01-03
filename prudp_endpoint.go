@@ -107,14 +107,22 @@ func (pep *PRUDPEndPoint) EmitError(err *Error) {
 
 // cleanupConnectionByID cleans up and deletes the connection with the specified ID
 func (pep *PRUDPEndPoint) cleanupConnectionByID(cid uint32) {
+	connections := make([]*PRUDPConnection, 0, 8)
+
 	pep.Connections.DeleteIf(func(key string, value *PRUDPConnection) bool {
 		if value.ID == cid {
-			value.cleanup()
+			connections = append(connections, value)
 			return true
 		}
 
 		return false
 	})
+
+	// * We can't do this during DeleteIf, since we hold the Connections mutex then
+	// * This way we avoid any recursive locking
+	for _, connection := range connections {
+		connection.cleanup()
+	}
 }
 
 func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *SocketConnection) {
