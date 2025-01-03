@@ -86,16 +86,7 @@ func (pc *PRUDPConnection) cleanup() {
 
 	pc.stopHeartbeatTimers()
 
-	pc.Socket.Connections.Delete(pc.SessionID)
-
 	pc.endpoint.emitConnectionEnded(pc)
-
-	if pc.Socket.Connections.Size() == 0 {
-		// * No more PRUDP connections, assume the socket connection is also closed
-		pc.endpoint.Server.Connections.Delete(pc.Socket.Address.String())
-		// TODO - Is there any other cleanup that needs to happen here?
-		// TODO - Should we add an event for when a socket closes too?
-	}
 }
 
 // InitializeSlidingWindows initializes the SlidingWindows for all substreams

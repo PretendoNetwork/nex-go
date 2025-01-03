@@ -23,6 +23,7 @@ go.work.sum
 
 # custom
 .vscode
+.idea
 .env
 build
 log

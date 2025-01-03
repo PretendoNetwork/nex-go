@@ -17,7 +17,6 @@ type PRUDPServer struct {
 	udpSocket                     *net.UDPConn
 	websocketServer               *WebSocketServer
 	Endpoints                     *MutexMap[uint8, *PRUDPEndPoint]
-	Connections                   *MutexMap[string, *SocketConnection]
 	SupportedFunctions            uint32
 	AccessKey                     string
 	KerberosTicketVersion         int
@@ -194,13 +193,7 @@ func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Ad
 		return
 	}
 
-	discriminator := address.String()
-	socket, ok := ps.Connections.Get(discriminator)
-	if !ok {
-		socket = NewSocketConnection(ps, address, webSocketConnection)
-		ps.Connections.Set(discriminator, socket)
-	}
-
+	socket := NewSocketConnection(ps, address, webSocketConnection)
 	endpoint.processPacket(packet, socket)
 }
 
@@ -338,7 +331,6 @@ func (ps *PRUDPServer) SetFragmentSize(fragmentSize int) {
 func NewPRUDPServer() *PRUDPServer {
 	return &PRUDPServer{
 		Endpoints:          NewMutexMap[uint8, *PRUDPEndPoint](),
-		Connections:        NewMutexMap[string, *SocketConnection](),
 		SessionKeyLength:   32,
 		FragmentSize:       1300,
 		LibraryVersions:    NewLibraryVersions(),
