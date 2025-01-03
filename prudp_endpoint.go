@@ -105,11 +105,24 @@ func (pep *PRUDPEndPoint) EmitError(err *Error) {
 	}
 }
 
-// deleteConnectionByID deletes the connection with the specified ID
-func (pep *PRUDPEndPoint) deleteConnectionByID(cid uint32) {
+// cleanupConnectionByID cleans up and deletes the connection with the specified ID
+func (pep *PRUDPEndPoint) cleanupConnectionByID(cid uint32) {
+	connections := make([]*PRUDPConnection, 0, 8)
+
 	pep.Connections.DeleteIf(func(key string, value *PRUDPConnection) bool {
-		return value.ID == cid
+		if value.ID == cid {
+			connections = append(connections, value)
+			return true
+		}
+
+		return false
 	})
+
+	// * We can't do this during DeleteIf, since we hold the Connections mutex then
+	// * This way we avoid any recursive locking
+	for _, connection := range connections {
+		connection.cleanup()
+	}
 }
 
 func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *SocketConnection) {
@@ -417,10 +430,7 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	streamID := packet.SourceVirtualPortStreamID()
 	discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
 	if connection, ok := pep.Connections.Get(discriminator); ok {
-		// * We make sure to update the connection state here because we could still be attempting to
-		// * resend packets.
-		connection.cleanup()
-		pep.Connections.Delete(discriminator)
+		pep.cleanupConnectionByID(connection.ID)
 	}
 
 	pep.emit("disconnect", packet)

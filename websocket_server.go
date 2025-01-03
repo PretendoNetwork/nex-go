@@ -22,25 +22,26 @@ func (wseh *wsEventHandler) OnOpen(socket *gws.Conn) {
 }
 
 func (wseh *wsEventHandler) OnClose(wsConn *gws.Conn, _ error) {
-	connections := make([]*PRUDPConnection, 0)
-
 	// * Loop over all connections on all endpoints
 	wseh.prudpServer.Endpoints.Each(func(streamid uint8, pep *PRUDPEndPoint) bool {
-		return pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
+		connections := make([]*PRUDPConnection, 0)
+
+		pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
 			if pc.Socket.Address == wsConn.RemoteAddr() {
 				connections = append(connections, pc)
 			}
 			return false
 		})
-	})
 
-	// * We cannot modify a MutexMap while looping over it
-	// * since the mutex is locked. We first need to grab
-	// * the entries we want to delete, and then loop over
-	// * them here to actually clean them up
-	for _, connection := range connections {
-		connection.cleanup() // * "removed" event is dispatched here
-	}
+		// * We cannot modify a MutexMap while looping over it
+		// * since the mutex is locked. We first need to grab
+		// * the entries we want to delete, and then loop over
+		// * them here to actually clean them up
+		for _, connection := range connections {
+			pep.cleanupConnectionByID(connection.ID) // * "removed" event is dispatched here
+		}
+		return false
+	})
 }
 
 func (wseh *wsEventHandler) OnPing(socket *gws.Conn, payload []byte) {
