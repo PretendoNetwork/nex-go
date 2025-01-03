@@ -21,18 +21,17 @@ func (wseh *wsEventHandler) OnOpen(socket *gws.Conn) {
 	_ = socket.SetDeadline(time.Now().Add(pingInterval + pingWait))
 }
 
-func (wseh *wsEventHandler) OnClose(wsConn *gws.Conn, err error) {
+func (wseh *wsEventHandler) OnClose(wsConn *gws.Conn, _ error) {
 	connections := make([]*PRUDPConnection, 0)
 
-	socket, ok := wseh.prudpServer.Connections.Get(wsConn.RemoteAddr().String())
-	if !ok {
-		// TODO - Error?
-		return
-	}
-
-	socket.Connections.Each(func(_ uint8, connection *PRUDPConnection) bool {
-		connections = append(connections, connection)
-		return false
+	// * Loop over all connections on all endpoints
+	wseh.prudpServer.Endpoints.Each(func(streamid uint8, pep *PRUDPEndPoint) bool {
+		return pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
+			if pc.Socket.Address == wsConn.RemoteAddr() {
+				connections = append(connections, pc)
+			}
+			return false
+		})
 	})
 
 	// * We cannot modify a MutexMap while looping over it
