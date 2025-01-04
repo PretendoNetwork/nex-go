@@ -261,9 +261,7 @@ func (pc *PRUDPConnection) startHeartbeat() {
 		// * If the heartbeat still did not restart, assume the
 		// * connection is dead and clean up
 		pc.pingKickTimer = time.AfterFunc(maxSilenceTime, func() {
-			pc.cleanup() // * "removed" event is dispatched here
-
-			endpoint.deleteConnectionByID(pc.ID)
+			endpoint.cleanupConnectionByID(pc.ID)
 		})
 	})
 }

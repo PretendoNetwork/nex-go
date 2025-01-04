@@ -53,10 +53,10 @@ func (tm *TimeoutManager) start(packet PRUDPPacketInterface) {
 	}
 
 	if tm.packets.Has(packet.SequenceID()) {
+		endpoint := packet.Sender().Endpoint().(*PRUDPEndPoint)
+
 		// * This is `<` instead of `<=` for accuracy with observed behavior, even though we're comparing send count vs _resend_ max
 		if packet.SendCount() < tm.streamSettings.MaxPacketRetransmissions {
-			endpoint := packet.Sender().Endpoint().(*PRUDPEndPoint)
-
 			packet.incrementSendCount()
 			packet.setSentAt(time.Now())
 			rto := endpoint.ComputeRetransmitTimeout(packet)
@@ -76,9 +76,7 @@ func (tm *TimeoutManager) start(packet PRUDPPacketInterface) {
 			server.sendRaw(connection.Socket, data)
 		} else {
 			// * Packet has been retried too many times, consider the connection dead
-			connection.Lock()
-			defer connection.Unlock()
-			connection.cleanup()
+			endpoint.cleanupConnectionByID(connection.ID)
 		}
 	}
 }
