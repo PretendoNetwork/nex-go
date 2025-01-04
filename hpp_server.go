@@ -18,7 +18,7 @@ type HPPServer struct {
 	dataHandlers             []func(packet PacketInterface)
 	errorEventHandlers       []func(err *Error)
 	byteStreamSettings       *ByteStreamSettings
-	AccountDetailsByPID      func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByPID      func(pid types.PID) (*Account, *Error)
 	AccountDetailsByUsername func(username string) (*Account, *Error)
 	useVerboseRMC            bool
 }

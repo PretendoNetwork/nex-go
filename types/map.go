@@ -6,99 +6,120 @@ import (
 )
 
 // Map represents a Quazal Rendez-Vous/NEX Map type.
-//
+// Type alias of map[K]V.
 // There is not an official type in either the rdv or nn::nex namespaces.
-// The data is stored as an array of key-value pairs.
-type Map[K RVType, V RVType] struct {
-	// * Rendez-Vous/NEX MapMap types can have ANY value for the key, but Go requires
-	// * map keys to implement the "comparable" constraint. This is not possible with
-	// * RVTypes. We have to either break spec and only allow primitives as Map keys,
-	// * or store the key/value types indirectly
-	keys      []K
-	values    []V
-	KeyType   K
-	ValueType V
+// May have any RVType as both a key and value. If either they key or
+// value types are not an RVType, they are ignored.
+//
+// Incompatible with RVType pointers!
+type Map[K comparable, V RVType] map[K]V
+
+func (m Map[K, V]) writeType(t any, writable Writable) {
+	// * This just makes Map.WriteTo() a bit cleaner
+	// * since it doesn't have to type check
+	if rvt, ok := t.(interface{ WriteTo(writable Writable) }); ok {
+		rvt.WriteTo(writable)
+	}
 }
 
 // WriteTo writes the Map to the given writable
-func (m *Map[K, V]) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt32LE(uint32(m.Size()))
+func (m Map[K, V]) WriteTo(writable Writable) {
+	writable.WriteUInt32LE(uint32(len(m)))
 
-	for i := 0; i < len(m.keys); i++ {
-		m.keys[i].WriteTo(writable)
-		m.values[i].WriteTo(writable)
+	for key, value := range m {
+		m.writeType(key, writable)
+		m.writeType(value, writable)
 	}
+}
+
+func (m Map[K, V]) extractType(t any, readable Readable) error {
+	// * This just makes Map.ExtractFrom() a bit cleaner
+	// * since it doesn't have to type check
+	if ptr, ok := t.(RVTypePtr); ok {
+		return ptr.ExtractFrom(readable)
+	}
+
+	// * Maybe support other types..?
+
+	return fmt.Errorf("Unsupported Map type %T", t)
 }
 
 // ExtractFrom extracts the Map from the given readable
 func (m *Map[K, V]) ExtractFrom(readable Readable) error {
-	length, err := readable.ReadPrimitiveUInt32LE()
+	length, err := readable.ReadUInt32LE()
 	if err != nil {
 		return err
 	}
 
-	keys := make([]K, 0, length)
-	values := make([]V, 0, length)
+	extracted := make(Map[K, V])
 
 	for i := 0; i < int(length); i++ {
-		key := m.KeyType.Copy()
-		if err := key.ExtractFrom(readable); err != nil {
+		var key K
+		if err := m.extractType(&key, readable); err != nil {
 			return err
 		}
 
-		value := m.ValueType.Copy()
-		if err := value.ExtractFrom(readable); err != nil {
+		var value V
+		if err := m.extractType(&value, readable); err != nil {
 			return err
 		}
 
-		keys = append(keys, key.(K))
-		values = append(values, value.(V))
+		extracted[key] = value
 	}
 
-	m.keys = keys
-	m.values = values
+	*m = extracted
 
 	return nil
 }
 
-// Copy returns a pointer to a copy of the Map. Requires type assertion when used
-func (m *Map[K, V]) Copy() RVType {
-	copied := NewMap[K, V]()
-	copied.keys = make([]K, len(m.keys))
-	copied.values = make([]V, len(m.values))
-	copied.KeyType = m.KeyType.Copy().(K)
-	copied.ValueType = m.ValueType.Copy().(V)
+func (m Map[K, V]) copyType(t any) RVType {
+	// * This just makes Map.Copy() a bit cleaner
+	// * since it doesn't have to type check
+	if rvt, ok := t.(RVType); ok {
+		return rvt.Copy()
+	}
 
-	for i := 0; i < len(m.keys); i++ {
-		copied.keys[i] = m.keys[i].Copy().(K)
-		copied.values[i] = m.values[i].Copy().(V)
+	// TODO - Improve this, this isn't safe
+	return nil
+}
+
+// Copy returns a pointer to a copy of the Map. Requires type assertion when used
+func (m Map[K, V]) Copy() RVType {
+	copied := make(Map[K, V])
+
+	for key, value := range m {
+		copied[m.copyType(key).(K)] = value.Copy().(V)
 	}
 
 	return copied
 }
 
-// Equals checks if the input is equal in value to the current instance
-func (m *Map[K, V]) Equals(o RVType) bool {
-	if _, ok := o.(*Map[K, V]); !ok {
-		return false
-	}
-
-	other := o.(*Map[K, V])
-
-	if len(m.keys) != len(other.keys) {
-		return false
-	}
-
-	if len(m.values) != len(other.values) {
-		return false
-	}
-
-	for i := 0; i < len(m.keys); i++ {
-		if !m.keys[i].Equals(other.keys[i]) {
-			return false
+func (m Map[K, V]) typesEqual(t1, t2 any) bool {
+	// * This just makes Map.Equals() a bit cleaner
+	// * since it doesn't have to type check
+	if rvt1, ok := t1.(RVType); ok {
+		if rvt2, ok := t2.(RVType); ok {
+			return rvt1.Equals(rvt2)
 		}
+	}
 
-		if !m.values[i].Equals(other.values[i]) {
+	return false
+}
+
+// Equals checks if the input is equal in value to the current instance
+func (m Map[K, V]) Equals(o RVType) bool {
+	if _, ok := o.(Map[K, V]); !ok {
+		return false
+	}
+
+	other := o.(Map[K, V])
+
+	if len(m) != len(other) {
+		return false
+	}
+
+	for key, value := range m {
+		if otherValue, ok := other[key]; !ok || m.typesEqual(&value, &otherValue) {
 			return false
 		}
 	}
@@ -106,70 +127,40 @@ func (m *Map[K, V]) Equals(o RVType) bool {
 	return true
 }
 
-// Set sets an element to the Map internal slices
-func (m *Map[K, V]) Set(key K, value V) {
-	var index int = -1
-
-	for i := 0; i < len(m.keys); i++ {
-		if m.keys[i].Equals(key) {
-			index = i
-			break
-		}
-	}
-
-	// * Replace the element if exists, otherwise push new
-	if index != -1 {
-		m.keys[index] = key
-		m.values[index] = value
-	} else {
-		m.keys = append(m.keys, key)
-		m.values = append(m.values, value)
-	}
+// CopyRef copies the current value of the Map
+// and returns a pointer to the new copy
+func (m Map[K, V]) CopyRef() RVTypePtr {
+	copied := m.Copy().(Map[K, V])
+	return &copied
 }
 
-// Get returns an element from the Map. If not found, "ok" is false
-func (m *Map[K, V]) Get(key K) (V, bool) {
-	var index int = -1
-
-	for i := 0; i < len(m.keys); i++ {
-		if m.keys[i].Equals(key) {
-			index = i
-			break
-		}
-	}
-
-	if index != -1 {
-		return m.values[index], true
-	}
-
-	return m.ValueType.Copy().(V), false
-}
-
-// Size returns the length of the Map
-func (m *Map[K, V]) Size() int {
-	return len(m.keys)
+// Deref takes a pointer to the Map
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (m *Map[K, V]) Deref() RVType {
+	return *m
 }
 
 // String returns a string representation of the struct
-func (m *Map[K, V]) String() string {
+func (m Map[K, V]) String() string {
 	return m.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (m *Map[K, V]) FormatToString(indentationLevel int) string {
+func (m Map[K, V]) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
 	var b strings.Builder
 
-	if len(m.keys) == 0 {
+	if len(m) == 0 {
 		b.WriteString("{}\n")
 	} else {
 		b.WriteString("{\n")
 
-		for i := 0; i < len(m.keys); i++ {
+		for key, value := range m {
 			// TODO - Special handle the the last item to not add the comma on last item
-			b.WriteString(fmt.Sprintf("%s%v: %v,\n", indentationValues, m.keys[i], m.values[i]))
+			b.WriteString(fmt.Sprintf("%s%v: %v,\n", indentationValues, key, value))
 		}
 
 		b.WriteString(fmt.Sprintf("%s}\n", indentationEnd))
@@ -179,9 +170,6 @@ func (m *Map[K, V]) FormatToString(indentationLevel int) string {
 }
 
 // NewMap returns a new Map of the provided type
-func NewMap[K RVType, V RVType]() *Map[K, V] {
-	return &Map[K, V]{
-		keys:   make([]K, 0),
-		values: make([]V, 0),
-	}
+func NewMap[K comparable, V RVType]() Map[K, V] {
+	return make(Map[K, V])
 }

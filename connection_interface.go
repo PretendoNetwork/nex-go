@@ -11,6 +11,6 @@ import (
 type ConnectionInterface interface {
 	Endpoint() EndpointInterface
 	Address() net.Addr
-	PID() *types.PID
-	SetPID(pid *types.PID)
+	PID() types.PID
+	SetPID(pid types.PID)
 }

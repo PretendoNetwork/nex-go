@@ -68,14 +68,14 @@ func (p *PRUDPPacketV0) decode() error {
 	server := p.server
 	start := p.readStream.ByteOffset()
 
-	source, err := p.readStream.ReadPrimitiveUInt8()
+	source, err := p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 source. %s", err.Error())
 	}
 
 	p.sourceVirtualPort = VirtualPort(source)
 
-	destination, err := p.readStream.ReadPrimitiveUInt8()
+	destination, err := p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 destination. %s", err.Error())
 	}
@@ -83,7 +83,7 @@ func (p *PRUDPPacketV0) decode() error {
 	p.destinationVirtualPort = VirtualPort(destination)
 
 	if server.PRUDPV0Settings.IsQuazalMode {
-		typeAndFlags, err := p.readStream.ReadPrimitiveUInt8()
+		typeAndFlags, err := p.readStream.ReadUInt8()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 type and flags. %s", err.Error())
 		}
@@ -91,7 +91,7 @@ func (p *PRUDPPacketV0) decode() error {
 		p.flags = uint16(typeAndFlags >> 3)
 		p.packetType = uint16(typeAndFlags & 7)
 	} else {
-		typeAndFlags, err := p.readStream.ReadPrimitiveUInt16LE()
+		typeAndFlags, err := p.readStream.ReadUInt16LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 type and flags. %s", err.Error())
 		}
@@ -100,14 +100,14 @@ func (p *PRUDPPacketV0) decode() error {
 		p.packetType = typeAndFlags & 0xF
 	}
 
-	p.sessionID, err = p.readStream.ReadPrimitiveUInt8()
+	p.sessionID, err = p.readStream.ReadUInt8()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 session ID. %s", err.Error())
 	}
 
 	p.signature = p.readStream.ReadBytesNext(4)
 
-	p.sequenceID, err = p.readStream.ReadPrimitiveUInt16LE()
+	p.sequenceID, err = p.readStream.ReadUInt16LE()
 	if err != nil {
 		return fmt.Errorf("Failed to read PRUDPv0 sequence ID. %s", err.Error())
 	}
@@ -125,7 +125,7 @@ func (p *PRUDPPacketV0) decode() error {
 			return errors.New("Failed to read PRUDPv0 fragment ID. Not have enough data")
 		}
 
-		p.fragmentID, err = p.readStream.ReadPrimitiveUInt8()
+		p.fragmentID, err = p.readStream.ReadUInt8()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 fragment ID. %s", err.Error())
 		}
@@ -138,7 +138,7 @@ func (p *PRUDPPacketV0) decode() error {
 			return errors.New("Failed to read PRUDPv0 payload size. Not have enough data")
 		}
 
-		payloadSize, err = p.readStream.ReadPrimitiveUInt16LE()
+		payloadSize, err = p.readStream.ReadUInt16LE()
 		if err != nil {
 			return fmt.Errorf("Failed to read PRUDPv0 payload size. %s", err.Error())
 		}
@@ -169,9 +169,9 @@ func (p *PRUDPPacketV0) decode() error {
 	var checksumU8 uint8
 
 	if server.PRUDPV0Settings.UseEnhancedChecksum {
-		checksum, err = p.readStream.ReadPrimitiveUInt32LE()
+		checksum, err = p.readStream.ReadUInt32LE()
 	} else {
-		checksumU8, err = p.readStream.ReadPrimitiveUInt8()
+		checksumU8, err = p.readStream.ReadUInt8()
 		checksum = uint32(checksumU8)
 	}
 
@@ -193,19 +193,19 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	server := p.server
 	stream := NewByteStreamOut(server.LibraryVersions, server.ByteStreamSettings)
 
-	stream.WritePrimitiveUInt8(uint8(p.sourceVirtualPort))
-	stream.WritePrimitiveUInt8(uint8(p.destinationVirtualPort))
+	stream.WriteUInt8(uint8(p.sourceVirtualPort))
+	stream.WriteUInt8(uint8(p.destinationVirtualPort))
 
 	if server.PRUDPV0Settings.IsQuazalMode {
-		stream.WritePrimitiveUInt8(uint8(p.packetType | (p.flags << 3)))
+		stream.WriteUInt8(uint8(p.packetType | (p.flags << 3)))
 	} else {
-		stream.WritePrimitiveUInt16LE(p.packetType | (p.flags << 4))
+		stream.WriteUInt16LE(p.packetType | (p.flags << 4))
 	}
 
-	stream.WritePrimitiveUInt8(p.sessionID)
+	stream.WriteUInt8(p.sessionID)
 	stream.Grow(int64(len(p.signature)))
 	stream.WriteBytesNext(p.signature)
-	stream.WritePrimitiveUInt16LE(p.sequenceID)
+	stream.WriteUInt16LE(p.sequenceID)
 
 	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 		stream.Grow(int64(len(p.connectionSignature)))
@@ -213,11 +213,11 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	}
 
 	if p.packetType == constants.DataPacket {
-		stream.WritePrimitiveUInt8(p.fragmentID)
+		stream.WriteUInt8(p.fragmentID)
 	}
 
 	if p.HasFlag(constants.PacketFlagHasSize) {
-		stream.WritePrimitiveUInt16LE(uint16(len(p.payload)))
+		stream.WriteUInt16LE(uint16(len(p.payload)))
 	}
 
 	if len(p.payload) > 0 {
@@ -228,9 +228,9 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	checksum := p.server.PRUDPV0Settings.ChecksumCalculator(p, stream.Bytes())
 
 	if server.PRUDPV0Settings.UseEnhancedChecksum {
-		stream.WritePrimitiveUInt32LE(checksum)
+		stream.WriteUInt32LE(checksum)
 	} else {
-		stream.WritePrimitiveUInt8(uint8(checksum))
+		stream.WriteUInt8(uint8(checksum))
 	}
 
 	return stream.Bytes()

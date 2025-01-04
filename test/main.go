@@ -13,7 +13,7 @@ var authenticationServerAccount *nex.Account
 var secureServerAccount *nex.Account
 var testUserAccount *nex.Account
 
-func accountDetailsByPID(pid *types.PID) (*nex.Account, *nex.Error) {
+func accountDetailsByPID(pid types.PID) (*nex.Account, *nex.Error) {
 	if pid.Equals(authenticationServerAccount.PID) {
 		return authenticationServerAccount, nil
 	}
