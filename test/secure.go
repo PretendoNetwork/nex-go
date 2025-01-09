@@ -102,7 +102,7 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	hCustomData := types.NewAnyDataHolder()
+	hCustomData := types.NewDataHolder()
 	if err := hCustomData.ExtractFrom(parametersStream); err != nil {
 		fmt.Println(err)
 	}

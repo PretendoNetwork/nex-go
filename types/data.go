@@ -5,10 +5,35 @@ import (
 	"strings"
 )
 
+// DataInterface defines an interface to track types which have Data anywhere
+// in their parent tree.
+type DataInterface interface {
+	HoldableObject
+	DataObjectID() RVType // Returns the object identifier of the type embedding Data
+}
+
+// DataHolder is an AnyObjectHolder for types which embed Data
+type DataHolder = AnyObjectHolder[DataInterface]
+
+// NewDataHolder returns a new DataHolder
+func NewDataHolder() DataHolder {
+	return DataHolder{}
+}
+
 // Data is an implementation of rdv::Data.
 // This structure has no data, and instead acts as the base class for many other structures.
 type Data struct {
 	Structure
+}
+
+// ObjectID returns the object identifier of the type
+func (d Data) ObjectID() RVType {
+	return d.DataObjectID()
+}
+
+// DataObjectID returns the object identifier of the type embedding Data
+func (d Data) DataObjectID() RVType {
+	return NewString("Data")
 }
 
 // WriteTo writes the Data to the given writable
