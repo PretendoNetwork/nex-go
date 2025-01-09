@@ -105,11 +105,24 @@ func (pep *PRUDPEndPoint) EmitError(err *Error) {
 	}
 }
 
-// deleteConnectionByID deletes the connection with the specified ID
-func (pep *PRUDPEndPoint) deleteConnectionByID(cid uint32) {
-	pep.Connections.DeleteIf(func(key string, value *PRUDPConnection) bool {
-		return value.ID == cid
+// cleanupConnection cleans up and deletes a connection from this endpoint. Will lock the Connections mutex - make sure
+// you don't hold it during a call, or this will deadlock
+func (pep *PRUDPEndPoint) cleanupConnection(connection *PRUDPConnection) {
+	discriminator := fmt.Sprintf("%s-%d-%d", connection.Socket.Address.String(), connection.StreamType, connection.StreamID)
+
+	found := false
+	pep.Connections.RunAndDelete(discriminator, func(key string, conn *PRUDPConnection) {
+		found = true
 	})
+
+	// * Probably this connection is on a different PRUDPEndPoint
+	if !found {
+		logger.Warningf("Tried to delete connection %v (ID %v) but it doesn't exist!", discriminator, connection.ID)
+	}
+
+	// * We can't do this during RunAndDelete, since we hold the Connections mutex then
+	// * This way we avoid any recursive locking
+	connection.cleanup()
 }
 
 func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *SocketConnection) {
@@ -417,10 +430,7 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	streamID := packet.SourceVirtualPortStreamID()
 	discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
 	if connection, ok := pep.Connections.Get(discriminator); ok {
-		// * We make sure to update the connection state here because we could still be attempting to
-		// * resend packets.
-		connection.cleanup()
-		pep.Connections.Delete(discriminator)
+		pep.cleanupConnection(connection)
 	}
 
 	pep.emit("disconnect", packet)
@@ -698,7 +708,7 @@ func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 	var connection *PRUDPConnection
 
 	pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
-		if uint64(pc.pid) == pid {
+		if uint64(pc.pid) == pid && pc.ConnectionState == StateConnected {
 			connection = pc
 			return true
 		}
