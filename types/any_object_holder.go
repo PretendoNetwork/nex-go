@@ -74,8 +74,7 @@ func (aoh *AnyObjectHolder[T]) ExtractFrom(readable Readable) error {
 	}
 
 	var ok bool
-	aoh.Object, ok = ptr.Deref().(T)
-	if (!ok) {
+	if aoh.Object, ok = ptr.Deref().(T); !ok {
 		return fmt.Errorf("Input AnyObjectHolder object %s is invalid", identifier)
 	}
 
