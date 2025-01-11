@@ -40,6 +40,7 @@ type PRUDPConnection struct {
 	pingKickTimer                       *time.Timer
 	StationURLs                         *types.List[*types.StationURL]
 	mutex                               *sync.Mutex
+	QueuedOutboundPackets				*MutexSlice[*PRUDPPacketInterface]     // * "extra" outgoing packets queued until after the current RMC event is finished
 }
 
 // Endpoint returns the PRUDP endpoint the connections socket is connected to
@@ -290,6 +291,7 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 		incomingFragmentBuffers:             NewMutexMap[uint8, []byte](),
 		StationURLs:                         types.NewList[*types.StationURL](),
 		mutex:                               &sync.Mutex{},
+		QueuedOutboundPackets:               NewMutexSlice[*PRUDPPacketInterface](),
 	}
 
 	pc.StationURLs.Type = types.NewStationURL("")

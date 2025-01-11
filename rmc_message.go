@@ -21,6 +21,7 @@ type RMCMessage struct {
 	ErrorCode             uint32                       // * Error code for a response message
 	ClassVersionContainer *types.ClassVersionContainer // * Contains version info for Structures in the request. Only present in "verbose" variations
 	Parameters            []byte                       // * Input for the method
+	OnAfterSend           func()                       // * Hook for after this gets sent
 	// TODO - Verbose messages suffix response method names with "*". Should we have a "HasResponsePointer" sort of field?
 }
 
@@ -41,6 +42,8 @@ func (rmc *RMCMessage) Copy() *RMCMessage {
 	if rmc.Parameters != nil {
 		copied.Parameters = append([]byte(nil), rmc.Parameters...)
 	}
+
+	copied.OnAfterSend = rmc.OnAfterSend
 
 	return copied
 }

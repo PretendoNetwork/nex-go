@@ -12,12 +12,12 @@ type MutexSlice[V comparable] struct {
 	real []V
 }
 
-// Add adds a value to the slice
-func (m *MutexSlice[V]) Add(value V) {
+// Add adds values to the slice
+func (m *MutexSlice[V]) Add(values ...V) {
 	m.Lock()
 	defer m.Unlock()
 
-	m.real = append(m.real, value)
+	m.real = append(m.real, values...)
 }
 
 // Delete removes the first instance of the given value from the slice.
@@ -136,11 +136,17 @@ func (m *MutexSlice[V]) Each(callback func(index int, value V) bool) bool {
 	return false
 }
 
-// Clear removes all items from the slice.
-func (m *MutexSlice[V]) Clear() {
+// Clear removes all items from the slice
+// Accepts an optional callback function ran for every item before it is deleted
+func (m *MutexSlice[V]) Clear(callback func(value V)) {
 	m.Lock()
 	defer m.Unlock()
 
+	if callback != nil {
+		for _, value := range m.real {
+			callback(value)
+		}
+	}
 	m.real = make([]V, 0)
 }
 
