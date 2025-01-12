@@ -16,13 +16,13 @@ var secureEndpoint *nex.PRUDPEndPoint
 
 type principalPreference struct {
 	types.Structure
-	*types.Data
-	ShowOnlinePresence  *types.PrimitiveBool
-	ShowCurrentTitle    *types.PrimitiveBool
-	BlockFriendRequests *types.PrimitiveBool
+	types.Data
+	ShowOnlinePresence  types.Bool
+	ShowCurrentTitle    types.Bool
+	BlockFriendRequests types.Bool
 }
 
-func (pp *principalPreference) WriteTo(writable types.Writable) {
+func (pp principalPreference) WriteTo(writable types.Writable) {
 	pp.ShowOnlinePresence.WriteTo(writable)
 	pp.ShowCurrentTitle.WriteTo(writable)
 	pp.BlockFriendRequests.WriteTo(writable)
@@ -30,13 +30,13 @@ func (pp *principalPreference) WriteTo(writable types.Writable) {
 
 type comment struct {
 	types.Structure
-	*types.Data
-	Unknown     *types.PrimitiveU8
-	Contents    *types.String
-	LastChanged *types.DateTime
+	types.Data
+	Unknown     types.UInt8
+	Contents    types.String
+	LastChanged types.DateTime
 }
 
-func (c *comment) WriteTo(writable types.Writable) {
+func (c comment) WriteTo(writable types.Writable) {
 	c.Unknown.WriteTo(writable)
 	c.Contents.WriteTo(writable)
 	c.LastChanged.WriteTo(writable)
@@ -52,6 +52,7 @@ func startSecureServer() {
 	secureEndpoint.AccountDetailsByPID = accountDetailsByPID
 	secureEndpoint.AccountDetailsByUsername = accountDetailsByUsername
 	secureEndpoint.ServerAccount = secureServerAccount
+	secureEndpoint.IsSecureEndPoint = true
 
 	secureEndpoint.OnData(func(packet nex.PacketInterface) {
 		if packet, ok := packet.(nex.PRUDPPacketInterface); ok {
@@ -96,18 +97,17 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 
 	parametersStream := nex.NewByteStreamIn(parameters, secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
-	vecMyURLs := types.NewList[*types.StationURL]()
-	vecMyURLs.Type = types.NewStationURL("")
+	vecMyURLs := types.NewList[types.StationURL]()
 	if err := vecMyURLs.ExtractFrom(parametersStream); err != nil {
 		panic(err)
 	}
 
-	hCustomData := types.NewAnyDataHolder()
+	hCustomData := types.NewDataHolder()
 	if err := hCustomData.ExtractFrom(parametersStream); err != nil {
 		fmt.Println(err)
 	}
 
-	localStation, _ := vecMyURLs.Get(0)
+	localStation := vecMyURLs[0]
 
 	address := packet.Sender().Address().(*net.UDPAddr).IP.String()
 
@@ -115,12 +115,12 @@ func registerEx(packet nex.PRUDPPacketInterface) {
 	localStation.SetPortNumber(uint16(packet.Sender().Address().(*net.UDPAddr).Port))
 
 	retval := types.NewQResultSuccess(0x00010001)
-	localStationURL := types.NewString(localStation.EncodeToString())
+	localStationURL := types.NewString(localStation.URL())
 
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
 	retval.WriteTo(responseStream)
-	responseStream.WritePrimitiveUInt32LE(connection.ID)
+	responseStream.WriteUInt32LE(connection.ID)
 	localStationURL.WriteTo(responseStream)
 
 	response.IsSuccess = true
@@ -153,23 +153,23 @@ func updateAndGetAllInformation(packet nex.PRUDPPacketInterface) {
 
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
-	(&principalPreference{
-		ShowOnlinePresence:  types.NewPrimitiveBool(true),
-		ShowCurrentTitle:    types.NewPrimitiveBool(true),
-		BlockFriendRequests: types.NewPrimitiveBool(false),
+	(principalPreference{
+		ShowOnlinePresence:  types.NewBool(true),
+		ShowCurrentTitle:    types.NewBool(true),
+		BlockFriendRequests: types.NewBool(false),
 	}).WriteTo(responseStream)
-	(&comment{
-		Unknown:     types.NewPrimitiveU8(0),
+	(comment{
+		Unknown:     types.NewUInt8(0),
 		Contents:    types.NewString("Rewrite Test"),
 		LastChanged: types.NewDateTime(0),
 	}).WriteTo(responseStream)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(blockList)
-	responseStream.WritePrimitiveBool(false) // * Unknown
-	responseStream.WritePrimitiveUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(notifications)
-	responseStream.WritePrimitiveBool(false) // * Unknown
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendList)
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsOut)
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(friendRequestsIn)
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(blockList)
+	responseStream.WriteBool(false) // * Unknown
+	responseStream.WriteUInt32LE(0) // * Stubbed empty list. responseStream.WriteListStructure(notifications)
+	responseStream.WriteBool(false) // * Unknown
 
 	response.IsSuccess = true
 	response.IsRequest = false
@@ -201,7 +201,7 @@ func checkSettingStatus(packet nex.PRUDPPacketInterface) {
 
 	responseStream := nex.NewByteStreamOut(secureEndpoint.LibraryVersions(), secureEndpoint.ByteStreamSettings())
 
-	responseStream.WritePrimitiveUInt8(0) // * Unknown
+	responseStream.WriteUInt8(0) // * Unknown
 
 	response.IsSuccess = true
 	response.IsRequest = false

@@ -69,8 +69,8 @@ func NewKerberosEncryption(key []byte) *KerberosEncryption {
 // KerberosTicket represents a ticket granting a user access to a secure server
 type KerberosTicket struct {
 	SessionKey   []byte
-	TargetPID    *types.PID
-	InternalData *types.Buffer
+	TargetPID    types.PID
+	InternalData types.Buffer
 }
 
 // Encrypt writes the ticket data to the provided stream and returns the encrypted byte slice
@@ -94,8 +94,8 @@ func NewKerberosTicket() *KerberosTicket {
 // KerberosTicketInternalData holds the internal data for a kerberos ticket to be processed by the server
 type KerberosTicketInternalData struct {
 	Server     *PRUDPServer // TODO - Remove this dependency and make a settings struct
-	Issued     *types.DateTime
-	SourcePID  *types.PID
+	Issued     types.DateTime
+	SourcePID  types.PID
 	SessionKey []byte
 }
 
@@ -152,10 +152,10 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 			return fmt.Errorf("Failed to read Kerberos ticket internal data. %s", err.Error())
 		}
 
-		hash := md5.Sum(append(key, ticketKey.Value...))
+		hash := md5.Sum(append(key, ticketKey...))
 		key = hash[:]
 
-		stream = NewByteStreamIn(data.Value, stream.LibraryVersions, stream.Settings)
+		stream = NewByteStreamIn(data, stream.LibraryVersions, stream.Settings)
 	}
 
 	encryption := NewKerberosEncryption(key)
@@ -190,17 +190,15 @@ func NewKerberosTicketInternalData(server *PRUDPServer) *KerberosTicketInternalD
 }
 
 // DeriveKerberosKey derives a users kerberos encryption key based on their PID and password
-func DeriveKerberosKey(pid *types.PID, password []byte) []byte {
-	iterationCount := int(65000 + pid.Value()%1024)
-	key := make([]byte, md5.Size)
-	copy(key, password)
+func DeriveKerberosKey(pid types.PID, password []byte) []byte {
+	iterationCount := int(65000 + pid%1024)
+	key := password
+	hash := make([]byte, md5.Size)
 
-	hash := md5.Sum(password)
-	copy(key, hash[:])
-
-	for i := 1; i < iterationCount; i++ {
-		hash = md5.Sum(key)
-		copy(key, hash[:])
+	for i := 0; i < iterationCount; i++ {
+		sum := md5.Sum(key)
+		copy(hash, sum[:])
+		key = hash
 	}
 
 	return key

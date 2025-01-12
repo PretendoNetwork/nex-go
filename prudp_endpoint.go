@@ -29,7 +29,7 @@ type PRUDPEndPoint struct {
 	errorEventHandlers                []func(err *Error)
 	ConnectionIDCounter               *Counter[uint32]
 	ServerAccount                     *Account
-	AccountDetailsByPID               func(pid *types.PID) (*Account, *Error)
+	AccountDetailsByPID               func(pid types.PID) (*Account, *Error)
 	AccountDetailsByUsername          func(username string) (*Account, *Error)
 	IsSecureEndPoint                  bool
 	CalcRetransmissionTimeoutCallback CalcRetransmissionTimeoutCallback
@@ -191,13 +191,13 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 	if packet.SubstreamID() == 1 {
 		// * New aggregate acknowledgment packets set this to 1
 		// * and encode the real substream ID in in the payload
-		substreamID, _ := stream.ReadPrimitiveUInt8()
-		additionalIDsCount, _ := stream.ReadPrimitiveUInt8()
-		baseSequenceID, _ = stream.ReadPrimitiveUInt16LE()
+		substreamID, _ := stream.ReadUInt8()
+		additionalIDsCount, _ := stream.ReadUInt8()
+		baseSequenceID, _ = stream.ReadUInt16LE()
 		slidingWindow = connection.SlidingWindow(substreamID)
 
 		for i := 0; i < int(additionalIDsCount); i++ {
-			additionalID, _ := stream.ReadPrimitiveUInt16LE()
+			additionalID, _ := stream.ReadUInt16LE()
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	} else {
@@ -208,7 +208,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 		baseSequenceID = packet.SequenceID()
 
 		for stream.Remaining() > 0 {
-			additionalID, _ := stream.ReadPrimitiveUInt16LE()
+			additionalID, _ := stream.ReadUInt16LE()
 			sequenceIDs = append(sequenceIDs, additionalID)
 		}
 	}
@@ -456,34 +456,34 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	}
 }
 
-func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID, uint32, error) {
+func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, types.PID, uint32, error) {
 	stream := NewByteStreamIn(payload, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	ticketData := types.NewBuffer(nil)
 	if err := ticketData.ExtractFrom(stream); err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	requestData := types.NewBuffer(nil)
 	if err := requestData.ExtractFrom(stream); err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	// * Sanity checks
 	serverAccount, _ := pep.AccountDetailsByUsername(pep.ServerAccount.Username)
 	if serverAccount == nil {
-		return nil, nil, 0, errors.New("Failed to find endpoint server account")
+		return nil, 0, 0, errors.New("Failed to find endpoint server account")
 	}
 
 	if serverAccount.Password != pep.ServerAccount.Password {
-		return nil, nil, 0, errors.New("Password for endpoint server account does not match the records from AccountDetailsByUsername")
+		return nil, 0, 0, errors.New("Password for endpoint server account does not match the records from AccountDetailsByUsername")
 	}
 
 	serverKey := DeriveKerberosKey(serverAccount.PID, []byte(serverAccount.Password))
 
 	ticket := NewKerberosTicketInternalData(pep.Server)
-	if err := ticket.Decrypt(NewByteStreamIn(ticketData.Value, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
-		return nil, nil, 0, err
+	if err := ticket.Decrypt(NewByteStreamIn(ticketData, pep.Server.LibraryVersions, pep.ByteStreamSettings()), serverKey); err != nil {
+		return nil, 0, 0, err
 	}
 
 	ticketTime := ticket.Issued.Standard()
@@ -491,32 +491,32 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, *types.PID
 
 	timeLimit := ticketTime.Add(time.Minute * 2)
 	if serverTime.After(timeLimit) {
-		return nil, nil, 0, errors.New("Kerberos ticket expired")
+		return nil, 0, 0, errors.New("Kerberos ticket expired")
 	}
 
 	sessionKey := ticket.SessionKey
 	kerberos := NewKerberosEncryption(sessionKey)
 
-	decryptedRequestData, err := kerberos.Decrypt(requestData.Value)
+	decryptedRequestData, err := kerberos.Decrypt(requestData)
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	checkDataStream := NewByteStreamIn(decryptedRequestData, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	userPID := types.NewPID(0)
 	if err := userPID.ExtractFrom(checkDataStream); err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
-	_, err = checkDataStream.ReadPrimitiveUInt32LE() // * CID of secure server station url
+	_, err = checkDataStream.ReadUInt32LE() // * CID of secure server station url
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
-	responseCheck, err := checkDataStream.ReadPrimitiveUInt32LE()
+	responseCheck, err := checkDataStream.ReadUInt32LE()
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	return sessionKey, userPID, responseCheck, nil
@@ -708,7 +708,7 @@ func (pep *PRUDPEndPoint) FindConnectionByPID(pid uint64) *PRUDPConnection {
 	var connection *PRUDPConnection
 
 	pep.Connections.Each(func(discriminator string, pc *PRUDPConnection) bool {
-		if pc.pid.Value() == pid && pc.ConnectionState == StateConnected {
+		if uint64(pc.pid) == pid && pc.ConnectionState == StateConnected {
 			connection = pc
 			return true
 		}

@@ -1,7 +1,6 @@
 package types
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -10,23 +9,32 @@ import (
 //
 // Unlike Buffer and qBuffer, which use the same data type with differing size field lengths,
 // there does not seem to be an official rdv::List type
-type List[T RVType] struct {
-	real []T
-	Type T
-}
+type List[T RVType] []T
 
 // WriteTo writes the List to the given writable
-func (l *List[T]) WriteTo(writable Writable) {
-	writable.WritePrimitiveUInt32LE(uint32(len(l.real)))
+func (l List[T]) WriteTo(writable Writable) {
+	writable.WriteUInt32LE(uint32(len(l)))
 
-	for _, v := range l.real {
+	for _, v := range l {
 		v.WriteTo(writable)
 	}
 }
 
+func (l List[T]) extractType(t any, readable Readable) error {
+	// * This just makes List.ExtractFrom() a bit cleaner
+	// * since it doesn't have to type check
+	if ptr, ok := t.(RVTypePtr); ok {
+		return ptr.ExtractFrom(readable)
+	}
+
+	// * Maybe support other types..?
+
+	return fmt.Errorf("Unsupported List type %T", t)
+}
+
 // ExtractFrom extracts the List from the given readable
 func (l *List[T]) ExtractFrom(readable Readable) error {
-	length, err := readable.ReadPrimitiveUInt32LE()
+	length, err := readable.ReadUInt32LE()
 	if err != nil {
 		return err
 	}
@@ -34,46 +42,44 @@ func (l *List[T]) ExtractFrom(readable Readable) error {
 	slice := make([]T, 0, length)
 
 	for i := 0; i < int(length); i++ {
-		value := l.Type.Copy()
-		if err := value.ExtractFrom(readable); err != nil {
+		var value T
+		if err := l.extractType(&value, readable); err != nil {
 			return err
 		}
 
-		slice = append(slice, value.(T))
+		slice = append(slice, value)
 	}
 
-	l.real = slice
+	*l = slice
 
 	return nil
 }
 
 // Copy returns a pointer to a copy of the List. Requires type assertion when used
-func (l *List[T]) Copy() RVType {
-	copied := NewList[T]()
-	copied.real = make([]T, len(l.real))
-	copied.Type = l.Type.Copy().(T)
+func (l List[T]) Copy() RVType {
+	copied := make(List[T], 0)
 
-	for i, v := range l.real {
-		copied.real[i] = v.Copy().(T)
+	for _, v := range l {
+		copied = append(copied, v.Copy().(T))
 	}
 
 	return copied
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (l *List[T]) Equals(o RVType) bool {
-	if _, ok := o.(*List[T]); !ok {
+func (l List[T]) Equals(o RVType) bool {
+	if _, ok := o.(List[T]); !ok {
 		return false
 	}
 
-	other := o.(*List[T])
+	other := o.(List[T])
 
-	if len(l.real) != len(other.real) {
+	if len(l) != len(other) {
 		return false
 	}
 
-	for i := 0; i < len(l.real); i++ {
-		if !l.real[i].Equals(other.real[i]) {
+	for i := 0; i < len(l); i++ {
+		if !l[i].Equals(other[i]) {
 			return false
 		}
 	}
@@ -81,73 +87,24 @@ func (l *List[T]) Equals(o RVType) bool {
 	return true
 }
 
-// Slice returns the real underlying slice for the List
-func (l *List[T]) Slice() []T {
-	return l.real
+// CopyRef copies the current value of the List
+// and returns a pointer to the new copy
+func (l List[T]) CopyRef() RVTypePtr {
+	copied := l.Copy().(List[T])
+	return &copied
 }
 
-// Append appends an element to the List internal slice
-func (l *List[T]) Append(value T) {
-	l.real = append(l.real, value)
+// Deref takes a pointer to the List
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (l *List[T]) Deref() RVType {
+	return *l
 }
 
-// Get returns an element at the given index. Returns an error if the index is OOB
-func (l *List[T]) Get(index int) (T, error) {
-	if index < 0 || index >= len(l.real) {
-		return l.Type.Copy().(T), errors.New("Index out of bounds")
-	}
-
-	return l.real[index], nil
-}
-
-// SetIndex sets a value in the List at the given index
-func (l *List[T]) SetIndex(index int, value T) error {
-	if index < 0 || index >= len(l.real) {
-		return errors.New("Index out of bounds")
-	}
-
-	l.real[index] = value
-
-	return nil
-}
-
-// DeleteIndex deletes an element at the given index. Returns an error if the index is OOB
-func (l *List[T]) DeleteIndex(index int) error {
-	if index < 0 || index >= len(l.real) {
-		return errors.New("Index out of bounds")
-	}
-
-	l.real = append(l.real[:index], l.real[index+1:]...)
-
-	return nil
-}
-
-// Remove removes the first occurance of the input from the List. Returns an error if the index is OOB
-func (l *List[T]) Remove(check T) {
-	for i, value := range l.real {
-		if value.Equals(check) {
-			l.DeleteIndex(i)
-			return
-		}
-	}
-}
-
-// SetFromData sets the List's internal slice to the input data
-func (l *List[T]) SetFromData(data []T) {
-	l.real = data
-}
-
-// Length returns the number of elements in the List
-func (l *List[T]) Length() int {
-	return len(l.real)
-}
-
-// Each runs a callback function for every element in the List
-// The List should not be modified inside the callback function
-// Returns true if the loop was terminated early
-func (l *List[T]) Each(callback func(i int, value T) bool) bool {
-	for i, value := range l.real {
-		if callback(i, value) {
+// Contains checks if the provided value exists in the List
+func (l List[T]) Contains(checkValue T) bool {
+	for _, v := range l {
+		if v.Equals(checkValue) {
 			return true
 		}
 	}
@@ -155,29 +112,12 @@ func (l *List[T]) Each(callback func(i int, value T) bool) bool {
 	return false
 }
 
-// Contains checks if the provided value exists in the List
-func (l *List[T]) Contains(checkValue T) bool {
-	contains := false
-
-	l.Each(func(_ int, value T) bool {
-		if value.Equals(checkValue) {
-			contains = true
-
-			return true
-		}
-
-		return false
-	})
-
-	return contains
-}
-
 // String returns a string representation of the struct
-func (l *List[T]) String() string {
-	return fmt.Sprintf("%v", l.real)
+func (l List[T]) String() string {
+	return fmt.Sprintf("%v", ([]T)(l))
 }
 
 // NewList returns a new List of the provided type
-func NewList[T RVType]() *List[T] {
-	return &List[T]{real: make([]T, 0)}
+func NewList[T RVType]() List[T] {
+	return make(List[T], 0)
 }

@@ -9,14 +9,14 @@ import (
 // Contains the locations and data of Rendez-Vous connection.
 type RVConnectionData struct {
 	Structure
-	StationURL                 *StationURL
-	SpecialProtocols           *List[*PrimitiveU8]
-	StationURLSpecialProtocols *StationURL
-	Time                       *DateTime
+	StationURL                 StationURL  `json:"station_url" db:"station_url" bson:"station_url" xml:"StationURL"`
+	SpecialProtocols           List[UInt8] `json:"special_protocols" db:"special_protocols" bson:"special_protocols" xml:"SpecialProtocols"`
+	StationURLSpecialProtocols StationURL  `json:"station_url_special_protocols" db:"station_url_special_protocols" bson:"station_url_special_protocols" xml:"StationURLSpecialProtocols"`
+	Time                       DateTime    `json:"time" db:"time" bson:"time" xml:"Time"`
 }
 
 // WriteTo writes the RVConnectionData to the given writable
-func (rvcd *RVConnectionData) WriteTo(writable Writable) {
+func (rvcd RVConnectionData) WriteTo(writable Writable) {
 	contentWritable := writable.CopyNew()
 
 	rvcd.StationURL.WriteTo(contentWritable)
@@ -67,28 +67,28 @@ func (rvcd *RVConnectionData) ExtractFrom(readable Readable) error {
 }
 
 // Copy returns a new copied instance of RVConnectionData
-func (rvcd *RVConnectionData) Copy() RVType {
+func (rvcd RVConnectionData) Copy() RVType {
 	copied := NewRVConnectionData()
 
 	copied.StructureVersion = rvcd.StructureVersion
-	copied.StationURL = rvcd.StationURL.Copy().(*StationURL)
-	copied.SpecialProtocols = rvcd.SpecialProtocols.Copy().(*List[*PrimitiveU8])
-	copied.StationURLSpecialProtocols = rvcd.StationURLSpecialProtocols.Copy().(*StationURL)
+	copied.StationURL = rvcd.StationURL.Copy().(StationURL)
+	copied.SpecialProtocols = rvcd.SpecialProtocols.Copy().(List[UInt8])
+	copied.StationURLSpecialProtocols = rvcd.StationURLSpecialProtocols.Copy().(StationURL)
 
 	if rvcd.StructureVersion >= 1 {
-		copied.Time = rvcd.Time.Copy().(*DateTime)
+		copied.Time = *rvcd.Time.Copy().(*DateTime)
 	}
 
 	return copied
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (rvcd *RVConnectionData) Equals(o RVType) bool {
-	if _, ok := o.(*RVConnectionData); !ok {
+func (rvcd RVConnectionData) Equals(o RVType) bool {
+	if _, ok := o.(RVConnectionData); !ok {
 		return false
 	}
 
-	other := o.(*RVConnectionData)
+	other := o.(RVConnectionData)
 
 	if rvcd.StructureVersion != other.StructureVersion {
 		return false
@@ -107,21 +107,33 @@ func (rvcd *RVConnectionData) Equals(o RVType) bool {
 	}
 
 	if rvcd.StructureVersion >= 1 {
-		if !rvcd.Time.Equals(other.Time) {
-			return false
-		}
+		return rvcd.Time.Equals(other.Time)
 	}
 
 	return true
 }
 
+// CopyRef copies the current value of the RVConnectionData
+// and returns a pointer to the new copy
+func (rvcd RVConnectionData) CopyRef() RVTypePtr {
+	copied := rvcd.Copy().(RVConnectionData)
+	return &copied
+}
+
+// Deref takes a pointer to the RVConnectionData
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (rvcd *RVConnectionData) Deref() RVType {
+	return *rvcd
+}
+
 // String returns a string representation of the struct
-func (rvcd *RVConnectionData) String() string {
+func (rvcd RVConnectionData) String() string {
 	return rvcd.FormatToString(0)
 }
 
 // FormatToString pretty-prints the struct data using the provided indentation level
-func (rvcd *RVConnectionData) FormatToString(indentationLevel int) string {
+func (rvcd RVConnectionData) FormatToString(indentationLevel int) string {
 	indentationValues := strings.Repeat("\t", indentationLevel+1)
 	indentationEnd := strings.Repeat("\t", indentationLevel)
 
@@ -139,15 +151,13 @@ func (rvcd *RVConnectionData) FormatToString(indentationLevel int) string {
 }
 
 // NewRVConnectionData returns a new RVConnectionData
-func NewRVConnectionData() *RVConnectionData {
-	rvcd := &RVConnectionData{
+func NewRVConnectionData() RVConnectionData {
+	rvcd := RVConnectionData{
 		StationURL:                 NewStationURL(""),
-		SpecialProtocols:           NewList[*PrimitiveU8](),
+		SpecialProtocols:           NewList[UInt8](),
 		StationURLSpecialProtocols: NewStationURL(""),
 		Time:                       NewDateTime(0),
 	}
-
-	rvcd.SpecialProtocols.Type = NewPrimitiveU8(0)
 
 	return rvcd
 }

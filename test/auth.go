@@ -2,6 +2,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/PretendoNetwork/nex-go/v2"
@@ -62,7 +63,7 @@ func login(packet nex.PRUDPPacketInterface) {
 		panic(err)
 	}
 
-	sourceAccount, _ := accountDetailsByUsername(strUserName.Value)
+	sourceAccount, _ := accountDetailsByUsername(string(strUserName))
 	targetAccount, _ := accountDetailsByUsername(secureServerAccount.Username)
 
 	retval := types.NewQResultSuccess(0x00010001)
@@ -72,8 +73,7 @@ func login(packet nex.PRUDPPacketInterface) {
 	strReturnMsg := types.NewString("Test Build")
 
 	pConnectionData.StationURL = types.NewStationURL("prudps:/address=192.168.1.98;port=60001;CID=1;PID=2;sid=1;stream=10;type=2")
-	pConnectionData.SpecialProtocols = types.NewList[*types.PrimitiveU8]()
-	pConnectionData.SpecialProtocols.Type = types.NewPrimitiveU8(0)
+	pConnectionData.SpecialProtocols = types.NewList[types.UInt8]()
 	pConnectionData.StationURLSpecialProtocols = types.NewStationURL("")
 	pConnectionData.Time = types.NewDateTime(0).Now()
 
@@ -105,6 +105,8 @@ func login(packet nex.PRUDPPacketInterface) {
 	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
+
+	fmt.Println(hex.EncodeToString(responsePacket.Payload()))
 
 	authServer.Send(responsePacket)
 }
@@ -158,6 +160,8 @@ func requestTicket(packet nex.PRUDPPacketInterface) {
 	responsePacket.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	responsePacket.SetSubstreamID(packet.SubstreamID())
 	responsePacket.SetPayload(response.Bytes())
+
+	fmt.Println(hex.EncodeToString(responsePacket.Payload()))
 
 	authServer.Send(responsePacket)
 }

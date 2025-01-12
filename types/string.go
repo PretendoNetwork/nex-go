@@ -7,23 +7,21 @@ import (
 )
 
 // String is an implementation of rdv::String.
-// Wraps a primitive Go string.
-type String struct {
-	Value string
-}
+// Type alias of string
+type String string
 
 // WriteTo writes the String to the given writable
-func (s *String) WriteTo(writable Writable) {
-	str := s.Value + "\x00"
-	strLength := len(str)
+func (s String) WriteTo(writable Writable) {
+	s = s + "\x00"
+	strLength := len(s)
 
 	if writable.StringLengthSize() == 4 {
-		writable.WritePrimitiveUInt32LE(uint32(strLength))
+		writable.WriteUInt32LE(uint32(strLength))
 	} else {
-		writable.WritePrimitiveUInt16LE(uint16(strLength))
+		writable.WriteUInt16LE(uint16(strLength))
 	}
 
-	writable.Write([]byte(str))
+	writable.Write([]byte(s))
 }
 
 // ExtractFrom extracts the String from the given readable
@@ -32,11 +30,11 @@ func (s *String) ExtractFrom(readable Readable) error {
 	var err error
 
 	if readable.StringLengthSize() == 4 {
-		l, e := readable.ReadPrimitiveUInt32LE()
+		l, e := readable.ReadUInt32LE()
 		length = uint64(l)
 		err = e
 	} else {
-		l, e := readable.ReadPrimitiveUInt16LE()
+		l, e := readable.ReadUInt16LE()
 		length = uint64(l)
 		err = e
 	}
@@ -56,31 +54,45 @@ func (s *String) ExtractFrom(readable Readable) error {
 
 	str := strings.TrimRight(string(stringData), "\x00")
 
-	s.Value = str
-
+	*s = String(str)
 	return nil
 }
 
 // Copy returns a pointer to a copy of the String. Requires type assertion when used
-func (s *String) Copy() RVType {
-	return NewString(s.Value)
+func (s String) Copy() RVType {
+	return NewString(string(s))
 }
 
 // Equals checks if the input is equal in value to the current instance
-func (s *String) Equals(o RVType) bool {
-	if _, ok := o.(*String); !ok {
+func (s String) Equals(o RVType) bool {
+	if _, ok := o.(String); !ok {
 		return false
 	}
 
-	return s.Value == o.(*String).Value
+	return s == o.(String)
+}
+
+// CopyRef copies the current value of the String
+// and returns a pointer to the new copy
+func (s String) CopyRef() RVTypePtr {
+	copied := s.Copy().(String)
+	return &copied
+}
+
+// Deref takes a pointer to the String
+// and dereferences it to the raw value.
+// Only useful when working with an instance of RVTypePtr
+func (s *String) Deref() RVType {
+	return *s
 }
 
 // String returns a string representation of the struct
-func (s *String) String() string {
-	return fmt.Sprintf("%q", s.Value)
+func (s String) String() string {
+	return fmt.Sprintf("%q", string(s))
 }
 
 // NewString returns a new String
-func NewString(str string) *String {
-	return &String{Value: str}
+func NewString(input string) String {
+	s := String(input)
+	return s
 }

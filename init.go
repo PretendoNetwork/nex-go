@@ -10,10 +10,10 @@ var logger = plogger.NewLogger()
 func init() {
 	initResultCodes()
 
-	types.RegisterVariantType(1, types.NewPrimitiveS64(0))
-	types.RegisterVariantType(2, types.NewPrimitiveF64(0))
-	types.RegisterVariantType(3, types.NewPrimitiveBool(false))
+	types.RegisterVariantType(1, types.NewInt64(0))
+	types.RegisterVariantType(2, types.NewDouble(0))
+	types.RegisterVariantType(3, types.NewBool(false))
 	types.RegisterVariantType(4, types.NewString(""))
 	types.RegisterVariantType(5, types.NewDateTime(0))
-	types.RegisterVariantType(6, types.NewPrimitiveU64(0))
+	types.RegisterVariantType(6, types.NewUInt64(0))
 }
