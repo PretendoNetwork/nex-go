@@ -63,7 +63,7 @@ func (dt *DateTime) Make(year, month, day, hour, minute, second int) DateTime {
 }
 
 // FromTimestamp converts a Time timestamp into a NEX DateTime
-func (dt DateTime) FromTimestamp(timestamp time.Time) DateTime {
+func (dt *DateTime) FromTimestamp(timestamp time.Time) DateTime {
 	year := timestamp.Year()
 	month := int(timestamp.Month())
 	day := timestamp.Day()
