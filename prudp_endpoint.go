@@ -509,6 +509,10 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, types.PID,
 		return nil, 0, 0, err
 	}
 
+	if userPID != ticket.SourcePID {
+		return nil, 0, 0, errors.New("User PID and ticket source PID mismatch")
+	}
+
 	_, err = checkDataStream.ReadUInt32LE() // * CID of secure server station url
 	if err != nil {
 		return nil, 0, 0, err
