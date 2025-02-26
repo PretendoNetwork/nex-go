@@ -127,6 +127,11 @@ func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 }
 
 func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
+	// * Check that the message is long enough for initial parsing
+	if len(packetData) < 2 {
+		return nil
+	}
+
 	readStream := NewByteStreamIn(packetData, ps.LibraryVersions, ps.ByteStreamSettings)
 
 	var packets []PRUDPPacketInterface

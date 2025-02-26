@@ -89,11 +89,19 @@ func (p *PRUDPPacketV1) decode() error {
 		return fmt.Errorf("Failed to decode PRUDPv1 header. %s", err.Error())
 	}
 
+	if p.readStream.Remaining() < 16 {
+		return errors.New("Failed to read PRUDPv1 signature. Not have enough data")
+	}
+
 	p.signature = p.readStream.ReadBytesNext(16)
 
 	err = p.decodeOptions()
 	if err != nil {
 		return fmt.Errorf("Failed to decode PRUDPv1 options. %s", err.Error())
+	}
+
+	if p.readStream.Remaining() < uint64(p.payloadLength) {
+		return errors.New("Failed to read PRUDPv1 payload. Not have enough data")
 	}
 
 	p.payload = p.readStream.ReadBytesNext(int64(p.payloadLength))
@@ -211,6 +219,10 @@ func (p *PRUDPPacketV1) encodeHeader() []byte {
 }
 
 func (p *PRUDPPacketV1) decodeOptions() error {
+	if p.readStream.Remaining() < uint64(p.optionsLength) {
+		return errors.New("Not have enough data")
+	}
+
 	data := p.readStream.ReadBytesNext(int64(p.optionsLength))
 	optionsStream := NewByteStreamIn(data, p.server.LibraryVersions, p.server.ByteStreamSettings)
 
@@ -234,7 +246,11 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 			}
 
 			if optionID == 1 {
-				p.connectionSignature = optionsStream.ReadBytesNext(16)
+				if optionsStream.Remaining() < 16 {
+					err = errors.New("Not have enough data")
+				} else {
+					p.connectionSignature = optionsStream.ReadBytesNext(16)
+				}
 			}
 
 			if optionID == 4 {
