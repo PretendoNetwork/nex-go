@@ -643,7 +643,7 @@ func (s *StationURL) Parse() {
 
 	standardParameters := strings.Split(standardSection, ";")
 
-	for i := 0; i < len(standardParameters); i++ {
+	for i := range standardParameters {
 		key, value, _ := strings.Cut(standardParameters[i], "=")
 
 		if key == "address" && len(value) > 256 {
@@ -662,12 +662,14 @@ func (s *StationURL) Parse() {
 		s.Set(key, value, false)
 	}
 
-	customParameters := strings.Split(customSection, ";")
+	if len(customSection) != 0 {
+		customParameters := strings.Split(customSection, ";")
 
-	for i := 0; i < len(customParameters); i++ {
-		key, value, _ := strings.Cut(customParameters[i], "=")
+		for i := range customParameters {
+			key, value, _ := strings.Cut(customParameters[i], "=")
 
-		s.Set(key, value, true)
+			s.Set(key, value, true)
+		}
 	}
 
 	if flags, ok := s.uint8ParamValue("type"); ok {
@@ -692,6 +694,19 @@ func (s *StationURL) Format() {
 	fields := make([]string, 0)
 
 	for key, value := range s.standardParams {
+		if key == "address" && len(value) > 256 {
+			// * The client can only hold a host name of up to 256 characters
+			// TODO - Should we return an error here?
+			return
+		}
+
+		if key == "port" {
+			if port, err := strconv.Atoi(value); err != nil || (port < 0 || port > 65535) {
+				// TODO - Should we return an error here?
+				return
+			}
+		}
+
 		fields = append(fields, fmt.Sprintf("%s=%s", key, value))
 	}
 
@@ -700,20 +715,7 @@ func (s *StationURL) Format() {
 	if len(s.customParams) != 0 {
 		customFields := make([]string, 0)
 
-		for key, value := range s.standardParams {
-			if key == "address" && len(value) > 256 {
-				// * The client can only hold a host name of up to 256 characters
-				// TODO - Should we return an error here?
-				return
-			}
-
-			if key == "port" {
-				if port, err := strconv.Atoi(value); err != nil || (port < 0 || port > 65535) {
-					// TODO - Should we return an error here?
-					return
-				}
-			}
-
+		for key, value := range s.customParams {
 			customFields = append(customFields, fmt.Sprintf("%s=%s", key, value))
 		}
 
