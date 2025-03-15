@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"net"
 
@@ -177,6 +178,10 @@ func (p *PRUDPPacketLite) decode() error {
 		return fmt.Errorf("Failed to decode PRUDPLite options. %s", err.Error())
 	}
 
+	if p.readStream.Remaining() < uint64(payloadLength) {
+		return errors.New("Failed to read PRUDPLite payload. Not have enough data")
+	}
+
 	p.payload = p.readStream.ReadBytesNext(int64(payloadLength))
 
 	return nil
@@ -208,6 +213,10 @@ func (p *PRUDPPacketLite) Bytes() []byte {
 }
 
 func (p *PRUDPPacketLite) decodeOptions() error {
+	if p.readStream.Remaining() < uint64(p.optionsLength) {
+		return errors.New("Not have enough data")
+	}
+
 	data := p.readStream.ReadBytesNext(int64(p.optionsLength))
 	optionsStream := NewByteStreamIn(data, p.server.LibraryVersions, p.server.ByteStreamSettings)
 
@@ -231,7 +240,11 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 			}
 
 			if optionID == 1 {
-				p.connectionSignature = optionsStream.ReadBytesNext(int64(optionSize))
+				if optionsStream.Remaining() < uint64(optionSize) {
+					err = errors.New("Failed to read connection signature. Not have enough data")
+				} else {
+					p.connectionSignature = optionsStream.ReadBytesNext(int64(optionSize))
+				}
 			}
 
 			if optionID == 4 {
@@ -253,7 +266,11 @@ func (p *PRUDPPacketLite) decodeOptions() error {
 
 		if p.packetType == constants.ConnectPacket && !p.HasFlag(constants.PacketFlagAck) {
 			if optionID == 0x80 {
-				p.liteSignature = optionsStream.ReadBytesNext(int64(optionSize))
+				if optionsStream.Remaining() < uint64(optionSize) {
+					err = errors.New("Failed to read lite signature. Not have enough data")
+				} else {
+					p.liteSignature = optionsStream.ReadBytesNext(int64(optionSize))
+				}
 			}
 		}
 
