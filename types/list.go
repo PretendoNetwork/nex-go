@@ -327,12 +327,11 @@ func (l *List[T]) Scan(value interface{}) error {
 				result = append(result, any(QUUID(bytes)).(T))
 			}
 		case DateTime:
-			i, err := strconv.ParseUint(element, 10, 64)
-			if err != nil {
+			dt := DateTime(0)
+			if err := dt.scanSQLString(element); err != nil {
 				return err
 			}
-
-			result = append(result, any(DateTime(i)).(T))
+			result = append(result, any(dt).(T))
 		case QResult:
 			i, err := strconv.ParseUint(element, 10, 32)
 			if err != nil {
