@@ -162,7 +162,7 @@ func (dt DateTime) Value() (driver.Value, error) {
 // Scan implements the sql.Scanner interface for DateTime
 //
 // Only designed for Postgres databases
-func (dt *DateTime) Scan(value interface{}) error {
+func (dt *DateTime) Scan(value any) error {
 	// TODO - Treating SQL NULL as a 0-value DateTime. Is this correct?
 	if value == nil {
 		*dt = 0

@@ -123,7 +123,7 @@ func (l List[T]) String() string {
 // Scan implements the sql.Scanner interface for List[T]
 //
 // Only designed for Postgres databases
-func (l *List[T]) Scan(value interface{}) error {
+func (l *List[T]) Scan(value any) error {
 	if value == nil {
 		return nil
 	}
