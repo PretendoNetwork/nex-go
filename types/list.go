@@ -120,7 +120,9 @@ func (l List[T]) String() string {
 	return fmt.Sprintf("%v", ([]T)(l))
 }
 
-// Scan implements the sql.Scanner interface for String
+// Scan implements the sql.Scanner interface for List[T]
+//
+// Only designed for Postgres databases
 func (l *List[T]) Scan(value interface{}) error {
 	if value == nil {
 		return nil
