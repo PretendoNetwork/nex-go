@@ -182,7 +182,7 @@ func (qu *QUUID) FromString(uuid string) error {
 // Returns the result of QUUID.GetStringValue()
 //
 // Only designed for Postgres databases, and only for
-// `string` and `uuid` column types
+// `text` and `uuid` column types
 func (qu QUUID) Value() (driver.Value, error) {
 	if len(qu) == 0 {
 		return nil, nil
