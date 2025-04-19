@@ -195,7 +195,6 @@ func (dt *DateTime) Scan(value any) error {
 // parse the various string formats the `timestamp`
 // could be in
 func (dt *DateTime) scanSQLString(str string) error {
-	fmt.Println(str)
 	// * First attempt, try date strings.
 	// * Attempt the constant first before
 	// * heuristically trying others
