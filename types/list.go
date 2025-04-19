@@ -305,7 +305,7 @@ func (l *List[T]) Scan(value interface{}) error {
 			// * that matters, but this works during testing
 			for _, byteString := range byteStrings {
 				byteString = strings.TrimPrefix(byteString, "\\\\x")
-				hexVal, err := strconv.ParseInt(byteString, 16, 64)
+				hexVal, err := strconv.ParseUint(byteString, 16, 8)
 				if err != nil {
 					return err
 				}
