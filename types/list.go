@@ -284,7 +284,12 @@ func (l *List[T]) Scan(value any) error {
 			}
 
 			result = append(result, any(PID(i)).(T))
-		case Buffer, QBuffer, QUUID:
+		case QUUID:
+			quuid := NewQUUID([]byte{})
+			quuid.FromString(element)
+
+			result = append(result, any(quuid).(T))
+		case Buffer, QBuffer:
 			// * Each element is stored as a hex string encoded such as:
 			// * `"\\x30","\\x31","\\x32","\\x33","\\x34"`.
 			// * Go's CSV reader can handle these strings to get the individual
@@ -323,8 +328,6 @@ func (l *List[T]) Scan(value any) error {
 				result = append(result, any(Buffer(bytes)).(T))
 			case QBuffer:
 				result = append(result, any(QBuffer(bytes)).(T))
-			case QUUID:
-				result = append(result, any(QUUID(bytes)).(T))
 			}
 		case DateTime:
 			dt := DateTime(0)

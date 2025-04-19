@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -175,6 +176,74 @@ func (qu *QUUID) FromString(uuid string) error {
 	*qu = data
 
 	return nil
+}
+
+// Value implements the sql.Valuer interface for QUUID.
+// Returns the result of QUUID.GetStringValue()
+//
+// Only designed for Postgres databases, and only for
+// `string` and `uuid` column types
+func (qu QUUID) Value() (driver.Value, error) {
+	if len(qu) == 0 {
+		return nil, nil
+	}
+
+	if len(qu) != 16 {
+		return nil, fmt.Errorf("invalid QUUID bytes length: %d", len(qu))
+	}
+
+	// * Just return as a basic UUID, not one of the
+	// * fancy ones Postgres supports
+	return qu.GetStringValue(), nil
+}
+
+// Scan implements the sql.Scanner interface for QUUID
+//
+// Only designed for Postgres databases
+func (qu *QUUID) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	var uuid string
+	switch v := value.(type) {
+	case string:
+		uuid = v
+	case []byte:
+		uuid = string(v)
+	default:
+		return fmt.Errorf("cannot scan type %T into QUUID", v)
+	}
+
+	// * Postgres supports multiple formats for `uuid` columns
+	// * https://www.postgresql.org/docs/current/datatype-uuid.html
+
+	// * Remove the optional surrounding braces
+	uuid = strings.TrimSuffix(uuid, "}")
+	uuid = strings.TrimPrefix(uuid, "{")
+
+	// * Some UUIDs may have varying amounts of
+	// * hyphens, or none at all. Get the UUID in
+	// * a consistent state by just removing them
+	// * all and re-adding them later
+	uuid = strings.ReplaceAll(uuid, "-", "")
+
+	if len(uuid) != 32 {
+		return fmt.Errorf("invalid QUUID string length: %d", len(uuid))
+	}
+
+	// * Add back in the missing hyphens, so that
+	// * QUUID.FromString can handle it
+	parts := make([]string, 0, 5)
+	parts = append(parts, uuid[0:8])
+	parts = append(parts, uuid[8:12])
+	parts = append(parts, uuid[12:16])
+	parts = append(parts, uuid[16:20])
+	parts = append(parts, uuid[20:32])
+
+	uuid = strings.Join(parts, "-")
+
+	return qu.FromString(uuid)
 }
 
 // NewQUUID returns a new qUUID
