@@ -342,6 +342,11 @@ func (l *List[T]) Scan(value any) error {
 			}
 
 			result = append(result, any(QResult(i)).(T))
+		case StationURL:
+			stationURL := NewStationURL("")
+			stationURL.SetURL(element)
+			stationURL.Parse()
+			result = append(result, any(stationURL).(T))
 		default:
 			return fmt.Errorf("unsupported List element type: %T", zero)
 		}

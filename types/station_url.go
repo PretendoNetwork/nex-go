@@ -1,6 +1,7 @@
 package types
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"strconv"
 	"strings"
@@ -747,6 +748,39 @@ func (s StationURL) FormatToString(indentationLevel int) string {
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
+}
+
+// Value implements the sql.Valuer interface for StationURL.
+// Returns the result of StationURL.URL()
+//
+// Only designed for Postgres databases, and only for
+// `text` column types
+func (s StationURL) Value() (driver.Value, error) {
+	return s.URL(), nil
+}
+
+// Scan implements the sql.Scanner interface for StationURL
+//
+// Only designed for Postgres databases
+func (s *StationURL) Scan(value any) error {
+	s.ensureFields()
+
+	if value == nil {
+		return nil
+	}
+
+	switch v := value.(type) {
+	case string:
+		s.SetURL(v)
+	case []byte:
+		s.SetURL(string(v))
+	default:
+		return fmt.Errorf("cannot scan type %T into StationURL", v)
+	}
+
+	s.Parse()
+
+	return nil
 }
 
 // NewStationURL returns a new StationURL
