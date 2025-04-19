@@ -6,6 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/PretendoNetwork/plogger-go v1.0.4
+	github.com/lib/pq v1.10.9
 	github.com/lxzan/gws v1.8.8
 	github.com/rasky/go-lzo v0.0.0-20200203143853-96a758eda86e
 	github.com/stretchr/testify v1.8.4
