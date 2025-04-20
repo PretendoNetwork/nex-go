@@ -156,7 +156,7 @@ func (l *List[T]) Scan(value any) error {
 	// * of arrays, formatted like
 	// * `{{"\\x35","\\x36","\\x37","\\x38","\\x39"},{"\\x35","\\x36","\\x37","\\x38","\\x39"}}`
 	switch any(zero).(type) {
-	case Buffer, QBuffer, QUUID:
+	case Buffer, QBuffer:
 		// * Trim any extra off the ends, if exists.
 		// * Nested arrays, parsed later
 		pgArray = strings.TrimSuffix(pgArray, "}")
