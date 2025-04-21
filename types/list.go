@@ -311,7 +311,7 @@ func (l *List[T]) Scan(value any) error {
 					return err
 				}
 
-				char, err := strconv.Atoi(string(hexVal))
+				char, err := strconv.Atoi(string(uint8(hexVal)))
 				if err != nil {
 					return err
 				}
