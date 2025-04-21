@@ -291,24 +291,20 @@ func (l *List[T]) Scan(value any) error {
 			result = append(result, any(quuid).(T))
 		case Buffer, QBuffer:
 			// * Each element is stored as a hex string encoded such as:
-			// * `"\\x30","\\x31","\\x32","\\x33","\\x34"`.
-			// * Go's CSV reader can handle these strings to get the individual
-			// * bytes out. Assumes bytes are in the correct format
-
-			reader := csv.NewReader(strings.NewReader(element))
-			reader.Comma = ','
-
-			byteStrings, err := reader.Read()
-			if err != nil {
-				return err
-			}
-
+			// * `"\\x30","\\x31","\\x32","\\x33","\\x34"`
+			// *
+			// * Since the "strings" will always represent
+			// * bytes in a standard format, we can safely
+			// * just split on `,`
+			byteStrings := strings.Split(element, ",")
 			bytes := make([]byte, 0, len(byteStrings))
 
-			// * Convert from \\xXX to bytes. Each "byte" is actually
+			// * Convert from "\\xXX" to bytes. Each "byte" is actually
 			// * the ASCII value, not the real byte value. Unsure if
 			// * that matters, but this works during testing
 			for _, byteString := range byteStrings {
+				byteString = strings.TrimPrefix(byteString, "\"")
+				byteString = strings.TrimSuffix(byteString, "\"")
 				byteString = strings.TrimPrefix(byteString, "\\\\x")
 				hexVal, err := strconv.ParseUint(byteString, 16, 8)
 				if err != nil {
