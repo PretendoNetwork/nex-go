@@ -215,33 +215,10 @@ func (qu *QUUID) Scan(value any) error {
 		return fmt.Errorf("cannot scan type %T into QUUID", v)
 	}
 
-	// * Postgres supports multiple formats for `uuid` columns
+	// * While Postgres supports many formats for UUID *inputs*,
+	// * the UUID *output* is always in the standard form:
 	// * https://www.postgresql.org/docs/current/datatype-uuid.html
-
-	// * Remove the optional surrounding braces
-	uuid = strings.TrimSuffix(uuid, "}")
-	uuid = strings.TrimPrefix(uuid, "{")
-
-	// * Some UUIDs may have varying amounts of
-	// * hyphens, or none at all. Get the UUID in
-	// * a consistent state by just removing them
-	// * all and re-adding them later
-	uuid = strings.ReplaceAll(uuid, "-", "")
-
-	if len(uuid) != 32 {
-		return fmt.Errorf("invalid QUUID string length: %d", len(uuid))
-	}
-
-	// * Add back in the missing hyphens, so that
-	// * QUUID.FromString can handle it
-	parts := make([]string, 0, 5)
-	parts = append(parts, uuid[0:8])
-	parts = append(parts, uuid[8:12])
-	parts = append(parts, uuid[12:16])
-	parts = append(parts, uuid[16:20])
-	parts = append(parts, uuid[20:32])
-
-	uuid = strings.Join(parts, "-")
+	// * "Output is always in the standard form."
 
 	return qu.FromString(uuid)
 }
