@@ -330,7 +330,7 @@ func (l *List[T]) Scan(value any) error {
 				result = append(result, any(QBuffer(bytes)).(T))
 			}
 		case DateTime:
-			dt := DateTime(0)
+			dt := NewDateTime(0)
 			if err := dt.scanSQLString(element); err != nil {
 				return err
 			}
