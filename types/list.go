@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/csv"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -290,28 +291,51 @@ func (l *List[T]) Scan(value any) error {
 
 			result = append(result, any(quuid).(T))
 		case Buffer, QBuffer:
-			// * Each element is stored as a hex string encoded such as:
-			// * `"\\x30","\\x31","\\x32","\\x33","\\x34"`
+			// * Buffer and QBuffer are type aliases of []byte.
+			// * When []byte is used in Postgres, the data is
+			// * stored in a somewhat odd what. Every byte is
+			// * encoded into the numeric string it represents
+			// * and then that string is converted into hex and
+			// * stored as a Postgres list.
 			// *
-			// * Since the "strings" will always represent
-			// * bytes in a standard format, we can safely
-			// * just split on `,`
+			// * For example, assume the following is used to
+			// * create a Buffer: `NewBuffer([]byte{0, 1, 2, 3, 4})`
+			// *
+			// * When this is sent to `List.Scan`, the data is:
+			// * `[123 123 34 92 92 120 51 48 34 44 34 92 92 120
+			// *   51 49 34 44 34 92 92 120 51 50 34 44 34 92 92
+			// *   120 51 51 34 44 34 92 92 120 51 52 34 125 125]`
+			// *
+			// * When converted to a `string``, this becomes:
+			// * `{{"\\x30","\\x31","\\x32","\\x33","\\x34"}}`
+			// *
+			// * The actual `Buffer` value in Postgres is the
+			// * byte list `{"\\x30","\\x31","\\x32","\\x33","\\x34"}`
+			// *
+			// * Each element in this list is a byte for the ASCII
+			// * value of the real number (`30` -> `0`, `31` -> `1`, etc.)
+			// *
+			// * The same goes for higher values as well. The byte
+			// * `0xFF` is stored as `"\\x323535"` (the string `255`)
+			// *
+			// * To get the real values, we must first decode the string
+			// * back into ASCII, and then convert the ASCII to a number
+			// *
+			// * Since the `byteStrings` will always represent bytes in a
+			// * standard format, we can safely just split on `,`
 			byteStrings := strings.Split(element, ",")
 			bytes := make([]byte, 0, len(byteStrings))
 
-			// * Convert from "\\xXX" to bytes. Each "byte" is actually
-			// * the ASCII value, not the real byte value. Unsure if
-			// * that matters, but this works during testing
 			for _, byteString := range byteStrings {
 				byteString = strings.TrimPrefix(byteString, "\"")
 				byteString = strings.TrimSuffix(byteString, "\"")
 				byteString = strings.TrimPrefix(byteString, "\\\\x")
-				hexVal, err := strconv.ParseUint(byteString, 16, 8)
+				asciiBytes, err := hex.DecodeString(byteString)
 				if err != nil {
 					return err
 				}
 
-				char, err := strconv.Atoi(string(uint8(hexVal)))
+				char, err := strconv.Atoi(string(asciiBytes))
 				if err != nil {
 					return err
 				}
