@@ -286,6 +286,10 @@ func (l *List[T]) Scan(value any) error {
 
 			result = append(result, any(PID(i)).(T))
 		case QUUID:
+			// * QUUID is a type alias of []byte, but we assume
+			// * that the column it was stored in was either a
+			// * `text` or `uuid` type
+			// TODO - Support `bytea` columns too if possible?
 			quuid := NewQUUID([]byte{})
 			quuid.FromString(element)
 
