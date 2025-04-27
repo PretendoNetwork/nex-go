@@ -297,7 +297,7 @@ func (l *List[T]) Scan(value any) error {
 		case Buffer, QBuffer:
 			// * Buffer and QBuffer are type aliases of []byte.
 			// * When []byte is used in Postgres, the data is
-			// * stored in a somewhat odd what. Every byte is
+			// * stored in a somewhat odd way. Every byte is
 			// * encoded into the numeric string it represents
 			// * and then that string is converted into hex and
 			// * stored as a Postgres list.
@@ -339,7 +339,7 @@ func (l *List[T]) Scan(value any) error {
 					return err
 				}
 
-				char, err := strconv.Atoi(string(asciiBytes))
+				char, err := strconv.ParseUint(string(asciiBytes), 10, 8)
 				if err != nil {
 					return err
 				}
