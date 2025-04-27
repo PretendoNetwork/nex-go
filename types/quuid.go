@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -175,6 +176,51 @@ func (qu *QUUID) FromString(uuid string) error {
 	*qu = data
 
 	return nil
+}
+
+// Value implements the sql.Valuer interface for QUUID.
+// Returns the result of QUUID.GetStringValue()
+//
+// Only designed for Postgres databases, and only for
+// `text` and `uuid` column types
+func (qu QUUID) Value() (driver.Value, error) {
+	if len(qu) == 0 {
+		return nil, nil
+	}
+
+	if len(qu) != 16 {
+		return nil, fmt.Errorf("invalid QUUID bytes length: %d", len(qu))
+	}
+
+	// * Just return as a basic UUID, not one of the
+	// * fancy ones Postgres supports
+	return qu.GetStringValue(), nil
+}
+
+// Scan implements the sql.Scanner interface for QUUID
+//
+// Only designed for Postgres databases
+func (qu *QUUID) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	var uuid string
+	switch v := value.(type) {
+	case string:
+		uuid = v
+	case []byte:
+		uuid = string(v)
+	default:
+		return fmt.Errorf("cannot scan type %T into QUUID", v)
+	}
+
+	// * While Postgres supports many formats for UUID *inputs*,
+	// * the UUID *output* is always in the standard form:
+	// * https://www.postgresql.org/docs/current/datatype-uuid.html
+	// * "Output is always in the standard form."
+
+	return qu.FromString(uuid)
 }
 
 // NewQUUID returns a new qUUID

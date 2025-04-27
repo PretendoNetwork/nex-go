@@ -1,7 +1,9 @@
 package types
 
 import (
+	"database/sql/driver"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -140,6 +142,94 @@ func (dt DateTime) FormatToString(indentationLevel int) string {
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
+}
+
+// Value implements the sql.Valuer interface for DateTime.
+// Returns the result of DateTime.Standard()
+//
+// Only designed for Postgres databases, and only for
+// `timestamp` column types WITHOUT a timezone.
+// `timestamp WITH TIME ZONE` is NOT supported.
+//
+// Value is always returned in UTC
+func (dt DateTime) Value() (driver.Value, error) {
+	// TODO - Treating 0-value DateTimes as SQL NULL. Is this correct?
+	if dt == 0 {
+		return nil, nil
+	}
+
+	// * Treat DateTime as a time.Time for SQL purposes
+	return dt.Standard(), nil
+}
+
+// Scan implements the sql.Scanner interface for DateTime
+//
+// Only designed for Postgres databases, and only for
+// `timestamp` column types WITHOUT a timezone.
+// `timestamp WITH TIME ZONE` is NOT supported.
+//
+// Assumes the value is already in UTC
+func (dt *DateTime) Scan(value any) error {
+	// TODO - Treating SQL NULL as a 0-value DateTime. Is this correct?
+	if value == nil {
+		*dt = 0
+		return nil
+	}
+
+	// * We shouldn't actually see anything besides
+	// * time.Time here, but handle all possible
+	// * cases just the be safe
+	switch v := value.(type) {
+	case int64:
+		*dt = DateTime(uint64(v))
+		return nil
+	case uint64:
+		*dt = DateTime(v)
+		return nil
+	case []byte:
+		return dt.scanSQLString(string(v))
+	case string:
+		return dt.scanSQLString(v)
+	case time.Time:
+		dt.FromTimestamp(v)
+		return nil
+	default:
+		return fmt.Errorf("DateTime.Scan: cannot convert %T to DateTime", value)
+	}
+}
+
+// scanSQLString suppliments DateTime.Scan() to help
+// parse the various string formats the `timestamp`
+// could be in
+func (dt *DateTime) scanSQLString(str string) error {
+	// * First attempt, try date strings.
+	// * Attempt the constant first before
+	// * heuristically trying others
+	timeFormats := []string{
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05Z07:00",
+	}
+
+	for _, format := range timeFormats {
+		if t, err := time.Parse(format, str); err == nil {
+			dt.FromTimestamp(t)
+			return nil
+		}
+	}
+
+	// * Second attempt, assume it's a uint64
+	// * stored as a string, and assume the uint64
+	// * is a DateTime uint64, NOT a UNIX timestamp
+	// TODO - Can we determine if this is a UNIX timestamp vs DateTime uint64? Heuristics?
+	if val, err := strconv.ParseUint(str, 10, 64); err == nil {
+		*dt = DateTime(val)
+		return nil
+	}
+
+	// * Something is super wrong
+	return fmt.Errorf("DateTime.Scan: cannot convert %q to DateTime", str)
 }
 
 // NewDateTime returns a new DateTime instance

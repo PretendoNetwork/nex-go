@@ -1,7 +1,11 @@
 package types
 
 import (
+	"encoding/csv"
+	"encoding/hex"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 // List is an implementation of rdv::qList.
@@ -115,6 +119,265 @@ func (l List[T]) Contains(checkValue T) bool {
 // String returns a string representation of the struct
 func (l List[T]) String() string {
 	return fmt.Sprintf("%v", ([]T)(l))
+}
+
+// Scan implements the sql.Scanner interface for List[T]
+//
+// Only designed for Postgres databases
+func (l *List[T]) Scan(value any) error {
+	if value == nil {
+		return nil
+	}
+
+	// * Ensure the value is in the right format
+	var pgArray string
+	switch v := value.(type) {
+	case []byte:
+		pgArray = string(v)
+	case string:
+		pgArray = v
+	default:
+		return fmt.Errorf("unsupported Scan type for List: %T", value)
+	}
+
+	// * Postgres formats arrays in curly braces,
+	// * such as `{"string1"}`
+	if len(pgArray) < 2 || pgArray[0] != '{' || pgArray[len(pgArray)-1] != '}' {
+		return fmt.Errorf("invalid PostgreSQL array format: %s", pgArray)
+	}
+
+	var zero T
+	isByteaArray := false
+
+	pgArray = strings.TrimSuffix(pgArray, "}")
+	pgArray = strings.TrimPrefix(pgArray, "{")
+
+	// * Postgres formats bytea colums as arrays
+	// * of hex strings. Which makes this a list
+	// * of arrays, formatted like
+	// * `{{"\\x35","\\x36","\\x37","\\x38","\\x39"},{"\\x35","\\x36","\\x37","\\x38","\\x39"}}`
+	switch any(zero).(type) {
+	case Buffer, QBuffer:
+		// * Trim any extra off the ends, if exists.
+		// * Nested arrays, parsed later
+		pgArray = strings.TrimSuffix(pgArray, "}")
+		pgArray = strings.TrimPrefix(pgArray, "{")
+		isByteaArray = true
+	}
+
+	// * Bail if array is empty, who cares
+	if pgArray == "" {
+		return nil
+	}
+
+	var elements []string
+	var err error
+
+	if isByteaArray {
+		// * Arrays of bytea (byte slices) are handled as
+		// * nested arrays. Handle these as special cases
+		elements = strings.Split(pgArray, "},{")
+	} else {
+		// * Basic array. Go's CSV reader can handle these strings,
+		// * including strings which contain the delimiter. Such as:
+		// * `{"string1","string2","strings can have spaces, commas, etc."}`
+		reader := csv.NewReader(strings.NewReader(pgArray))
+		reader.Comma = ','
+
+		elements, err = reader.Read()
+	}
+
+	if err != nil {
+		return nil
+	}
+
+	result := make(List[T], 0, len(elements))
+
+	// * This is technically less effecient than running the
+	// * switch-case FIRST, and using a for loop inside each
+	// * case block. But that's ugly. This is fine for now.
+	// * This also assumes all numbers are within range, which
+	// * they should be for our purposes but this is not guaranteed
+	for _, element := range elements {
+		// * Only support basic/simple types. Nothing else can
+		// * be safely stored in Postgres. Complex types should
+		// * opt for JSON mode
+		switch any(zero).(type) {
+		case String:
+			result = append(result, any(String(element)).(T))
+		case Bool:
+			b := element == "t" || element == "true"
+			result = append(result, any(Bool(b)).(T))
+		case Double:
+			d, err := strconv.ParseFloat(element, 64)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(Double(d)).(T))
+		case Float:
+			f, err := strconv.ParseFloat(element, 32)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(Float(f)).(T))
+		case Int8:
+			i, err := strconv.ParseInt(element, 10, 8)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(Int8(i)).(T))
+		case Int16:
+			i, err := strconv.ParseInt(element, 10, 16)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(Int16(i)).(T))
+		case Int32:
+			i, err := strconv.ParseInt(element, 10, 32)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(Int32(i)).(T))
+		case Int64:
+			i, err := strconv.ParseInt(element, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(Int64(i)).(T))
+		case UInt8:
+			i, err := strconv.ParseUint(element, 10, 8)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(UInt8(i)).(T))
+		case UInt16:
+			i, err := strconv.ParseUint(element, 10, 16)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(UInt16(i)).(T))
+		case UInt32:
+			i, err := strconv.ParseUint(element, 10, 32)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(UInt32(i)).(T))
+		case UInt64:
+			i, err := strconv.ParseUint(element, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(UInt64(i)).(T))
+		case PID:
+			i, err := strconv.ParseUint(element, 10, 64)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(PID(i)).(T))
+		case QUUID:
+			// * QUUID is a type alias of []byte, but we assume
+			// * that the column it was stored in was either a
+			// * `text` or `uuid` type
+			// TODO - Support `bytea` columns too if possible?
+			quuid := NewQUUID([]byte{})
+			quuid.FromString(element)
+
+			result = append(result, any(quuid).(T))
+		case Buffer, QBuffer:
+			// * Buffer and QBuffer are type aliases of []byte.
+			// * When []byte is used in Postgres, the data is
+			// * stored in a somewhat odd way. Every byte is
+			// * encoded into the numeric string it represents
+			// * and then that string is converted into hex and
+			// * stored as a Postgres list.
+			// *
+			// * For example, assume the following is used to
+			// * create a Buffer: `NewBuffer([]byte{0, 1, 2, 3, 4})`
+			// *
+			// * When this is sent to `List.Scan`, the data is:
+			// * `[123 123 34 92 92 120 51 48 34 44 34 92 92 120
+			// *   51 49 34 44 34 92 92 120 51 50 34 44 34 92 92
+			// *   120 51 51 34 44 34 92 92 120 51 52 34 125 125]`
+			// *
+			// * When converted to a `string``, this becomes:
+			// * `{{"\\x30","\\x31","\\x32","\\x33","\\x34"}}`
+			// *
+			// * The actual `Buffer` value in Postgres is the
+			// * byte list `{"\\x30","\\x31","\\x32","\\x33","\\x34"}`
+			// *
+			// * Each element in this list is a byte for the ASCII
+			// * value of the real number (`30` -> `0`, `31` -> `1`, etc.)
+			// *
+			// * The same goes for higher values as well. The byte
+			// * `0xFF` is stored as `"\\x323535"` (the string `255`)
+			// *
+			// * To get the real values, we must first decode the string
+			// * back into ASCII, and then convert the ASCII to a number
+			// *
+			// * Since the `byteStrings` will always represent bytes in a
+			// * standard format, we can safely just split on `,`
+			byteStrings := strings.Split(element, ",")
+			bytes := make([]byte, 0, len(byteStrings))
+
+			for _, byteString := range byteStrings {
+				byteString = strings.TrimPrefix(byteString, "\"")
+				byteString = strings.TrimSuffix(byteString, "\"")
+				byteString = strings.TrimPrefix(byteString, "\\\\x")
+				asciiBytes, err := hex.DecodeString(byteString)
+				if err != nil {
+					return err
+				}
+
+				char, err := strconv.ParseUint(string(asciiBytes), 10, 8)
+				if err != nil {
+					return err
+				}
+
+				bytes = append(bytes, byte(char))
+			}
+
+			switch any(zero).(type) {
+			case Buffer:
+				result = append(result, any(Buffer(bytes)).(T))
+			case QBuffer:
+				result = append(result, any(QBuffer(bytes)).(T))
+			}
+		case DateTime:
+			dt := NewDateTime(0)
+			if err := dt.scanSQLString(element); err != nil {
+				return err
+			}
+			result = append(result, any(dt).(T))
+		case QResult:
+			i, err := strconv.ParseUint(element, 10, 32)
+			if err != nil {
+				return err
+			}
+
+			result = append(result, any(QResult(i)).(T))
+		case StationURL:
+			stationURL := NewStationURL("")
+			stationURL.SetURL(element)
+			stationURL.Parse()
+			result = append(result, any(stationURL).(T))
+		default:
+			return fmt.Errorf("unsupported List element type: %T", zero)
+		}
+	}
+
+	*l = result
+	return nil
 }
 
 // NewList returns a new List of the provided type
