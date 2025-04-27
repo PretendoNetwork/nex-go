@@ -148,7 +148,10 @@ func (dt DateTime) FormatToString(indentationLevel int) string {
 // Returns the result of DateTime.Standard()
 //
 // Only designed for Postgres databases, and only for
-// `timestamp` column types
+// `timestamp` column types WITHOUT a timezone.
+// `timestamp WITH TIME ZONE` is NOT supported.
+//
+// Value is always returned in UTC
 func (dt DateTime) Value() (driver.Value, error) {
 	// TODO - Treating 0-value DateTimes as SQL NULL. Is this correct?
 	if dt == 0 {
@@ -161,7 +164,11 @@ func (dt DateTime) Value() (driver.Value, error) {
 
 // Scan implements the sql.Scanner interface for DateTime
 //
-// Only designed for Postgres databases
+// Only designed for Postgres databases, and only for
+// `timestamp` column types WITHOUT a timezone.
+// `timestamp WITH TIME ZONE` is NOT supported.
+//
+// Assumes the value is already in UTC
 func (dt *DateTime) Scan(value any) error {
 	// TODO - Treating SQL NULL as a 0-value DateTime. Is this correct?
 	if value == nil {
