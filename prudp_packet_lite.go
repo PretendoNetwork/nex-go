@@ -26,7 +26,7 @@ type PRUDPPacketLite struct {
 	liteSignature                    []byte
 }
 
-// SetSourceVirtualPortStreamType sets the packets source VirtualPort  StreamType
+// SetSourceVirtualPortStreamType sets the packets source VirtualPort StreamType
 func (p *PRUDPPacketLite) SetSourceVirtualPortStreamType(streamType constants.StreamType) {
 	p.sourceVirtualPortStreamType = streamType
 }
@@ -43,7 +43,7 @@ func (p *PRUDPPacketLite) SetSourceVirtualPortStreamID(port uint8) {
 
 // SourceVirtualPortStreamID returns the packets source VirtualPort port number
 func (p *PRUDPPacketLite) SourceVirtualPortStreamID() uint8 {
-	return p.sourceVirtualPort.StreamID()
+	return p.sourceVirtualPortStreamID
 }
 
 // SetDestinationVirtualPortStreamType sets the packets destination VirtualPort constants.StreamType
