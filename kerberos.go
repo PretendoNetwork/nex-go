@@ -148,7 +148,7 @@ func (ti *KerberosTicketInternalData) Decrypt(stream *ByteStreamIn, key []byte) 
 		}
 
 		data := types.NewBuffer(nil)
-		if err := ticketKey.ExtractFrom(stream); err != nil {
+		if err := data.ExtractFrom(stream); err != nil {
 			return fmt.Errorf("Failed to read Kerberos ticket internal data. %s", err.Error())
 		}
 
