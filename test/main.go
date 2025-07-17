@@ -46,9 +46,9 @@ func accountDetailsByUsername(username string) (*nex.Account, *nex.Error) {
 }
 
 func main() {
-	authenticationServerAccount = nex.NewAccount(types.NewPID(1), "Quazal Authentication", "authpassword")
-	secureServerAccount = nex.NewAccount(types.NewPID(2), "Quazal Rendez-Vous", "securepassword")
-	testUserAccount = nex.NewAccount(types.NewPID(1800000000), "1800000000", "nexuserpassword")
+	authenticationServerAccount = nex.NewAccount(types.NewPID(1), "Quazal Authentication", "authpassword", false)
+	secureServerAccount = nex.NewAccount(types.NewPID(2), "Quazal Rendez-Vous", "securepassword", false)
+	testUserAccount = nex.NewAccount(types.NewPID(1800000000), "1800000000", "nexuserpassword", false)
 
 	wg.Add(3)
 
