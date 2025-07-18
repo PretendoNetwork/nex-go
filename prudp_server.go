@@ -187,8 +187,10 @@ func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Ad
 
 	// * PRUDPLite packets can use port numbers 0-31
 	// * PRUDPv0 and PRUDPv1 can use port numbers 0-15
-	if _, ok := packet.(*PRUDPPacketLite); ok && sourcePortNumber > 31 {
-		invalidSourcePort = true
+	if _, ok := packet.(*PRUDPPacketLite); ok {
+		if sourcePortNumber > 31 {
+			invalidSourcePort = true
+		}
 	} else if sourcePortNumber > 15 {
 		invalidSourcePort = true
 	}
