@@ -188,7 +188,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 	var baseSequenceID uint16
 	var slidingWindow *SlidingWindow
 
-	if packet.SubstreamID() == 1 {
+	if packet.SubstreamID() == 1 || packet.Version() == 2 {
 		// * New aggregate acknowledgment packets set this to 1
 		// * and encode the real substream ID in in the payload
 		substreamID, _ := stream.ReadUInt8()
