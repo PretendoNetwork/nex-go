@@ -3,22 +3,21 @@ package nex
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/lxzan/gws"
 )
 
-const (
-	pingInterval = 5 * time.Second
-	pingWait     = 10 * time.Second
-)
+// const (
+// 	pingInterval = 5 * time.Second
+// 	pingWait     = 10 * time.Second
+// )
 
 type wsEventHandler struct {
 	prudpServer *PRUDPServer
 }
 
 func (wseh *wsEventHandler) OnOpen(socket *gws.Conn) {
-	_ = socket.SetDeadline(time.Now().Add(pingInterval + pingWait))
+	// _ = socket.SetDeadline(time.Now().Add(pingInterval + pingWait))
 }
 
 func (wseh *wsEventHandler) OnClose(wsConn *gws.Conn, _ error) {
@@ -45,8 +44,8 @@ func (wseh *wsEventHandler) OnClose(wsConn *gws.Conn, _ error) {
 }
 
 func (wseh *wsEventHandler) OnPing(socket *gws.Conn, payload []byte) {
-	_ = socket.SetDeadline(time.Now().Add(pingInterval + pingWait))
-	_ = socket.WritePong(nil)
+	//_ = socket.SetDeadline(time.Now().Add(pingInterval + pingWait))
+	//_ = socket.WritePong(nil)
 }
 
 func (wseh *wsEventHandler) OnPong(socket *gws.Conn, payload []byte) {}
