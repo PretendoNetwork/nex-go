@@ -10,7 +10,7 @@ This library implements the lowest level parts of NEX, the transport protocols. 
 ### Install
 
 ```
-go get github.com/PretendoNetwork/nex-go
+go get github.com/PretendoNetwork/nex-go/v2
 ```
 
 ### Other NEX libraries
