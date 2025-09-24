@@ -23,7 +23,7 @@ type PRUDPEndPoint struct {
 	StreamID                          uint8
 	DefaultStreamSettings             *StreamSettings
 	Connections                       *MutexMap[string, *PRUDPConnection]
-	packetHandlers                    map[uint16]func(packet PRUDPPacketInterface)
+	packetHandlers                    map[uint16]func(pep *PRUDPEndPoint, packet PRUDPPacketInterface)
 	packetEventHandlers               map[string][]func(packet PacketInterface)
 	connectionEndedEventHandlers      []func(connection *PRUDPConnection)
 	errorEventHandlers                []func(err *Error)
@@ -46,7 +46,7 @@ func (pep *PRUDPEndPoint) RegisterServiceProtocol(protocol ServiceProtocol) {
 }
 
 // RegisterCustomPacketHandler registers a custom handler for a given packet type. Used to override existing handlers or create new ones for custom packet types.
-func (pep *PRUDPEndPoint) RegisterCustomPacketHandler(packetType uint16, handler func(packet PRUDPPacketInterface)) {
+func (pep *PRUDPEndPoint) RegisterCustomPacketHandler(packetType uint16, handler func(pep *PRUDPEndPoint, packet PRUDPPacketInterface)) {
 	pep.packetHandlers[packetType] = handler
 }
 
@@ -151,7 +151,7 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 	}
 
 	if packetHandler, ok := pep.packetHandlers[packet.Type()]; ok {
-		packetHandler(packet)
+		packetHandler(pep, packet)
 	} else {
 		logger.Warningf("Unhandled packet type %d", packet.Type())
 	}
@@ -802,7 +802,7 @@ func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 		StreamID:                     streamID,
 		DefaultStreamSettings:        NewStreamSettings(),
 		Connections:                  NewMutexMap[string, *PRUDPConnection](),
-		packetHandlers:               make(map[uint16]func(packet PRUDPPacketInterface)),
+		packetHandlers:               make(map[uint16]func(pep *PRUDPEndPoint, packet PRUDPPacketInterface)),
 		packetEventHandlers:          make(map[string][]func(PacketInterface)),
 		connectionEndedEventHandlers: make([]func(connection *PRUDPConnection), 0),
 		errorEventHandlers:           make([]func(err *Error), 0),
@@ -810,11 +810,11 @@ func NewPRUDPEndPoint(streamID uint8) *PRUDPEndPoint {
 		IsSecureEndPoint:             false,
 	}
 
-	pep.packetHandlers[constants.SynPacket] = pep.handleSyn
-	pep.packetHandlers[constants.ConnectPacket] = pep.handleConnect
-	pep.packetHandlers[constants.DataPacket] = pep.handleData
-	pep.packetHandlers[constants.DisconnectPacket] = pep.handleDisconnect
-	pep.packetHandlers[constants.PingPacket] = pep.handlePing
+	pep.packetHandlers[constants.SynPacket] = (*PRUDPEndPoint).handleSyn
+	pep.packetHandlers[constants.ConnectPacket] = (*PRUDPEndPoint).handleConnect
+	pep.packetHandlers[constants.DataPacket] = (*PRUDPEndPoint).handleData
+	pep.packetHandlers[constants.DisconnectPacket] = (*PRUDPEndPoint).handleDisconnect
+	pep.packetHandlers[constants.PingPacket] = (*PRUDPEndPoint).handlePing
 
 	return pep
 }
