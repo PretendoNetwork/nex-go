@@ -73,10 +73,10 @@ func (tm *TimeoutManager) start(packet PRUDPPacketInterface) {
 			// * Resend the packet to the connection
 			server := connection.endpoint.Server
 			data := packet.Bytes()
-			server.sendRaw(connection.Socket, data)
+			server.SendRaw(connection.Socket, data)
 		} else {
 			// * Packet has been retried too many times, consider the connection dead
-			endpoint.cleanupConnection(connection)
+			endpoint.CleanupConnection(connection)
 		}
 	}
 }

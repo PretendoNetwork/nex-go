@@ -84,7 +84,7 @@ func (pep *PRUDPEndPoint) on(name string, handler func(packet PacketInterface)) 
 	pep.packetEventHandlers[name] = append(pep.packetEventHandlers[name], handler)
 }
 
-func (pep *PRUDPEndPoint) emit(name string, packet PRUDPPacketInterface) {
+func (pep *PRUDPEndPoint) Emit(name string, packet PRUDPPacketInterface) {
 	if handlers, ok := pep.packetEventHandlers[name]; ok {
 		for _, handler := range handlers {
 			handler(packet)
@@ -105,9 +105,9 @@ func (pep *PRUDPEndPoint) EmitError(err *Error) {
 	}
 }
 
-// cleanupConnection cleans up and deletes a connection from this endpoint. Will lock the Connections mutex - make sure
+// CleanupConnection cleans up and deletes a connection from this endpoint. Will lock the Connections mutex - make sure
 // you don't hold it during a call, or this will deadlock
-func (pep *PRUDPEndPoint) cleanupConnection(connection *PRUDPConnection) {
+func (pep *PRUDPEndPoint) CleanupConnection(connection *PRUDPConnection) {
 	discriminator := fmt.Sprintf("%s-%d-%d", connection.Socket.Address.String(), connection.StreamType, connection.StreamID)
 
 	found := false
@@ -164,7 +164,7 @@ func (pep *PRUDPEndPoint) handleAcknowledgment(packet PRUDPPacketInterface) {
 		return
 	}
 
-	connection.resetHeartbeat()
+	connection.ResetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagMultiAck) {
 		pep.handleMultiAcknowledgment(packet)
@@ -231,7 +231,7 @@ func (pep *PRUDPEndPoint) handleMultiAcknowledgment(packet PRUDPPacketInterface)
 
 func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	connection := packet.Sender().(*PRUDPConnection)
-	connection.resetHeartbeat()
+	connection.ResetHeartbeat()
 
 	var ack PRUDPPacketInterface
 
@@ -243,12 +243,12 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 		ack, _ = NewPRUDPPacketV0(pep.Server, connection, nil)
 	}
 
-	connectionSignature, err := packet.calculateConnectionSignature(connection.Socket.Address)
+	connectionSignature, err := packet.CalculateConnectionSignature(connection.Socket.Address)
 	if err != nil {
 		logger.Error(err.Error())
 	}
 
-	connection.reset()
+	connection.Reset()
 	connection.Signature = connectionSignature
 
 	ack.SetType(constants.SynPacket)
@@ -258,21 +258,21 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
 	ack.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
-	ack.setConnectionSignature(connectionSignature)
-	ack.setSignature(ack.calculateSignature([]byte{}, []byte{}))
+	ack.SetConnectionSignature(connectionSignature)
+	ack.SetSignature(ack.CalculateSignature([]byte{}, []byte{}))
 
 	if ack, ok := ack.(*PRUDPPacketV1); ok {
 		// * Negotiate with the client what we support
-		ack.maximumSubstreamID = packet.(*PRUDPPacketV1).maximumSubstreamID // * No change needed, we can just support what the client wants
-		ack.minorVersion = packet.(*PRUDPPacketV1).minorVersion             // * No change needed, we can just support what the client wants
-		ack.supportedFunctions = pep.Server.SupportedFunctions & packet.(*PRUDPPacketV1).supportedFunctions
+		ack.MaximumSubstreamID = packet.(*PRUDPPacketV1).MaximumSubstreamID // * No change needed, we can just support what the client wants
+		ack.MinorVersion = packet.(*PRUDPPacketV1).MinorVersion             // * No change needed, we can just support what the client wants
+		ack.SupportedFunctions = pep.Server.SupportedFunctions & packet.(*PRUDPPacketV1).SupportedFunctions
 	}
 
 	connection.ConnectionState = StateConnecting
 
-	pep.emit("syn", ack)
+	pep.Emit("syn", ack)
 
-	pep.Server.sendRaw(connection.Socket, ack.Bytes())
+	pep.Server.SendRaw(connection.Socket, ack.Bytes())
 }
 
 func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
@@ -282,7 +282,7 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 		return
 	}
 
-	connection.resetHeartbeat()
+	connection.ResetHeartbeat()
 
 	var ack PRUDPPacketInterface
 
@@ -294,10 +294,10 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 		ack, _ = NewPRUDPPacketV0(pep.Server, connection, nil)
 	}
 
-	connection.ServerConnectionSignature = packet.getConnectionSignature()
+	connection.ServerConnectionSignature = packet.GetConnectionSignature()
 	connection.SessionID = packet.SessionID()
 
-	connectionSignature, err := packet.calculateConnectionSignature(connection.Socket.Address)
+	connectionSignature, err := packet.CalculateConnectionSignature(connection.Socket.Address)
 	if err != nil {
 		logger.Error(err.Error())
 	}
@@ -311,7 +311,7 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	ack.SetSourceVirtualPortStreamID(packet.DestinationVirtualPortStreamID())
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
 	ack.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
-	ack.setConnectionSignature(make([]byte, len(connectionSignature)))
+	ack.SetConnectionSignature(make([]byte, len(connectionSignature)))
 	ack.SetSessionID(connection.ServerSessionID)
 	ack.SetSequenceID(1)
 
@@ -320,13 +320,13 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 		// * negotiated what they each can support, so configure
 		// * the client now and just send the client back the
 		// * negotiated configuration
-		ack.maximumSubstreamID = packet.(*PRUDPPacketV1).maximumSubstreamID
-		ack.minorVersion = packet.(*PRUDPPacketV1).minorVersion
-		ack.supportedFunctions = packet.(*PRUDPPacketV1).supportedFunctions
+		ack.MaximumSubstreamID = packet.(*PRUDPPacketV1).MaximumSubstreamID
+		ack.MinorVersion = packet.(*PRUDPPacketV1).MinorVersion
+		ack.SupportedFunctions = packet.(*PRUDPPacketV1).SupportedFunctions
 
-		connection.InitializeSlidingWindows(ack.maximumSubstreamID)
-		connection.InitializePacketDispatchQueues(ack.maximumSubstreamID)
-		connection.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](packet.(*PRUDPPacketV1).initialUnreliableSequenceID)
+		connection.InitializeSlidingWindows(ack.MaximumSubstreamID)
+		connection.InitializePacketDispatchQueues(ack.MaximumSubstreamID)
+		connection.OutgoingUnreliableSequenceIDCounter = NewCounter[uint16](packet.(*PRUDPPacketV1).InitialUnreliableSequenceID)
 	} else {
 		connection.InitializeSlidingWindows(0)
 		connection.InitializePacketDispatchQueues(0)
@@ -353,14 +353,14 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 			return
 		}
 
-		sessionKey, pid, checkValue, err := pep.readKerberosTicket(decompressedPayload)
+		sessionKey, pid, checkValue, err := pep.ReadKerberosTicket(decompressedPayload)
 		if err != nil {
 			logger.Error(err.Error())
 			return
 		}
 
 		connection.SetPID(pid)
-		connection.setSessionKey(sessionKey)
+		connection.SetSessionKey(sessionKey)
 
 		responseCheckValue := checkValue + 1
 		responseCheckValueBytes := make([]byte, 4)
@@ -393,14 +393,14 @@ func (pep *PRUDPEndPoint) handleConnect(packet PRUDPPacketInterface) {
 	}
 
 	ack.SetPayload(encryptedPayload)
-	ack.setSignature(ack.calculateSignature([]byte{}, packet.getConnectionSignature()))
+	ack.SetSignature(ack.CalculateSignature([]byte{}, packet.GetConnectionSignature()))
 
 	connection.ConnectionState = StateConnected
-	connection.startHeartbeat()
+	connection.StartHeartbeat()
 
-	pep.emit("connect", ack)
+	pep.Emit("connect", ack)
 
-	pep.Server.sendRaw(connection.Socket, ack.Bytes())
+	pep.Server.SendRaw(connection.Socket, ack.Bytes())
 }
 
 func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
@@ -410,12 +410,12 @@ func (pep *PRUDPEndPoint) handleData(packet PRUDPPacketInterface) {
 		return
 	}
 
-	connection.resetHeartbeat()
+	connection.ResetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagReliable) {
-		pep.handleReliable(packet)
+		pep.HandleReliable(packet)
 	} else {
-		pep.handleUnreliable(packet)
+		pep.HandleUnreliable(packet)
 	}
 }
 
@@ -423,17 +423,17 @@ func (pep *PRUDPEndPoint) handleDisconnect(packet PRUDPPacketInterface) {
 	// TODO - Should we check the state here, or just let the connection disconnect at any time?
 
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
-		pep.acknowledgePacket(packet)
+		pep.AcknowledgePacket(packet)
 	}
 
 	streamType := packet.SourceVirtualPortStreamType()
 	streamID := packet.SourceVirtualPortStreamID()
 	discriminator := fmt.Sprintf("%s-%d-%d", packet.Sender().Address().String(), streamType, streamID)
 	if connection, ok := pep.Connections.Get(discriminator); ok {
-		pep.cleanupConnection(connection)
+		pep.CleanupConnection(connection)
 	}
 
-	pep.emit("disconnect", packet)
+	pep.Emit("disconnect", packet)
 }
 
 func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
@@ -443,10 +443,10 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 		return
 	}
 
-	connection.resetHeartbeat()
+	connection.ResetHeartbeat()
 
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
-		pep.acknowledgePacket(packet)
+		pep.AcknowledgePacket(packet)
 	}
 
 	if packet.HasFlag(constants.PacketFlagReliable) {
@@ -456,7 +456,7 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	}
 }
 
-func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, types.PID, uint32, error) {
+func (pep *PRUDPEndPoint) ReadKerberosTicket(payload []byte) ([]byte, types.PID, uint32, error) {
 	stream := NewByteStreamIn(payload, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
 	ticketData := types.NewBuffer(nil)
@@ -526,7 +526,7 @@ func (pep *PRUDPEndPoint) readKerberosTicket(payload []byte) ([]byte, types.PID,
 	return sessionKey, userPID, responseCheck, nil
 }
 
-func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
+func (pep *PRUDPEndPoint) AcknowledgePacket(packet PRUDPPacketInterface) {
 	var ack PRUDPPacketInterface
 
 	if packet.Version() == 2 {
@@ -556,9 +556,9 @@ func (pep *PRUDPEndPoint) acknowledgePacket(packet PRUDPPacketInterface) {
 	}
 }
 
-func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
+func (pep *PRUDPEndPoint) HandleReliable(packet PRUDPPacketInterface) {
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
-		pep.acknowledgePacket(packet)
+		pep.AcknowledgePacket(packet)
 	}
 
 	connection := packet.Sender().(*PRUDPConnection)
@@ -599,7 +599,7 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 				nextPacket.SetRMCMessage(message)
 				connection.ClearOutgoingBuffer(substreamID)
 
-				pep.emit("data", nextPacket)
+				pep.Emit("data", nextPacket)
 			}
 		}
 
@@ -607,9 +607,9 @@ func (pep *PRUDPEndPoint) handleReliable(packet PRUDPPacketInterface) {
 	}
 }
 
-func (pep *PRUDPEndPoint) handleUnreliable(packet PRUDPPacketInterface) {
+func (pep *PRUDPEndPoint) HandleUnreliable(packet PRUDPPacketInterface) {
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
-		pep.acknowledgePacket(packet)
+		pep.AcknowledgePacket(packet)
 	}
 
 	// * Since unreliable DATA packets can in theory reach the
@@ -665,7 +665,7 @@ func (pep *PRUDPEndPoint) handleUnreliable(packet PRUDPPacketInterface) {
 
 	packet.SetRMCMessage(message)
 
-	pep.emit("data", packet)
+	pep.Emit("data", packet)
 }
 
 func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {

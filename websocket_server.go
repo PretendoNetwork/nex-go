@@ -30,7 +30,7 @@ func (wseh *wsEventHandler) OnClose(wsConn *gws.Conn, _ error) {
 		// * the entries we want to delete, and then loop over
 		// * them here to actually clean them up
 		for _, connection := range connections {
-			pep.cleanupConnection(connection) // * "removed" event is dispatched here
+			pep.CleanupConnection(connection) // * "removed" event is dispatched here
 		}
 		return false
 	})

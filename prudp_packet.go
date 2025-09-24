@@ -125,7 +125,7 @@ func (p *PRUDPPacket) SetSubstreamID(substreamID uint8) {
 	p.substreamID = substreamID
 }
 
-func (p *PRUDPPacket) setSignature(signature []byte) {
+func (p *PRUDPPacket) SetSignature(signature []byte) {
 	p.signature = signature
 }
 
@@ -162,11 +162,11 @@ func (p *PRUDPPacket) decryptPayload() []byte {
 	return payload
 }
 
-func (p *PRUDPPacket) getConnectionSignature() []byte {
+func (p *PRUDPPacket) GetConnectionSignature() []byte {
 	return p.connectionSignature
 }
 
-func (p *PRUDPPacket) setConnectionSignature(connectionSignature []byte) {
+func (p *PRUDPPacket) SetConnectionSignature(connectionSignature []byte) {
 	p.connectionSignature = connectionSignature
 }
 

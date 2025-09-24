@@ -236,11 +236,11 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	return stream.Bytes()
 }
 
-func (p *PRUDPPacketV0) calculateConnectionSignature(addr net.Addr) ([]byte, error) {
+func (p *PRUDPPacketV0) CalculateConnectionSignature(addr net.Addr) ([]byte, error) {
 	return p.server.PRUDPV0Settings.ConnectionSignatureCalculator(p, addr)
 }
 
-func (p *PRUDPPacketV0) calculateSignature(sessionKey, connectionSignature []byte) []byte {
+func (p *PRUDPPacketV0) CalculateSignature(sessionKey, connectionSignature []byte) []byte {
 	return p.server.PRUDPV0Settings.SignatureCalculator(p, sessionKey, connectionSignature)
 }
 

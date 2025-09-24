@@ -249,7 +249,7 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 			slidingWindow := connection.SlidingWindow(packetCopy.SubstreamID())
 			packetCopy.SetSequenceID(slidingWindow.NextOutgoingSequenceID())
 		} else if packetCopy.Type() == constants.DataPacket {
-			packetCopy.SetSequenceID(connection.outgoingUnreliableSequenceIDCounter.Next())
+			packetCopy.SetSequenceID(connection.OutgoingUnreliableSequenceIDCounter.Next())
 		} else if packetCopy.Type() == constants.PingPacket {
 			packetCopy.SetSequenceID(connection.outgoingPingSequenceIDCounter.Next())
 			connection.lastSentPingTime = time.Now()
@@ -285,9 +285,9 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 	}
 
 	if ps.PRUDPV1Settings.LegacyConnectionSignature {
-		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.Signature))
+		packetCopy.SetSignature(packetCopy.CalculateSignature(connection.SessionKey, connection.Signature))
 	} else {
-		packetCopy.setSignature(packetCopy.calculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
+		packetCopy.SetSignature(packetCopy.CalculateSignature(connection.SessionKey, connection.ServerConnectionSignature))
 	}
 
 	packetCopy.incrementSendCount()
@@ -298,11 +298,11 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 		slidingWindow.TimeoutManager.SchedulePacketTimeout(packetCopy)
 	}
 
-	ps.sendRaw(packetCopy.Sender().(*PRUDPConnection).Socket, packetCopy.Bytes())
+	ps.SendRaw(packetCopy.Sender().(*PRUDPConnection).Socket, packetCopy.Bytes())
 }
 
-// sendRaw will send the given socket the provided packet
-func (ps *PRUDPServer) sendRaw(socket *SocketConnection, data []byte) {
+// SendRaw will send the given socket the provided packet
+func (ps *PRUDPServer) SendRaw(socket *SocketConnection, data []byte) {
 	// TODO - Should this return the error too?
 
 	var err error

@@ -33,7 +33,7 @@ type PRUDPConnection struct {
 	slidingWindows                      *MutexMap[uint8, *SlidingWindow]       // * Outbound reliable packet substreams
 	packetDispatchQueues                *MutexMap[uint8, *PacketDispatchQueue] // * Inbound reliable packet substreams
 	incomingFragmentBuffers             *MutexMap[uint8, []byte]               // * Buffers which store the incoming payloads from fragmented DATA packets
-	outgoingUnreliableSequenceIDCounter *Counter[uint16]
+	OutgoingUnreliableSequenceIDCounter *Counter[uint16]
 	outgoingPingSequenceIDCounter       *Counter[uint16]
 	lastSentPingTime                    time.Time
 	heartbeatTimer                      *time.Timer
@@ -62,8 +62,8 @@ func (pc *PRUDPConnection) SetPID(pid types.PID) {
 	pc.pid = pid
 }
 
-// reset resets the connection state to all zero values
-func (pc *PRUDPConnection) reset() {
+// Reset resets the connection state to all zero values
+func (pc *PRUDPConnection) Reset() {
 	pc.ConnectionState = StateNotConnected
 	pc.packetDispatchQueues.Clear(func(_ uint8, packetDispatchQueue *PacketDispatchQueue) {
 		packetDispatchQueue.Purge()
@@ -76,13 +76,13 @@ func (pc *PRUDPConnection) reset() {
 	pc.Signature = make([]byte, 0)
 	pc.ServerConnectionSignature = make([]byte, 0)
 	pc.SessionKey = make([]byte, 0)
-	pc.outgoingUnreliableSequenceIDCounter = NewCounter[uint16](1)
+	pc.OutgoingUnreliableSequenceIDCounter = NewCounter[uint16](1)
 	pc.outgoingPingSequenceIDCounter = NewCounter[uint16](0)
 }
 
 // cleanup resets the connection state and cleans up some resources. Used when a client is considered dead and to be removed from the endpoint
 func (pc *PRUDPConnection) cleanup() {
-	pc.reset()
+	pc.Reset()
 
 	pc.stopHeartbeatTimers()
 
@@ -157,8 +157,8 @@ func (pc *PRUDPConnection) PacketDispatchQueue(substreamID uint8) *PacketDispatc
 	return packetDispatchQueue
 }
 
-// setSessionKey sets the connection's session key and updates the SlidingWindows
-func (pc *PRUDPConnection) setSessionKey(sessionKey []byte) {
+// SetSessionKey sets the connection's session key and updates the SlidingWindows
+func (pc *PRUDPConnection) SetSessionKey(sessionKey []byte) {
 	pc.SessionKey = sessionKey
 
 	pc.slidingWindows.Each(func(substreamID uint8, slidingWindow *SlidingWindow) bool {
@@ -197,7 +197,7 @@ func (pc *PRUDPConnection) setSessionKey(sessionKey []byte) {
 	pc.UnreliablePacketBaseKey = append(unreliableBaseKeyPart1[:], unreliableBaseKeyPart2[:]...)
 }
 
-func (pc *PRUDPConnection) resetHeartbeat() {
+func (pc *PRUDPConnection) ResetHeartbeat() {
 	if pc.pingKickTimer != nil {
 		pc.pingKickTimer.Stop()
 	}
@@ -243,7 +243,7 @@ func (pc *PRUDPConnection) ClearOutgoingBuffer(substreamID uint8) {
 	pc.incomingFragmentBuffers.Set(substreamID, make([]byte, 0))
 }
 
-func (pc *PRUDPConnection) startHeartbeat() {
+func (pc *PRUDPConnection) StartHeartbeat() {
 	endpoint := pc.endpoint
 
 	// TODO: This may not be accurate, needs more research
@@ -261,7 +261,7 @@ func (pc *PRUDPConnection) startHeartbeat() {
 		// * If the heartbeat still did not restart, assume the
 		// * connection is dead and clean up
 		pc.pingKickTimer = time.AfterFunc(maxSilenceTime, func() {
-			endpoint.cleanupConnection(pc)
+			endpoint.CleanupConnection(pc)
 		})
 	})
 }
@@ -285,7 +285,7 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 		pid:                                 types.NewPID(0),
 		slidingWindows:                      NewMutexMap[uint8, *SlidingWindow](),
 		packetDispatchQueues:                NewMutexMap[uint8, *PacketDispatchQueue](),
-		outgoingUnreliableSequenceIDCounter: NewCounter[uint16](1),
+		OutgoingUnreliableSequenceIDCounter: NewCounter[uint16](1),
 		outgoingPingSequenceIDCounter:       NewCounter[uint16](0),
 		incomingFragmentBuffers:             NewMutexMap[uint8, []byte](),
 		StationURLs:                         types.NewList[types.StationURL](),

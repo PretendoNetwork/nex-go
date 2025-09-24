@@ -44,12 +44,12 @@ type PRUDPPacketInterface interface {
 	getTimeout() *Timeout
 	setTimeout(timeout *Timeout)
 	decode() error
-	setSignature(signature []byte)
-	calculateConnectionSignature(addr net.Addr) ([]byte, error)
-	calculateSignature(sessionKey, connectionSignature []byte) []byte
+	SetSignature(signature []byte)
+	CalculateConnectionSignature(addr net.Addr) ([]byte, error)
+	CalculateSignature(sessionKey, connectionSignature []byte) []byte
 	decryptPayload() []byte
-	getConnectionSignature() []byte
-	setConnectionSignature(connectionSignature []byte)
+	GetConnectionSignature() []byte
+	SetConnectionSignature(connectionSignature []byte)
 	getFragmentID() uint8
 	setFragmentID(fragmentID uint8)
 	processUnreliableCrypto() []byte
