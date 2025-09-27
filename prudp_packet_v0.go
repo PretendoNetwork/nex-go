@@ -236,10 +236,12 @@ func (p *PRUDPPacketV0) Bytes() []byte {
 	return stream.Bytes()
 }
 
+// CalculateConnectionSignature calculates connection signature using the registered calculator.
 func (p *PRUDPPacketV0) CalculateConnectionSignature(addr net.Addr) ([]byte, error) {
 	return p.server.PRUDPV0Settings.ConnectionSignatureCalculator(p, addr)
 }
 
+// CalculateSignature calculates PRUDP packet signature using the registered calculator.
 func (p *PRUDPPacketV0) CalculateSignature(sessionKey, connectionSignature []byte) []byte {
 	return p.server.PRUDPV0Settings.SignatureCalculator(p, sessionKey, connectionSignature)
 }

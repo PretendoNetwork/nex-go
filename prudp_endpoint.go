@@ -84,6 +84,7 @@ func (pep *PRUDPEndPoint) on(name string, handler func(packet PacketInterface)) 
 	pep.packetEventHandlers[name] = append(pep.packetEventHandlers[name], handler)
 }
 
+// Emit calls the registered packet event handler.
 func (pep *PRUDPEndPoint) Emit(name string, packet PRUDPPacketInterface) {
 	if handlers, ok := pep.packetEventHandlers[name]; ok {
 		for _, handler := range handlers {
@@ -456,6 +457,7 @@ func (pep *PRUDPEndPoint) handlePing(packet PRUDPPacketInterface) {
 	}
 }
 
+// ReadKerberosTicket decrypts and parses Kerberos ticket obtained from CONNECT packet.
 func (pep *PRUDPEndPoint) ReadKerberosTicket(payload []byte) ([]byte, types.PID, uint32, error) {
 	stream := NewByteStreamIn(payload, pep.Server.LibraryVersions, pep.ByteStreamSettings())
 
@@ -556,6 +558,7 @@ func (pep *PRUDPEndPoint) AcknowledgePacket(packet PRUDPPacketInterface) {
 	}
 }
 
+// HandleReliable handles reliable PRUDP DATA packets.
 func (pep *PRUDPEndPoint) HandleReliable(packet PRUDPPacketInterface) {
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.AcknowledgePacket(packet)
@@ -607,6 +610,7 @@ func (pep *PRUDPEndPoint) HandleReliable(packet PRUDPPacketInterface) {
 	}
 }
 
+// HandleUnreliable handles unreliable PRUDP DATA packets.
 func (pep *PRUDPEndPoint) HandleUnreliable(packet PRUDPPacketInterface) {
 	if packet.HasFlag(constants.PacketFlagNeedsAck) {
 		pep.AcknowledgePacket(packet)

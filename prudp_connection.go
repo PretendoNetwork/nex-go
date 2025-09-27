@@ -197,6 +197,7 @@ func (pc *PRUDPConnection) SetSessionKey(sessionKey []byte) {
 	pc.UnreliablePacketBaseKey = append(unreliableBaseKeyPart1[:], unreliableBaseKeyPart2[:]...)
 }
 
+// ResetHeartbeat resets the connection's heartbeat timer to PRUDPConnection.StreamSettings.MaxSilenceTime.
 func (pc *PRUDPConnection) ResetHeartbeat() {
 	if pc.pingKickTimer != nil {
 		pc.pingKickTimer.Stop()
@@ -243,6 +244,7 @@ func (pc *PRUDPConnection) ClearOutgoingBuffer(substreamID uint8) {
 	pc.incomingFragmentBuffers.Set(substreamID, make([]byte, 0))
 }
 
+// StartHeartbeat initializes the connection's heartbeat timer.
 func (pc *PRUDPConnection) StartHeartbeat() {
 	endpoint := pc.endpoint
 
