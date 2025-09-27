@@ -311,7 +311,7 @@ func (p *PRUDPPacketLite) encodeOptions() []byte {
 	return optionsStream.Bytes()
 }
 
-func (p *PRUDPPacketLite) calculateConnectionSignature(addr net.Addr) ([]byte, error) {
+func (p *PRUDPPacketLite) CalculateConnectionSignature(addr net.Addr) ([]byte, error) {
 	var ip net.IP
 	var port int
 
@@ -333,7 +333,7 @@ func (p *PRUDPPacketLite) calculateConnectionSignature(addr net.Addr) ([]byte, e
 	return hash.Sum(nil), nil
 }
 
-func (p *PRUDPPacketLite) calculateSignature(sessionKey, connectionSignature []byte) []byte {
+func (p *PRUDPPacketLite) CalculateSignature(sessionKey, connectionSignature []byte) []byte {
 	// * PRUDPLite has no signature
 	return make([]byte, 0)
 }

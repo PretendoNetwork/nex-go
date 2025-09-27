@@ -17,10 +17,10 @@ type PRUDPPacketV1 struct {
 	PRUDPPacket
 	optionsLength               uint8
 	payloadLength               uint16
-	minorVersion                uint32
-	supportedFunctions          uint32
-	maximumSubstreamID          uint8
-	initialUnreliableSequenceID uint16
+	MinorVersion                uint32
+	SupportedFunctions          uint32
+	MaximumSubstreamID          uint8
+	InitialUnreliableSequenceID uint16
 }
 
 // Copy copies the packet into a new PRUDPPacketV1
@@ -59,10 +59,10 @@ func (p *PRUDPPacketV1) Copy() PRUDPPacketInterface {
 
 	copied.optionsLength = p.optionsLength
 	copied.payloadLength = p.payloadLength
-	copied.minorVersion = p.minorVersion
-	copied.supportedFunctions = p.supportedFunctions
-	copied.maximumSubstreamID = p.maximumSubstreamID
-	copied.initialUnreliableSequenceID = p.initialUnreliableSequenceID
+	copied.MinorVersion = p.MinorVersion
+	copied.SupportedFunctions = p.SupportedFunctions
+	copied.MaximumSubstreamID = p.MaximumSubstreamID
+	copied.InitialUnreliableSequenceID = p.InitialUnreliableSequenceID
 
 	return copied
 }
@@ -239,10 +239,10 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 
 		if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 			if optionID == 0 {
-				p.supportedFunctions, err = optionsStream.ReadUInt32LE()
+				p.SupportedFunctions, err = optionsStream.ReadUInt32LE()
 
-				p.minorVersion = p.supportedFunctions & 0xFF
-				p.supportedFunctions = p.supportedFunctions >> 8
+				p.MinorVersion = p.SupportedFunctions & 0xFF
+				p.SupportedFunctions = p.SupportedFunctions >> 8
 			}
 
 			if optionID == 1 {
@@ -254,13 +254,13 @@ func (p *PRUDPPacketV1) decodeOptions() error {
 			}
 
 			if optionID == 4 {
-				p.maximumSubstreamID, err = optionsStream.ReadUInt8()
+				p.MaximumSubstreamID, err = optionsStream.ReadUInt8()
 			}
 		}
 
 		if p.packetType == constants.ConnectPacket {
 			if optionID == 3 {
-				p.initialUnreliableSequenceID, err = optionsStream.ReadUInt16LE()
+				p.InitialUnreliableSequenceID, err = optionsStream.ReadUInt16LE()
 			}
 		}
 
@@ -287,7 +287,7 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 	if p.packetType == constants.SynPacket || p.packetType == constants.ConnectPacket {
 		optionsStream.WriteUInt8(0)
 		optionsStream.WriteUInt8(4)
-		optionsStream.WriteUInt32LE(p.minorVersion | (p.supportedFunctions << 8))
+		optionsStream.WriteUInt32LE(p.MinorVersion | (p.SupportedFunctions << 8))
 
 		optionsStream.WriteUInt8(1)
 		optionsStream.WriteUInt8(16)
@@ -305,12 +305,12 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 		if p.packetType == constants.ConnectPacket {
 			optionsStream.WriteUInt8(3)
 			optionsStream.WriteUInt8(2)
-			optionsStream.WriteUInt16LE(p.initialUnreliableSequenceID)
+			optionsStream.WriteUInt16LE(p.InitialUnreliableSequenceID)
 		}
 
 		optionsStream.WriteUInt8(4)
 		optionsStream.WriteUInt8(1)
-		optionsStream.WriteUInt8(p.maximumSubstreamID)
+		optionsStream.WriteUInt8(p.MaximumSubstreamID)
 	}
 
 	if p.packetType == constants.DataPacket {
@@ -322,11 +322,11 @@ func (p *PRUDPPacketV1) encodeOptions() []byte {
 	return optionsStream.Bytes()
 }
 
-func (p *PRUDPPacketV1) calculateConnectionSignature(addr net.Addr) ([]byte, error) {
+func (p *PRUDPPacketV1) CalculateConnectionSignature(addr net.Addr) ([]byte, error) {
 	return p.server.PRUDPV1Settings.ConnectionSignatureCalculator(p, addr)
 }
 
-func (p *PRUDPPacketV1) calculateSignature(sessionKey, connectionSignature []byte) []byte {
+func (p *PRUDPPacketV1) CalculateSignature(sessionKey, connectionSignature []byte) []byte {
 	return p.server.PRUDPV1Settings.SignatureCalculator(p, sessionKey, connectionSignature)
 }
 
