@@ -10,7 +10,8 @@ import (
 // A single socket may have many PRUDP connections open on it.
 type SocketConnection struct {
 	Server              *PRUDPServer // * PRUDP server the socket is connected to
-	Address             net.Addr     // * Sockets address
+	ProxyAddress        net.Addr     // * Address of the proxy server, when in proxied mode
+	Address             net.Addr     // * Address of the real client
 	WebSocketConnection *gws.Conn    // * Only used in PRUDPLite
 }
 
