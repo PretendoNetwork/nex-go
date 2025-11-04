@@ -130,7 +130,7 @@ func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 
 func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
 	// * Check that the message is long enough for initial parsing
-	if ps.ProxiedMode && len(packetData) < 6 {
+	if ps.ProxiedMode && len(packetData) < 7 {
 		return nil
 	} else if len(packetData) < 2 {
 		return nil
@@ -145,13 +145,14 @@ func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, 
 	if ps.ProxiedMode {
 		socket = NewSocketConnection(ps, address, webSocketConnection)
 
+		// * Always proxy protocol version 0 for now, skip the version byte
 		socket.ProxyAddress = address
 		socket.Address = &net.UDPAddr{
-			IP:   net.IP(packetData[0:4]),
-			Port: int(binary.BigEndian.Uint16(packetData[4:6])),
+			IP:   net.IP(packetData[1:5]),
+			Port: int(binary.BigEndian.Uint16(packetData[5:7])),
 		}
 
-		readStream.SeekByte(6, true)
+		readStream.SeekByte(7, true)
 	} else {
 		socket = NewSocketConnection(ps, address, webSocketConnection)
 	}
@@ -332,13 +333,14 @@ func (ps *PRUDPServer) SendRaw(socket *SocketConnection, data []byte) {
 	if ps.ProxiedMode {
 		if udpAddr, ok := sendAddress.(*net.UDPAddr); ok {
 			ip4 := udpAddr.IP.To4()
-			newData := make([]byte, 6+len(data))
+			newData := make([]byte, 7+len(data))
 
 			sendAddress = socket.ProxyAddress
 
-			copy(newData[0:4], ip4)
-			binary.BigEndian.PutUint16(newData[4:6], uint16(udpAddr.Port))
-			copy(newData[6:], data)
+			newData[0] = PROXY_PROTOCOL_VERSION
+			copy(newData[1:5], ip4)
+			binary.BigEndian.PutUint16(newData[5:7], uint16(udpAddr.Port))
+			copy(newData[7:], data)
 
 			data = newData
 		}

@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+const PROXY_PROTOCOL_VERSION = 0
+
 type ProxyServer struct {
 	mappings map[int]*ProxyMapping
 	wg       sync.WaitGroup
@@ -49,11 +51,12 @@ func (ps *ProxyServer) handleClientPacket(mapping *ProxyMapping, data []byte, cl
 		return
 	}
 
-	packet := make([]byte, 6+len(data))
+	packet := make([]byte, 7+len(data))
 
-	copy(packet[0:4], ip4)
-	binary.BigEndian.PutUint16(packet[4:6], uint16(clientAddr.Port))
-	copy(packet[6:], data)
+	packet[0] = PROXY_PROTOCOL_VERSION
+	copy(packet[1:5], ip4)
+	binary.BigEndian.PutUint16(packet[5:7], uint16(clientAddr.Port))
+	copy(packet[7:], data)
 
 	_, err := mapping.conn.WriteToUDP(packet, mapping.targetAddr)
 	if err != nil {
@@ -68,14 +71,15 @@ func (ps *ProxyServer) handleServerPacket(mapping *ProxyMapping, data []byte) {
 		return
 	}
 
-	clientIP := net.IPv4(data[0], data[1], data[2], data[3])
-	clientPort := int(binary.BigEndian.Uint16(data[4:6]))
+	// * Always version 0 for now, skip the version byte
+	clientIP := net.IPv4(data[1], data[2], data[3], data[4])
+	clientPort := int(binary.BigEndian.Uint16(data[5:7]))
 	clientAddr := &net.UDPAddr{
 		IP:   clientIP,
 		Port: clientPort,
 	}
 
-	payload := data[6:]
+	payload := data[7:]
 
 	_, err := mapping.conn.WriteToUDP(payload, clientAddr)
 	if err != nil {
