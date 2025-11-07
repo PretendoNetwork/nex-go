@@ -3,13 +3,13 @@ package nex
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/binary"
 	"fmt"
 	"net"
 	"runtime"
 	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
+	"github.com/PretendoNetwork/nex-go/v2/proxy"
 	"github.com/lxzan/gws"
 )
 
@@ -29,7 +29,7 @@ type PRUDPServer struct {
 	PRUDPV0Settings               *PRUDPV0Settings
 	PRUDPV1Settings               *PRUDPV1Settings
 	UseVerboseRMC                 bool
-	ProxiedMode                   bool
+	ProxyProtocol                 proxy.ProxyProtocol
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server
@@ -130,32 +130,16 @@ func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 
 func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
 	// * Check that the message is long enough for initial parsing
-	if ps.ProxiedMode && len(packetData) < 7 {
-		return nil
-	} else if len(packetData) < 2 {
+	if len(packetData) < ps.ProxyProtocol.HeaderSize()+2 {
 		return nil
 	}
-
-	readStream := NewByteStreamIn(packetData, ps.LibraryVersions, ps.ByteStreamSettings)
-	var socket *SocketConnection
 
 	// * The constant calls to NewSocketConnection is just moved from
 	// * ps.processPacket, but should we really be doing that? Seems wasteful
 	// TODO - Proxied mode doesn't work on WebSocket connections
-	if ps.ProxiedMode {
-		socket = NewSocketConnection(ps, address, webSocketConnection)
-
-		// * Always proxy protocol version 0 for now, skip the version byte
-		socket.ProxyAddress = address
-		socket.Address = &net.UDPAddr{
-			IP:   net.IP(packetData[1:5]),
-			Port: int(binary.BigEndian.Uint16(packetData[5:7])),
-		}
-
-		readStream.SeekByte(7, true)
-	} else {
-		socket = NewSocketConnection(ps, address, webSocketConnection)
-	}
+	socket := NewSocketConnection(ps, address, webSocketConnection)
+	realPacketPayload, _ := ps.ProxyProtocol.Parse(socket.Address, socket.ProxyAddress, packetData)
+	readStream := NewByteStreamIn(realPacketPayload, ps.LibraryVersions, ps.ByteStreamSettings)
 
 	var packets []PRUDPPacketInterface
 
@@ -326,30 +310,14 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 // SendRaw will send the given socket the provided packet
 func (ps *PRUDPServer) SendRaw(socket *SocketConnection, data []byte) {
 	// TODO - Should this return the error too?
-
-	sendAddress := socket.Address
 	var err error
 
-	if ps.ProxiedMode {
-		if udpAddr, ok := sendAddress.(*net.UDPAddr); ok {
-			ip4 := udpAddr.IP.To4()
-			newData := make([]byte, 7+len(data))
+	sendData, _ := ps.ProxyProtocol.Encode(socket.Address, socket.ProxyAddress, data)
 
-			sendAddress = socket.ProxyAddress
-
-			newData[0] = PROXY_PROTOCOL_VERSION
-			copy(newData[1:5], ip4)
-			binary.BigEndian.PutUint16(newData[5:7], uint16(udpAddr.Port))
-			copy(newData[7:], data)
-
-			data = newData
-		}
-	}
-
-	if address, ok := sendAddress.(*net.UDPAddr); ok && ps.udpSocket != nil {
-		_, err = ps.udpSocket.WriteToUDP(data, address)
+	if address, ok := socket.ProxyAddress.(*net.UDPAddr); ok && ps.udpSocket != nil {
+		_, err = ps.udpSocket.WriteToUDP(sendData, address)
 	} else if socket.WebSocketConnection != nil {
-		err = socket.WebSocketConnection.WriteMessage(gws.OpcodeBinary, data)
+		err = socket.WebSocketConnection.WriteMessage(gws.OpcodeBinary, sendData)
 	}
 
 	if err != nil {
@@ -383,5 +351,6 @@ func NewPRUDPServer() *PRUDPServer {
 		ByteStreamSettings: NewByteStreamSettings(),
 		PRUDPV0Settings:    NewPRUDPV0Settings(),
 		PRUDPV1Settings:    NewPRUDPV1Settings(),
+		ProxyProtocol:      proxy.NewDummyProxyProtocol(),
 	}
 }

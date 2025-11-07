@@ -1,13 +1,15 @@
-package nex
+package proxy
 
 import (
 	"encoding/binary"
 	"fmt"
 	"net"
 	"sync"
+
+	"github.com/PretendoNetwork/plogger-go"
 )
 
-const PROXY_PROTOCOL_VERSION = 0
+var logger = plogger.NewLogger()
 
 type ProxyServer struct {
 	mappings map[int]*ProxyMapping
@@ -53,7 +55,7 @@ func (ps *ProxyServer) handleClientPacket(mapping *ProxyMapping, data []byte, cl
 
 	packet := make([]byte, 7+len(data))
 
-	packet[0] = PROXY_PROTOCOL_VERSION
+	packet[0] = PRUDP_SIMPLE_PROXY_PROTOCOL_VERSION
 	copy(packet[1:5], ip4)
 	binary.BigEndian.PutUint16(packet[5:7], uint16(clientAddr.Port))
 	copy(packet[7:], data)
