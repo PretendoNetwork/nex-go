@@ -130,7 +130,7 @@ func (ps *PRUDPServer) initPRUDPv1ConnectionSignatureKey() {
 
 func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, webSocketConnection *gws.Conn) error {
 	// * Check that the message is long enough for initial parsing
-	if len(packetData) < ps.ProxyProtocol.HeaderSize()+2 {
+	if len(packetData) < 2 {
 		return nil
 	}
 
