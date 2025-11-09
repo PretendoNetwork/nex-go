@@ -1,6 +1,7 @@
 package types
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"strings"
@@ -89,6 +90,27 @@ func (s *String) Deref() RVType {
 // String returns a string representation of the struct
 func (s String) String() string {
 	return fmt.Sprintf("%q", string(s))
+}
+
+// Scan implements sql.Scanner for database/sql
+func (s *String) Scan(value any) error {
+	if value == nil {
+		*s = String("")
+		return nil
+	}
+
+	if _, ok := value.(string); !ok {
+		return fmt.Errorf("cannot scan %T into String", value)
+	}
+
+	*s = String(value.(string))
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (s String) Value() (driver.Value, error) {
+	return string(s), nil
 }
 
 // NewString returns a new String
