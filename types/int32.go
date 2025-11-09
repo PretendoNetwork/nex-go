@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // Int32 is a type alias for the Go basic type int32 for use as an RVType
 type Int32 int32
@@ -53,6 +57,34 @@ func (i32 *Int32) Deref() RVType {
 // String returns a string representation of the Int32
 func (i32 Int32) String() string {
 	return fmt.Sprintf("%d", i32)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (i32 *Int32) Scan(value any) error {
+	if value == nil {
+		*i32 = Int32(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64:
+		*i32 = Int32(v)
+	case string:
+		parsed, err := strconv.ParseInt(v, 10, 32)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into Int32: %w", v, err)
+		}
+		*i32 = Int32(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into Int32", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (i32 Int32) Value() (driver.Value, error) {
+	return int64(i32), nil
 }
 
 // NewInt32 returns a new Int32
