@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
 )
@@ -69,6 +70,27 @@ func (qb *QBuffer) Deref() RVType {
 // String returns a string representation of the struct
 func (qb QBuffer) String() string {
 	return hex.EncodeToString(qb)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (qb *QBuffer) Scan(value any) error {
+	if value == nil {
+		*qb = QBuffer([]byte{})
+		return nil
+	}
+
+	if _, ok := value.([]byte); !ok {
+		return fmt.Errorf("cannot scan %T into QBuffer", value)
+	}
+
+	*qb = QBuffer(value.([]byte))
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (qb QBuffer) Value() (driver.Value, error) {
+	return []byte(qb), nil
 }
 
 // NewQBuffer returns a new QBuffer
