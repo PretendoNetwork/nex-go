@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // Int8 is a type alias for the Go basic type int8 for use as an RVType
 type Int8 int8
@@ -53,6 +57,34 @@ func (i8 *Int8) Deref() RVType {
 // String returns a string representation of the Int8
 func (i8 Int8) String() string {
 	return fmt.Sprintf("%d", i8)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (i8 *Int8) Scan(value any) error {
+	if value == nil {
+		*i8 = Int8(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64:
+		*i8 = Int8(v)
+	case string:
+		parsed, err := strconv.ParseInt(v, 10, 8)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into Int8: %w", v, err)
+		}
+		*i8 = Int8(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into Int8", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (i8 Int8) Value() (driver.Value, error) {
+	return int64(i8), nil
 }
 
 // NewInt8 returns a new Int8
