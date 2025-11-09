@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // Int16 is a type alias for the Go basic type int16 for use as an RVType
 type Int16 int16
@@ -53,6 +57,34 @@ func (i16 *Int16) Deref() RVType {
 // String returns a string representation of the Int16
 func (i16 Int16) String() string {
 	return fmt.Sprintf("%d", i16)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (i16 *Int16) Scan(value any) error {
+	if value == nil {
+		*i16 = Int16(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64:
+		*i16 = Int16(v)
+	case string:
+		parsed, err := strconv.ParseInt(v, 10, 16)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into Int16: %w", v, err)
+		}
+		*i16 = Int16(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into Int16", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (i16 Int16) Value() (driver.Value, error) {
+	return int64(i16), nil
 }
 
 // NewInt16 returns a new Int16
