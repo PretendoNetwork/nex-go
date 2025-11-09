@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // UInt64 is a type alias for the Go basic type uint64 for use as an RVType
 type UInt64 uint64
@@ -53,6 +57,41 @@ func (u64 *UInt64) Deref() RVType {
 // String returns a string representation of the UInt64
 func (u64 UInt64) String() string {
 	return fmt.Sprintf("%d", u64)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (u64 *UInt64) Scan(value any) error {
+	if value == nil {
+		*u64 = UInt64(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64: // * Postgres might store/return the data as an int64
+		*u64 = UInt64(uint64(v))
+	case []byte, string: // * Otherwise, it's stored/returned as a string
+		var str string
+		if b, ok := v.([]byte); ok {
+			str = string(b)
+		} else {
+			str = v.(string)
+		}
+
+		parsed, err := strconv.ParseUint(str, 10, 64)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into UInt64: %w", v, err)
+		}
+		*u64 = UInt64(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into UInt64", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (u64 UInt64) Value() (driver.Value, error) {
+	return fmt.Sprintf("%d", uint64(u64)), nil
 }
 
 // NewUInt64 returns a new UInt64
