@@ -1,11 +1,13 @@
 package types
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"encoding/csv"
 	"encoding/hex"
 	"fmt"
-	"strconv"
 	"strings"
+	"time"
 )
 
 // List is an implementation of rdv::qList.
@@ -121,15 +123,13 @@ func (l List[T]) String() string {
 	return fmt.Sprintf("%v", ([]T)(l))
 }
 
-// Scan implements the sql.Scanner interface for List[T]
-//
-// Only designed for Postgres databases
+// Scan implements sql.Scanner for database/sql
 func (l *List[T]) Scan(value any) error {
 	if value == nil {
+		*l = List[T]{}
 		return nil
 	}
 
-	// * Ensure the value is in the right format
 	var pgArray string
 	switch v := value.(type) {
 	case []byte:
@@ -140,244 +140,129 @@ func (l *List[T]) Scan(value any) error {
 		return fmt.Errorf("unsupported Scan type for List: %T", value)
 	}
 
-	// * Postgres formats arrays in curly braces,
-	// * such as `{"string1"}`
 	if len(pgArray) < 2 || pgArray[0] != '{' || pgArray[len(pgArray)-1] != '}' {
 		return fmt.Errorf("invalid PostgreSQL array format: %s", pgArray)
 	}
 
-	var zero T
-	isByteaArray := false
+	pgArray = pgArray[1 : len(pgArray)-1]
 
-	pgArray = strings.TrimSuffix(pgArray, "}")
-	pgArray = strings.TrimPrefix(pgArray, "{")
-
-	// * Postgres formats bytea colums as arrays
-	// * of hex strings. Which makes this a list
-	// * of arrays, formatted like
-	// * `{{"\\x35","\\x36","\\x37","\\x38","\\x39"},{"\\x35","\\x36","\\x37","\\x38","\\x39"}}`
-	switch any(zero).(type) {
-	case Buffer, QBuffer:
-		// * Trim any extra off the ends, if exists.
-		// * Nested arrays, parsed later
-		pgArray = strings.TrimSuffix(pgArray, "}")
-		pgArray = strings.TrimPrefix(pgArray, "{")
-		isByteaArray = true
-	}
-
-	// * Bail if array is empty, who cares
 	if pgArray == "" {
+		*l = List[T]{}
 		return nil
 	}
 
 	var elements []string
-	var err error
 
-	if isByteaArray {
-		// * Arrays of bytea (byte slices) are handled as
-		// * nested arrays. Handle these as special cases
-		elements = strings.Split(pgArray, "},{")
-	} else {
-		// * Basic array. Go's CSV reader can handle these strings,
-		// * including strings which contain the delimiter. Such as:
-		// * `{"string1","string2","strings can have spaces, commas, etc."}`
+	if strings.HasPrefix(pgArray, "\"") {
 		reader := csv.NewReader(strings.NewReader(pgArray))
 		reader.Comma = ','
 
+		var err error
 		elements, err = reader.Read()
+
+		if err != nil {
+			return fmt.Errorf("failed to parse array elements: %w", err)
+		}
+	} else {
+		elements = strings.Split(pgArray, ",")
 	}
 
-	if err != nil {
-		return nil
+	var zero T
+	isByteaType := false
+
+	switch any(zero).(type) {
+	case Buffer, QBuffer:
+		isByteaType = true
 	}
 
 	result := make(List[T], 0, len(elements))
 
-	// * This is technically less effecient than running the
-	// * switch-case FIRST, and using a for loop inside each
-	// * case block. But that's ugly. This is fine for now.
-	// * This also assumes all numbers are within range, which
-	// * they should be for our purposes but this is not guaranteed
 	for _, element := range elements {
-		// * Only support basic/simple types. Nothing else can
-		// * be safely stored in Postgres. Complex types should
-		// * opt for JSON mode
-		switch any(zero).(type) {
-		case String:
-			result = append(result, any(String(element)).(T))
-		case Bool:
-			b := element == "t" || element == "true"
-			result = append(result, any(Bool(b)).(T))
-		case Double:
-			d, err := strconv.ParseFloat(element, 64)
-			if err != nil {
-				return err
-			}
+		var new T
+		ptr := any(&new)
 
-			result = append(result, any(Double(d)).(T))
-		case Float:
-			f, err := strconv.ParseFloat(element, 32)
-			if err != nil {
-				return err
-			}
+		if scanner, ok := ptr.(sql.Scanner); ok {
+			var scanValue any = element
 
-			result = append(result, any(Float(f)).(T))
-		case Int8:
-			i, err := strconv.ParseInt(element, 10, 8)
-			if err != nil {
-				return err
-			}
+			if isByteaType {
+				hexStr := element
+				hexStr = strings.TrimPrefix(hexStr, "\\\\x")
+				hexStr = strings.TrimPrefix(hexStr, "\\x")
+				bytes, err := hex.DecodeString(hexStr)
 
-			result = append(result, any(Int8(i)).(T))
-		case Int16:
-			i, err := strconv.ParseInt(element, 10, 16)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(Int16(i)).(T))
-		case Int32:
-			i, err := strconv.ParseInt(element, 10, 32)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(Int32(i)).(T))
-		case Int64:
-			i, err := strconv.ParseInt(element, 10, 64)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(Int64(i)).(T))
-		case UInt8:
-			i, err := strconv.ParseUint(element, 10, 8)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(UInt8(i)).(T))
-		case UInt16:
-			i, err := strconv.ParseUint(element, 10, 16)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(UInt16(i)).(T))
-		case UInt32:
-			i, err := strconv.ParseUint(element, 10, 32)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(UInt32(i)).(T))
-		case UInt64:
-			i, err := strconv.ParseUint(element, 10, 64)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(UInt64(i)).(T))
-		case PID:
-			i, err := strconv.ParseUint(element, 10, 64)
-			if err != nil {
-				return err
-			}
-
-			result = append(result, any(PID(i)).(T))
-		case QUUID:
-			// * QUUID is a type alias of []byte, but we assume
-			// * that the column it was stored in was either a
-			// * `text` or `uuid` type
-			// TODO - Support `bytea` columns too if possible?
-			quuid := NewQUUID([]byte{})
-			quuid.FromString(element)
-
-			result = append(result, any(quuid).(T))
-		case Buffer, QBuffer:
-			// * Buffer and QBuffer are type aliases of []byte.
-			// * When []byte is used in Postgres, the data is
-			// * stored in a somewhat odd way. Every byte is
-			// * encoded into the numeric string it represents
-			// * and then that string is converted into hex and
-			// * stored as a Postgres list.
-			// *
-			// * For example, assume the following is used to
-			// * create a Buffer: `NewBuffer([]byte{0, 1, 2, 3, 4})`
-			// *
-			// * When this is sent to `List.Scan`, the data is:
-			// * `[123 123 34 92 92 120 51 48 34 44 34 92 92 120
-			// *   51 49 34 44 34 92 92 120 51 50 34 44 34 92 92
-			// *   120 51 51 34 44 34 92 92 120 51 52 34 125 125]`
-			// *
-			// * When converted to a `string``, this becomes:
-			// * `{{"\\x30","\\x31","\\x32","\\x33","\\x34"}}`
-			// *
-			// * The actual `Buffer` value in Postgres is the
-			// * byte list `{"\\x30","\\x31","\\x32","\\x33","\\x34"}`
-			// *
-			// * Each element in this list is a byte for the ASCII
-			// * value of the real number (`30` -> `0`, `31` -> `1`, etc.)
-			// *
-			// * The same goes for higher values as well. The byte
-			// * `0xFF` is stored as `"\\x323535"` (the string `255`)
-			// *
-			// * To get the real values, we must first decode the string
-			// * back into ASCII, and then convert the ASCII to a number
-			// *
-			// * Since the `byteStrings` will always represent bytes in a
-			// * standard format, we can safely just split on `,`
-			byteStrings := strings.Split(element, ",")
-			bytes := make([]byte, 0, len(byteStrings))
-
-			for _, byteString := range byteStrings {
-				byteString = strings.TrimPrefix(byteString, "\"")
-				byteString = strings.TrimSuffix(byteString, "\"")
-				byteString = strings.TrimPrefix(byteString, "\\\\x")
-				asciiBytes, err := hex.DecodeString(byteString)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to decode hex for bytea element %q: %w", element, err)
 				}
 
-				char, err := strconv.ParseUint(string(asciiBytes), 10, 8)
-				if err != nil {
-					return err
-				}
-
-				bytes = append(bytes, byte(char))
+				scanValue = bytes
 			}
 
-			switch any(zero).(type) {
-			case Buffer:
-				result = append(result, any(Buffer(bytes)).(T))
-			case QBuffer:
-				result = append(result, any(QBuffer(bytes)).(T))
-			}
-		case DateTime:
-			dt := NewDateTime(0)
-			if err := dt.scanSQLString(element); err != nil {
-				return err
-			}
-			result = append(result, any(dt).(T))
-		case QResult:
-			i, err := strconv.ParseUint(element, 10, 32)
-			if err != nil {
-				return err
+			if err := scanner.Scan(scanValue); err != nil {
+				return fmt.Errorf("failed to scan element: %w", err)
 			}
 
-			result = append(result, any(QResult(i)).(T))
-		case StationURL:
-			stationURL := NewStationURL("")
-			stationURL.SetURL(element)
-			stationURL.Parse()
-			result = append(result, any(stationURL).(T))
-		default:
-			return fmt.Errorf("unsupported List element type: %T", zero)
+			result = append(result, new)
+		} else {
+			return fmt.Errorf("list element type %T does not implement sql.Scanner", zero)
 		}
 	}
 
 	*l = result
+
 	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (l List[T]) Value() (driver.Value, error) {
+	if len(l) == 0 {
+		return "{}", nil
+	}
+
+	var b strings.Builder
+	b.WriteString("{")
+
+	for i, new := range l {
+		if i > 0 {
+			b.WriteString(",")
+		}
+
+		if valuer, ok := any(new).(driver.Valuer); ok {
+			v, err := valuer.Value()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get value for element %d: %w", i, err)
+			}
+
+			switch val := v.(type) {
+			case string:
+				escaped := strings.ReplaceAll(val, "\\", "\\\\")
+				escaped = strings.ReplaceAll(escaped, "\"", "\\\"")
+
+				b.WriteString("\"")
+				b.WriteString(escaped)
+				b.WriteString("\"")
+			case int64, float64, bool:
+				b.WriteString(fmt.Sprintf("%v", val))
+			case []byte:
+				b.WriteString("\"\\\\x")
+				b.WriteString(hex.EncodeToString(val))
+				b.WriteString("\"")
+			case time.Time:
+				b.WriteString("\"")
+				b.WriteString(val.Format("2006-01-02 15:04:05"))
+				b.WriteString("\"")
+			case nil:
+				b.WriteString("NULL")
+			default:
+				return nil, fmt.Errorf("unsupported value type %T for element %d", val, i)
+			}
+		} else {
+			return nil, fmt.Errorf("element type %T does not implement driver.Valuer", new)
+		}
+	}
+
+	b.WriteString("}")
+
+	return b.String(), nil
 }
 
 // NewList returns a new List of the provided type
