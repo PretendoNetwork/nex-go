@@ -3,13 +3,19 @@ package nex
 import (
 	"bytes"
 	"crypto/rand"
+	"expvar"
 	"fmt"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 	"github.com/lxzan/gws"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // PRUDPServer represents a bare-bones PRUDP server
@@ -28,6 +34,64 @@ type PRUDPServer struct {
 	PRUDPV0Settings               *PRUDPV0Settings
 	PRUDPV1Settings               *PRUDPV1Settings
 	UseVerboseRMC                 bool
+}
+
+// EnableMetrics enables the net/http/pprof server at the specified address.
+// This exposes standard pprof profiles (CPU, heap, goroutine, etc.) at /debug/pprof/
+// and custom metrics at /debug/vars. Also enables a prometheus exporter at /metrics
+func (ps *PRUDPServer) EnableMetrics(addr string) {
+	endpointConnections := promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "prudp_endpoint_connections",
+			Help: "Number of active connections per PRUDP endpoint",
+		},
+		[]string{"endpoint_id"},
+	)
+
+	totalConnections := promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "prudp_total_connections",
+			Help: "Total number of active PRUDP connections across all endpoints",
+		},
+	)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			total := 0
+			ps.Endpoints.Each(func(key uint8, endpoint *PRUDPEndPoint) bool {
+				count := endpoint.Connections.Size()
+				total += count
+				endpointConnections.WithLabelValues(fmt.Sprintf("prudp_endpoint_%d", endpoint.StreamID)).Set(float64(count))
+				return false
+			})
+			totalConnections.Set(float64(total))
+		}
+	}()
+
+	expvar.Publish("endpoint_connections", expvar.Func(func() any {
+		result := make(map[string]any)
+
+		endpointCounts := make(map[string]int)
+
+		ps.Endpoints.Each(func(_ uint8, endpoint *PRUDPEndPoint) bool {
+			endpointCounts[fmt.Sprintf("prudp_endpoint_%d", endpoint.StreamID)] = endpoint.Connections.Size()
+			return false
+		})
+
+		result["prudp_endpoint_connections"] = endpointCounts
+
+		return result
+	}))
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			logger.Errorf("pprof server failed: %v", err)
+		}
+	}()
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server
