@@ -13,6 +13,8 @@ import (
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 	"github.com/lxzan/gws"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -38,8 +40,39 @@ type PRUDPServer struct {
 // This exposes standard pprof profiles (CPU, heap, goroutine, etc.) at /debug/pprof/
 // and custom metrics at /debug/vars. Also enables a prometheus exporter at /metrics
 func (ps *PRUDPServer) EnableMetrics(addr string) {
-	expvar.Publish("endpoint_connections", expvar.Func(func() interface{} {
-		result := make(map[string]interface{})
+	endpointConnections := promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "prudp_endpoint_connections",
+			Help: "Number of active connections per PRUDP endpoint",
+		},
+		[]string{"endpoint_id"},
+	)
+
+	totalConnections := promauto.NewGauge(
+		prometheus.GaugeOpts{
+			Name: "prudp_total_connections",
+			Help: "Total number of active PRUDP connections across all endpoints",
+		},
+	)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			total := 0
+			ps.Endpoints.Each(func(key uint8, endpoint *PRUDPEndPoint) bool {
+				count := endpoint.Connections.Size()
+				total += count
+				endpointConnections.WithLabelValues(fmt.Sprintf("prudp_endpoint_%d", endpoint.StreamID)).Set(float64(count))
+				return false
+			})
+			totalConnections.Set(float64(total))
+		}
+	}()
+
+	expvar.Publish("endpoint_connections", expvar.Func(func() any {
+		result := make(map[string]any)
 
 		endpointCounts := make(map[string]int)
 
