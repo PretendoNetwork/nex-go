@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // Float is a type alias for the Go basic type float32 for use as an RVType
 type Float float32
@@ -53,6 +57,34 @@ func (f *Float) Deref() RVType {
 // String returns a string representation of the Float
 func (f Float) String() string {
 	return fmt.Sprintf("%f", f)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (f *Float) Scan(value any) error {
+	if value == nil {
+		*f = Float(0.0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case float64:
+		*f = Float(value.(float64))
+	case string:
+		parsed, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into Float: %w", v, err)
+		}
+		*f = Float(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into Float", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (f Float) Value() (driver.Value, error) {
+	return float64(f), nil
 }
 
 // NewFloat returns a new Float

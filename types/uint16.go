@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // UInt16 is a type alias for the Go basic type uint16 for use as an RVType
 type UInt16 uint16
@@ -53,6 +57,34 @@ func (u16 *UInt16) Deref() RVType {
 // String returns a string representation of the UInt16
 func (u16 UInt16) String() string {
 	return fmt.Sprintf("%d", u16)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (u16 *UInt16) Scan(value any) error {
+	if value == nil {
+		*u16 = UInt16(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64:
+		*u16 = UInt16(v)
+	case string:
+		parsed, err := strconv.ParseUint(v, 10, 16)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into UInt16: %w", v, err)
+		}
+		*u16 = UInt16(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into UInt16", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (u16 UInt16) Value() (driver.Value, error) {
+	return int64(u16), nil
 }
 
 // NewUInt16 returns a new UInt16

@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // UInt32 is a type alias for the Go basic type uint32 for use as an RVType
 type UInt32 uint32
@@ -53,6 +57,34 @@ func (u32 *UInt32) Deref() RVType {
 // String returns a string representation of the UInt32
 func (u32 UInt32) String() string {
 	return fmt.Sprintf("%d", u32)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (u32 *UInt32) Scan(value any) error {
+	if value == nil {
+		*u32 = UInt32(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64:
+		*u32 = UInt32(v)
+	case string:
+		parsed, err := strconv.ParseUint(v, 10, 32)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into UInt32: %w", v, err)
+		}
+		*u32 = UInt32(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into UInt32", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (u32 UInt32) Value() (driver.Value, error) {
+	return int64(u32), nil
 }
 
 // NewUInt32 returns a new UInt32

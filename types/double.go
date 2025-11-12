@@ -1,6 +1,10 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+	"strconv"
+)
 
 // Double is a type alias for the Go basic type float64 for use as an RVType
 type Double float64
@@ -53,6 +57,34 @@ func (d *Double) Deref() RVType {
 // String returns a string representation of the Double
 func (d Double) String() string {
 	return fmt.Sprintf("%f", d)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (d *Double) Scan(value any) error {
+	if value == nil {
+		*d = Double(0.0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case float64:
+		*d = Double(v)
+	case string:
+		parsed, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into Double: %w", v, err)
+		}
+		*d = Double(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into Double", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (d Double) Value() (driver.Value, error) {
+	return float64(d), nil
 }
 
 // NewDouble returns a new Double

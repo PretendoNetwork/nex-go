@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
 )
@@ -69,6 +70,27 @@ func (b *Buffer) Deref() RVType {
 // String returns a string representation of the struct
 func (b Buffer) String() string {
 	return hex.EncodeToString(b)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (b *Buffer) Scan(value any) error {
+	if value == nil {
+		*b = Buffer([]byte{})
+		return nil
+	}
+
+	if _, ok := value.([]byte); !ok {
+		return fmt.Errorf("cannot scan %T into Buffer", value)
+	}
+
+	*b = Buffer(value.([]byte))
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (b Buffer) Value() (driver.Value, error) {
+	return []byte(b), nil
 }
 
 // NewBuffer returns a new Buffer

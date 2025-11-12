@@ -1,6 +1,9 @@
 package types
 
-import "fmt"
+import (
+	"database/sql/driver"
+	"fmt"
+)
 
 // Bool is a type alias for the Go basic type bool for use as an RVType
 type Bool bool
@@ -53,6 +56,30 @@ func (b *Bool) Deref() RVType {
 // String returns a string representation of the Bool
 func (b Bool) String() string {
 	return fmt.Sprintf("%t", b)
+}
+
+// Scan implements sql.Scanner for database/sql
+func (b *Bool) Scan(value any) error {
+	if value == nil {
+		*b = Bool(false)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case bool:
+		*b = Bool(v)
+	case string:
+		*b = Bool(v == "t" || v == "true")
+	default:
+		return fmt.Errorf("cannot scan %T into Bool", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (b Bool) Value() (driver.Value, error) {
+	return bool(b), nil
 }
 
 // NewBool returns a new Bool

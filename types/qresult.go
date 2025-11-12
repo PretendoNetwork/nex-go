@@ -1,7 +1,9 @@
 package types
 
 import (
+	"database/sql/driver"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -90,6 +92,34 @@ func (r QResult) FormatToString(indentationLevel int) string {
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
+}
+
+// Scan implements sql.Scanner for database/sql
+func (r *QResult) Scan(value any) error {
+	if value == nil {
+		*r = QResult(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64:
+		*r = QResult(v)
+	case string:
+		parsed, err := strconv.ParseUint(v, 10, 32)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into QResult: %w", v, err)
+		}
+		*r = QResult(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into QResult", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (r QResult) Value() (driver.Value, error) {
+	return int64(r), nil
 }
 
 // NewQResult returns a new QResult

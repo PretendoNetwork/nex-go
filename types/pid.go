@@ -1,7 +1,9 @@
 package types
 
 import (
+	"database/sql/driver"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -87,6 +89,41 @@ func (p PID) FormatToString(indentationLevel int) string {
 	b.WriteString(fmt.Sprintf("%s}", indentationEnd))
 
 	return b.String()
+}
+
+// Scan implements sql.Scanner for database/sql
+func (p *PID) Scan(value any) error {
+	if value == nil {
+		*p = PID(0)
+		return nil
+	}
+
+	switch v := value.(type) {
+	case int64: // * Postgres might store/return the data as an int64
+		*p = PID(uint64(v))
+	case []byte, string: // * Otherwise, it's stored/returned as a string
+		var str string
+		if b, ok := v.([]byte); ok {
+			str = string(b)
+		} else {
+			str = v.(string)
+		}
+
+		parsed, err := strconv.ParseUint(str, 10, 64)
+		if err != nil {
+			return fmt.Errorf("cannot parse string %q into PID: %w", v, err)
+		}
+		*p = PID(parsed)
+	default:
+		return fmt.Errorf("cannot scan %T into PID", value)
+	}
+
+	return nil
+}
+
+// Value implements driver.Valuer for database/sql
+func (p PID) Value() (driver.Value, error) {
+	return fmt.Sprintf("%d", uint64(p)), nil
 }
 
 // NewPID returns a PID instance. The real size of PID depends on the client version
