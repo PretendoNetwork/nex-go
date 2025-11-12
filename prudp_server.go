@@ -34,10 +34,10 @@ type PRUDPServer struct {
 	UseVerboseRMC                 bool
 }
 
-// EnablePPROF enables the net/http/pprof server at the specified port.
+// EnableMetrics enables the net/http/pprof server at the specified address.
 // This exposes standard pprof profiles (CPU, heap, goroutine, etc.) at /debug/pprof/
-// and custom metrics at /debug/vars.
-func (ps *PRUDPServer) EnablePPROF(addr string) {
+// and custom metrics at /debug/vars. Also enables a prometheus exporter at /metrics
+func (ps *PRUDPServer) EnableMetrics(addr string) {
 	expvar.Publish("endpoint_connections", expvar.Func(func() interface{} {
 		result := make(map[string]interface{})
 
