@@ -3,8 +3,11 @@ package nex
 import (
 	"bytes"
 	"crypto/rand"
+	"expvar"
 	"fmt"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"time"
 
@@ -28,6 +31,32 @@ type PRUDPServer struct {
 	PRUDPV0Settings               *PRUDPV0Settings
 	PRUDPV1Settings               *PRUDPV1Settings
 	UseVerboseRMC                 bool
+}
+
+// EnablePPROF enables the net/http/pprof server at the specified port.
+// This exposes standard pprof profiles (CPU, heap, goroutine, etc.) at /debug/pprof/
+// and custom metrics at /debug/vars.
+func (ps *PRUDPServer) EnablePPROF(port int) {
+	expvar.Publish("endpoint_connections", expvar.Func(func() interface{} {
+		result := make(map[string]interface{})
+
+		endpointCounts := make(map[string]int)
+
+		ps.Endpoints.Each(func(_ uint8, endpoint *PRUDPEndPoint) bool {
+			endpointCounts[fmt.Sprintf("prudp_endpoint_%d", endpoint.StreamID)] = endpoint.Connections.Size()
+			return false
+		})
+
+		result["prudp_endpoint_connections"] = endpointCounts
+
+		return result
+	}))
+
+	go func() {
+		if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), nil); err != nil {
+			logger.Errorf("pprof server failed: %v", err)
+		}
+	}()
 }
 
 // BindPRUDPEndPoint binds a provided PRUDPEndPoint to the server

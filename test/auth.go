@@ -20,6 +20,8 @@ func startAuthenticationServer() {
 
 	authEndpoint = nex.NewPRUDPEndPoint(1)
 
+	authServer.EnablePPROF(9090)
+
 	authEndpoint.AccountDetailsByPID = accountDetailsByPID
 	authEndpoint.AccountDetailsByUsername = accountDetailsByUsername
 	authEndpoint.ServerAccount = authenticationServerAccount
