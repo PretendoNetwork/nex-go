@@ -13,6 +13,7 @@ import (
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
 	"github.com/lxzan/gws"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // PRUDPServer represents a bare-bones PRUDP server
@@ -53,6 +54,7 @@ func (ps *PRUDPServer) EnablePPROF(port int) {
 	}))
 
 	go func() {
+		http.Handle("/metrics", promhttp.Handler())
 		if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), nil); err != nil {
 			logger.Errorf("pprof server failed: %v", err)
 		}
