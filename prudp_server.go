@@ -37,7 +37,7 @@ type PRUDPServer struct {
 // EnablePPROF enables the net/http/pprof server at the specified port.
 // This exposes standard pprof profiles (CPU, heap, goroutine, etc.) at /debug/pprof/
 // and custom metrics at /debug/vars.
-func (ps *PRUDPServer) EnablePPROF(port int) {
+func (ps *PRUDPServer) EnablePPROF(addr string) {
 	expvar.Publish("endpoint_connections", expvar.Func(func() interface{} {
 		result := make(map[string]interface{})
 
@@ -55,7 +55,7 @@ func (ps *PRUDPServer) EnablePPROF(port int) {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		if err := http.ListenAndServe(fmt.Sprintf("localhost:%d", port), nil); err != nil {
+		if err := http.ListenAndServe(addr, nil); err != nil {
 			logger.Errorf("pprof server failed: %v", err)
 		}
 	}()
