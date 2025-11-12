@@ -20,7 +20,7 @@ func startAuthenticationServer() {
 
 	authEndpoint = nex.NewPRUDPEndPoint(1)
 
-	authServer.EnableMetrics("localhost:9090")
+	authServer.EnableMetrics("0.0.0.0:9090")
 
 	authEndpoint.AccountDetailsByPID = accountDetailsByPID
 	authEndpoint.AccountDetailsByUsername = accountDetailsByUsername
