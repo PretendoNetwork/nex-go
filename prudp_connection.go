@@ -292,6 +292,7 @@ func NewPRUDPConnection(socket *SocketConnection) *PRUDPConnection {
 		incomingFragmentBuffers:             NewMutexMap[uint8, []byte](),
 		StationURLs:                         types.NewList[types.StationURL](),
 		mutex:                               &sync.Mutex{},
+		UnreliablePacketBaseKey:             make([]byte, md5.Size), // * Gets updated to the real value in SetSessionKey
 	}
 
 	return pc
