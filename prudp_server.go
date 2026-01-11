@@ -18,6 +18,34 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// EnableBasicUDPHealthCheck enables a basic UDP echo server
+// on the given port, used to check if the server is reachable
+// at all
+func EnableBasicUDPHealthCheck(port int) {
+	udpAddress, err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		panic(err)
+	}
+
+	socket, err := net.ListenUDP("udp", udpAddress)
+	if err != nil {
+		panic(err)
+	}
+
+	for i := 0; i < runtime.NumCPU(); i++ {
+		go func() {
+			buffer := make([]byte, 1024)
+
+			for {
+				n, clientAddr, err := socket.ReadFromUDP(buffer)
+				if err == nil {
+					socket.WriteToUDP(buffer[:n], clientAddr)
+				}
+			}
+		}()
+	}
+}
+
 // PRUDPServer represents a bare-bones PRUDP server
 type PRUDPServer struct {
 	udpSocket                     *net.UDPConn
