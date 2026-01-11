@@ -32,8 +32,6 @@ func EnableBasicUDPHealthCheck(port int) {
 		panic(err)
 	}
 
-	quit := make(chan struct{})
-
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go func() {
 			buffer := make([]byte, 1024)
@@ -46,8 +44,6 @@ func EnableBasicUDPHealthCheck(port int) {
 			}
 		}()
 	}
-
-	<-quit
 }
 
 // PRUDPServer represents a bare-bones PRUDP server
