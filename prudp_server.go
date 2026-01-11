@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/PretendoNetwork/nex-go/v2/constants"
+	"github.com/PretendoNetwork/nex-go/v2/proxy"
 	"github.com/lxzan/gws"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -62,6 +63,7 @@ type PRUDPServer struct {
 	PRUDPV0Settings               *PRUDPV0Settings
 	PRUDPV1Settings               *PRUDPV1Settings
 	UseVerboseRMC                 bool
+	ProxyProtocol                 proxy.ProxyProtocol
 }
 
 // EnableMetrics enables the net/http/pprof server at the specified address.
@@ -224,7 +226,12 @@ func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, 
 		return nil
 	}
 
-	readStream := NewByteStreamIn(packetData, ps.LibraryVersions, ps.ByteStreamSettings)
+	// * The constant calls to NewSocketConnection is just moved from
+	// * ps.processPacket, but should we really be doing that? Seems wasteful
+	// TODO - Proxied mode doesn't work on WebSocket connections
+	socket := NewSocketConnection(ps, address, webSocketConnection)
+	realPacketPayload, _ := ps.ProxyProtocol.Parse(socket.Address, socket.ProxyAddress, packetData)
+	readStream := NewByteStreamIn(realPacketPayload, ps.LibraryVersions, ps.ByteStreamSettings)
 
 	var packets []PRUDPPacketInterface
 
@@ -241,36 +248,36 @@ func (ps *PRUDPServer) handleSocketMessage(packetData []byte, address net.Addr, 
 	}
 
 	for _, packet := range packets {
-		go ps.processPacket(packet, address, webSocketConnection)
+		go ps.processPacket(packet, socket)
 	}
 
 	return nil
 }
 
-func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Addr, webSocketConnection *gws.Conn) {
+func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, socket *SocketConnection) {
 	if !ps.Endpoints.Has(packet.DestinationVirtualPortStreamID()) {
-		logger.Warningf("Client %s trying to connect to unbound PRUDPEndPoint %d", address.String(), packet.DestinationVirtualPortStreamID())
+		logger.Warningf("Client %s trying to connect to unbound PRUDPEndPoint %d", socket.Address.String(), packet.DestinationVirtualPortStreamID())
 		return
 	}
 
 	endpoint, ok := ps.Endpoints.Get(packet.DestinationVirtualPortStreamID())
 	if !ok {
-		logger.Warningf("Client %s trying to connect to unbound PRUDPEndPoint %d", address.String(), packet.DestinationVirtualPortStreamID())
+		logger.Warningf("Client %s trying to connect to unbound PRUDPEndPoint %d", socket.Address.String(), packet.DestinationVirtualPortStreamID())
 		return
 	}
 
 	if packet.DestinationVirtualPortStreamType() != packet.SourceVirtualPortStreamType() {
-		logger.Warningf("Client %s trying to use non matching destination and source stream types %d and %d", address.String(), packet.DestinationVirtualPortStreamType(), packet.SourceVirtualPortStreamType())
+		logger.Warningf("Client %s trying to use non matching destination and source stream types %d and %d", socket.Address.String(), packet.DestinationVirtualPortStreamType(), packet.SourceVirtualPortStreamType())
 		return
 	}
 
 	if packet.DestinationVirtualPortStreamType() > constants.StreamTypeRelay {
-		logger.Warningf("Client %s trying to use invalid to destination stream type %d", address.String(), packet.DestinationVirtualPortStreamType())
+		logger.Warningf("Client %s trying to use invalid to destination stream type %d", socket.Address.String(), packet.DestinationVirtualPortStreamType())
 		return
 	}
 
 	if packet.SourceVirtualPortStreamType() > constants.StreamTypeRelay {
-		logger.Warningf("Client %s trying to use invalid to source stream type %d", address.String(), packet.DestinationVirtualPortStreamType())
+		logger.Warningf("Client %s trying to use invalid to source stream type %d", socket.Address.String(), packet.DestinationVirtualPortStreamType())
 		return
 	}
 
@@ -288,11 +295,10 @@ func (ps *PRUDPServer) processPacket(packet PRUDPPacketInterface, address net.Ad
 	}
 
 	if invalidSourcePort {
-		logger.Warningf("Client %s trying to use invalid to source port number %d. Port number too large", address.String(), sourcePortNumber)
+		logger.Warningf("Client %s trying to use invalid to source port number %d. Port number too large", socket.Address.String(), sourcePortNumber)
 		return
 	}
 
-	socket := NewSocketConnection(ps, address, webSocketConnection)
 	endpoint.processPacket(packet, socket)
 }
 
@@ -396,13 +402,14 @@ func (ps *PRUDPServer) sendPacket(packet PRUDPPacketInterface) {
 // SendRaw will send the given socket the provided packet
 func (ps *PRUDPServer) SendRaw(socket *SocketConnection, data []byte) {
 	// TODO - Should this return the error too?
-
 	var err error
 
-	if address, ok := socket.Address.(*net.UDPAddr); ok && ps.udpSocket != nil {
-		_, err = ps.udpSocket.WriteToUDP(data, address)
+	sendData, _ := ps.ProxyProtocol.Encode(socket.Address, socket.ProxyAddress, data)
+
+	if address, ok := socket.ProxyAddress.(*net.UDPAddr); ok && ps.udpSocket != nil {
+		_, err = ps.udpSocket.WriteToUDP(sendData, address)
 	} else if socket.WebSocketConnection != nil {
-		err = socket.WebSocketConnection.WriteMessage(gws.OpcodeBinary, data)
+		err = socket.WebSocketConnection.WriteMessage(gws.OpcodeBinary, sendData)
 	}
 
 	if err != nil {
@@ -436,5 +443,6 @@ func NewPRUDPServer() *PRUDPServer {
 		ByteStreamSettings: NewByteStreamSettings(),
 		PRUDPV0Settings:    NewPRUDPV0Settings(),
 		PRUDPV1Settings:    NewPRUDPV1Settings(),
+		ProxyProtocol:      proxy.NewDummyProxyProtocol(),
 	}
 }
