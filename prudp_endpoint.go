@@ -695,6 +695,37 @@ func (pep *PRUDPEndPoint) sendPing(connection *PRUDPConnection) {
 	pep.Server.sendPacket(ping)
 }
 
+// Disconnect sends a disconnect packet to the connection. The connection
+// is cleaned up once it times out or acknowledges the disconnect.
+func (pep *PRUDPEndPoint) Disconnect(connection *PRUDPConnection) {
+	var disconnect PRUDPPacketInterface
+
+	switch connection.DefaultPRUDPVersion {
+	case 0:
+		disconnect, _ = NewPRUDPPacketV0(pep.Server, connection, nil)
+	case 1:
+		disconnect, _ = NewPRUDPPacketV1(pep.Server, connection, nil)
+	case 2:
+		disconnect, _ = NewPRUDPPacketLite(pep.Server, connection, nil)
+	}
+
+	disconnect.SetType(constants.DisconnectPacket)
+	disconnect.SetSourceVirtualPortStreamType(connection.StreamType)
+	disconnect.SetSourceVirtualPortStreamID(pep.StreamID)
+	disconnect.SetDestinationVirtualPortStreamType(connection.StreamType)
+	disconnect.SetDestinationVirtualPortStreamID(connection.StreamID)
+	disconnect.SetSubstreamID(0)
+
+	pep.Server.sendPacket(disconnect)
+
+	discriminator := fmt.Sprintf("%s-%d-%d", connection.Address().String(), connection.StreamType, pep.StreamID)
+	
+	connection.cleanup()
+	pep.Connections.Delete(discriminator)
+
+	pep.emit("disconnect", disconnect)
+}
+
 // FindConnectionByID returns the PRUDP client connected with the given connection ID
 func (pep *PRUDPEndPoint) FindConnectionByID(connectedID uint32) *PRUDPConnection {
 	var connection *PRUDPConnection
