@@ -260,7 +260,6 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 	ack.SetDestinationVirtualPortStreamType(packet.SourceVirtualPortStreamType())
 	ack.SetDestinationVirtualPortStreamID(packet.SourceVirtualPortStreamID())
 	ack.SetConnectionSignature(connectionSignature)
-	ack.SetSignature(ack.CalculateSignature([]byte{}, []byte{}))
 
 	if ack, ok := ack.(*PRUDPPacketV1); ok {
 		// * Negotiate with the client what we support
@@ -268,6 +267,8 @@ func (pep *PRUDPEndPoint) handleSyn(packet PRUDPPacketInterface) {
 		ack.MinorVersion = packet.(*PRUDPPacketV1).MinorVersion             // * No change needed, we can just support what the client wants
 		ack.SupportedFunctions = pep.Server.SupportedFunctions & packet.(*PRUDPPacketV1).SupportedFunctions
 	}
+
+	ack.SetSignature(ack.CalculateSignature([]byte{}, []byte{}))
 
 	connection.ConnectionState = StateConnecting
 
