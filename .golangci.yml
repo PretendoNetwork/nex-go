@@ -1,15 +1,26 @@
+version: "2"
 linters:
   enable:
     - revive
-linters-settings:
-  revive:
-    ignore-generated-header: true
-    severity: error
-    rules:
-      - name: exported
-      - name: unexported-naming
-      - name: unexported-return
-      - name: package-comments
-      - name: var-naming
-issues:
-  exclude-use-default: false
+  settings:
+    revive:
+      severity: error
+      rules:
+        - name: exported
+        - name: unexported-naming
+        - name: unexported-return
+        - name: package-comments
+        - name: var-naming
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
