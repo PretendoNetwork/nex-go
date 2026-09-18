@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
+	"slices"
 )
 
 // QBuffer is an implementation of rdv::qBuffer.
@@ -79,11 +80,14 @@ func (qb *QBuffer) Scan(value any) error {
 		return nil
 	}
 
-	if _, ok := value.([]byte); !ok {
+	bytes, ok := value.([]byte)
+	if !ok {
 		return fmt.Errorf("cannot scan %T into QBuffer", value)
 	}
 
-	*qb = QBuffer(value.([]byte))
+	// * The database driver seems to reuse this buffer, cloning
+	// * here stops it from leaking data from other calls
+	*qb = QBuffer(slices.Clone(bytes))
 
 	return nil
 }
