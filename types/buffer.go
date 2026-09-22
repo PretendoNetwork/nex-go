@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/hex"
 	"fmt"
+	"slices"
 )
 
 // Buffer is an implementation of rdv::Buffer.
@@ -79,11 +80,14 @@ func (b *Buffer) Scan(value any) error {
 		return nil
 	}
 
-	if _, ok := value.([]byte); !ok {
+	bytes, ok := value.([]byte)
+	if !ok {
 		return fmt.Errorf("cannot scan %T into Buffer", value)
 	}
 
-	*b = Buffer(value.([]byte))
+	// * The database driver seems to reuse this buffer, cloning
+	// * here stops it from leaking data from other calls
+	*b = Buffer(slices.Clone(bytes))
 
 	return nil
 }
