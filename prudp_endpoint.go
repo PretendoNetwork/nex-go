@@ -141,8 +141,11 @@ func (pep *PRUDPEndPoint) processPacket(packet PRUDPPacketInterface, socket *Soc
 		return connection
 	})
 
-	connection.Lock()
-	defer connection.Unlock()
+	// * Skip connection locks on incoming PING packets to give them priority
+	if packet.Type() != constants.PingPacket || !packet.HasFlag(constants.PacketFlagNeedsAck) {
+		connection.Lock()
+		defer connection.Unlock()
+	}
 
 	packet.SetSender(connection)
 
