@@ -21,6 +21,12 @@ func (e Error) Error() string {
 	return fmt.Sprintf("[%s] %s", ResultCodeToName(resultCode), e.Message)
 }
 
+// Equals checks if the input is equal in value to the current instance.
+// The error mask is ignored on both sides of the check
+func (e Error) Equals(resultCode uint32) bool {
+	return e.ResultCode&^uint32(errorMask) == resultCode&^uint32(errorMask)
+}
+
 // NewError returns a new NEX error with a RDV result code
 func NewError(resultCode uint32, message string) *Error {
 	if int(resultCode)&errorMask == 0 {
