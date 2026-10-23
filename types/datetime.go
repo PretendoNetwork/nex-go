@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/PretendoNetwork/nex-go/v2/constants"
 )
 
 // DateTime is an implementation of rdv::DateTime.
@@ -125,6 +127,26 @@ func (dt DateTime) Standard() time.Time {
 	)
 }
 
+// IsInvalidDateTime checks if the value is equal to the constant INVALID_DATE_TIME
+func (dt DateTime) IsInvalidDateTime() bool {
+	return uint64(dt) == constants.InvalidDateTime
+}
+
+// IsFuture checks if the value is equal to the constant Future
+func (dt DateTime) IsFuture() bool {
+	return uint64(dt) == constants.Future
+}
+
+// IsPermanentDateTime checks if the value is equal to the constant PERMANENT_DATE_TIME
+func (dt DateTime) IsPermanentDateTime() bool {
+	return uint64(dt) == constants.PermanentDateTime
+}
+
+// IsNever checks if the value is equal to the constant Never
+func (dt DateTime) IsNever() bool {
+	return uint64(dt) == constants.Never
+}
+
 // String returns a string representation of the struct
 func (dt DateTime) String() string {
 	return dt.FormatToString(0)
@@ -236,4 +258,24 @@ func (dt *DateTime) scanSQLString(str string) error {
 func NewDateTime(input uint64) DateTime {
 	dt := DateTime(input)
 	return dt
+}
+
+// NewInvalidDateTime returns a new DateTime instance using the INVALID_DATE_TIME constant
+func NewInvalidDateTime() DateTime {
+	return NewDateTime(constants.InvalidDateTime)
+}
+
+// NewFutureDateTime returns a new DateTime instance using the Future constant
+func NewFutureDateTime() DateTime {
+	return NewDateTime(constants.Future)
+}
+
+// NewPermanentDateTime returns a new DateTime instance using the PERMANENT_DATE_TIME constant
+func NewPermanentDateTime() DateTime {
+	return NewDateTime(constants.PermanentDateTime)
+}
+
+// NewNeverDateTime returns a new DateTime instance using the Never constant
+func NewNeverDateTime() DateTime {
+	return NewDateTime(constants.Never)
 }
