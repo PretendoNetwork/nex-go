@@ -53,7 +53,10 @@ func (s *String) ExtractFrom(readable Readable) error {
 		return fmt.Errorf("Failed to read NEX string length. %s", err.Error())
 	}
 
-	str := strings.TrimRight(string(stringData), "\x00")
+	// * Strings actually end at the NULL even if it's earlier than the
+	// * length says. Like a string "a\x00b" has a length of 4 but ends
+	// * at the character "a"
+	str, _, _ := strings.Cut(string(stringData), "\x00")
 
 	*s = String(str)
 	return nil
