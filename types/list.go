@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // List is an implementation of rdv::qList.
@@ -263,6 +265,36 @@ func (l List[T]) Value() (driver.Value, error) {
 	b.WriteString("}")
 
 	return b.String(), nil
+}
+
+// SetDimensions implements pgtype.ArraySetter for pgx.
+// Multi-dimensional get flattened
+func (l *List[T]) SetDimensions(dimensions []pgtype.ArrayDimension) error {
+	// * Treat nil dimensions, which are SQL NULL, as an empty
+	// * List the same as List.Scan
+	if len(dimensions) == 0 {
+		*l = List[T]{}
+		return nil
+	}
+
+	length := 1
+	for _, dimension := range dimensions {
+		length *= int(dimension.Length)
+	}
+
+	*l = make(List[T], length)
+
+	return nil
+}
+
+// ScanIndex implements pgtype.ArraySetter for pgx
+func (l List[T]) ScanIndex(i int) any {
+	return &l[i]
+}
+
+// ScanIndexType implements pgtype.ArraySetter for pgx
+func (l List[T]) ScanIndexType() any {
+	return new(T)
 }
 
 // NewList returns a new List of the provided type
