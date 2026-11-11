@@ -5,7 +5,6 @@ go 1.25.0
 require (
 	github.com/PretendoNetwork/plogger-go v1.1.0
 	github.com/jackc/pgx/v5 v5.12.0
-	github.com/lib/pq v1.12.3
 	github.com/lxzan/gws v1.10.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/rasky/go-lzo v0.0.0-20200203143853-96a758eda86e
